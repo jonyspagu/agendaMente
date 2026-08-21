@@ -1262,7 +1262,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       return res.id;
     });
     if (cargando) {
-      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "#8B6B76", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15 } }, "Cargando datos del consultorio..."), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "#A98B94" } }, "Si tarda m\xE1s de 20 segundos, se va a cancelar solo."));
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "#8B6B76", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15 } }, "Cargando..."));
     }
     if (error) {
       return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "40px auto", padding: 24, fontFamily: "-apple-system, sans-serif", background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33" } }, /* @__PURE__ */ React.createElement("strong", null, "No se pudo cargar la app."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5 } }, error), /* @__PURE__ */ React.createElement(
