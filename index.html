@@ -12,9 +12,7 @@
   * { box-sizing: border-box; }
   button { font: inherit; }
   select, input, textarea { font: inherit; }
-  @media (max-width: 720px) {
-    #root { padding: 0; align-items: stretch; }
-  }
+  @media (max-width: 720px) { #root { padding: 0; align-items: stretch; } }
 </style>
 </head>
 <body>
@@ -263,7 +261,7 @@
     }, [turnos, weekDates]);
     const pacienteNombre = (id) => {
       const p = pacientes.find((x) => x.id === id);
-      return p ? nombreCompleto(p) : "\u2014";
+      return p ? nombreCompleto(p) : "\u26A0 Sin paciente asignado";
     };
     const turnosAgendadosSemana = weekDates.reduce((acc, d) => acc + (byFecha[fmtKey(d)] || []).filter((t) => t.estado === "agendado").length, 0);
     const [deshacerId, setDeshacerId] = useState(null);
@@ -273,6 +271,10 @@
       return () => clearTimeout(timer);
     }, [deshacerId]);
     const validarYGuardar = () => {
+      if (!Number.isFinite(Number(form.pacienteId))) {
+        window.alert("Eleg\xED un paciente de la lista antes de guardar el turno.\n\nEscrib\xED parte del apellido y seleccion\xE1 una de las opciones que aparecen.");
+        return;
+      }
       const conflicto = turnoConflicto(turnos, form.pacienteId, form.fecha, form.hora, null);
       if (conflicto === "mismo") {
         const ok = window.confirm(`Ya hay un turno cargado para ${pacienteNombre(form.pacienteId)} el ${formatFechaCorta(form.fecha)} a las ${form.hora}.
@@ -859,7 +861,7 @@
     const cobrosMes = useMemo(() => cobros.filter((c) => c.fecha.startsWith(mes)).sort((a, b) => a.fecha.localeCompare(b.fecha)), [cobros, mes]);
     const pacienteNombre = (id) => {
       const p = pacientes.find((x) => x.id === id);
-      return p ? nombreCompleto(p) : "\u2014";
+      return p ? nombreCompleto(p) : "\u26A0 Sin paciente asignado";
     };
     const totalPendiente = cobrosMes.filter((c) => c.estado === "pendiente").reduce((s, c) => s + c.monto, 0);
     const totalCobrado = cobrosMes.filter((c) => c.estado === "pagado").reduce((s, c) => s + c.monto, 0);
