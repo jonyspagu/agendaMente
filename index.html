@@ -259,7 +259,7 @@
     const byFecha = useMemo(() => {
       const m = {};
       weekDates.forEach((d) => m[fmtKey(d)] = []);
-      turnos.forEach((t) => m[t.fecha] && m[t.fecha].push(t));
+      turnos.forEach((t) => t.estado !== "cancelado" && m[t.fecha] && m[t.fecha].push(t));
       Object.values(m).forEach((arr) => arr.sort((a, b) => a.hora.localeCompare(b.hora)));
       return m;
     }, [turnos, weekDates]);
@@ -997,18 +997,17 @@
           display: "flex",
           flexDirection: isMobile ? "column" : "row",
           width: "100%",
-          height: isMobile ? "auto" : 680,
+          minHeight: isMobile ? "auto" : 640,
           maxWidth: isMobile ? 480 : "none",
           margin: isMobile ? "0 auto" : 0,
           background: "var(--paper)",
           borderRadius: 14,
-          overflow: "hidden",
           border: "1px solid var(--line)",
           boxSizing: "border-box"
         }
       },
       /* @__PURE__ */ React.createElement(Sidebar, { tab, setTab, isMobile }),
-      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", height: isMobile ? "auto" : "100%", overflowY: isMobile ? "visible" : "auto", boxSizing: "border-box" } }, tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box" } }, tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
         PacientesView,
         {
           pacientes,
