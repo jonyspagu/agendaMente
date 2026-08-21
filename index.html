@@ -45,10 +45,10 @@
     return meses;
   }
   function nombreCompleto(p) {
-    return `${p.apellido}, ${p.nombre}`;
+    return `${p.apellido || "(sin apellido)"}, ${p.nombre || "(sin nombre)"}`;
   }
   function normalizar(s) {
-    return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   }
   function ordenAlfabetico(arr) {
     return [...arr].sort((a, b) => {
@@ -828,6 +828,28 @@
   function normalizarCobro(c) {
     return { ...c, id: Number(c.id), pacienteId: Number(c.pacienteId), monto: Number(c.monto) };
   }
+  class ErrorBoundary extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = { error: null };
+    }
+    static getDerivedStateFromError(error) {
+      return { error };
+    }
+    render() {
+      if (this.state.error) {
+        return /* @__PURE__ */ React.createElement("div", { style: { padding: 24, background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33", fontFamily: "-apple-system, sans-serif" } }, /* @__PURE__ */ React.createElement("strong", null, "Esta pantalla no pudo cargar por un dato inesperado."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, lineHeight: 1.5 } }, "Probablemente alg\xFAn paciente/turno/cobro tiene un campo vac\xEDo o mal cargado en el Google Sheet. Revis\xE1 que todas las filas tengan sus columnas completas."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#9C5257", fontFamily: "monospace" } }, String(this.state.error)), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => this.setState({ error: null }),
+            style: { marginTop: 8, border: "1px solid #7A2E33", background: "#fff", color: "#7A2E33", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }
+          },
+          "Reintentar"
+        ));
+      }
+      return this.props.children;
+    }
+  }
   function App() {
     const [tab, setTab] = useState("agenda");
     const [pacientes, setPacientes] = useState([]);
@@ -1007,7 +1029,7 @@
         }
       },
       /* @__PURE__ */ React.createElement(Sidebar, { tab, setTab, isMobile }),
-      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box" } }, tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box" } }, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
         PacientesView,
         {
           pacientes,
@@ -1028,7 +1050,7 @@
           onGenerarCobroMensual: generarCobroMensual,
           isMobile
         }
-      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, isMobile }))
+      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, isMobile })))
     );
   }
   ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
