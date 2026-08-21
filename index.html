@@ -453,10 +453,10 @@
     const pacientesSinConsentimiento = useMemo(() => ordenAlfabetico(pacientes.filter((pac) => pac.consentimientoFirmado !== "SI")), [pacientes]);
     const p = pacientes.find((x) => x.id === selected);
     useEffect(() => {
-      if (!p && pacientes.length > 0) {
+      if (!p && pacientes.length > 0 && Number.isFinite(pacientes[0].id) && pacientes[0].id !== selected) {
         setSelected(pacientes[0].id);
       }
-    }, [pacientes, p]);
+    }, [pacientes, p, selected]);
     const sugerenciaAumento = (precio) => Math.round(precio * (1 + pctAumento / 100) / 500) * 500;
     const marcarAumentoConPrecio = (pac) => {
       const sugerido = sugerenciaAumento(pac.precio);
@@ -824,14 +824,50 @@
     if (!json.ok) throw new Error(json.error || "Error desconocido del backend");
     return json;
   }
+  function leerCampo(obj, nombre) {
+    if (obj[nombre] !== void 0) return obj[nombre];
+    const objetivo = String(nombre).toLowerCase().trim();
+    const clave = Object.keys(obj).find((k) => String(k).toLowerCase().trim() === objetivo);
+    return clave !== void 0 ? obj[clave] : void 0;
+  }
+  function normalizarClaves(obj, campos) {
+    const salida = { ...obj };
+    campos.forEach((campo) => {
+      const valor = leerCampo(obj, campo);
+      if (valor !== void 0) salida[campo] = valor;
+    });
+    return salida;
+  }
+  const CAMPOS_PACIENTE = [
+    "id",
+    "nombre",
+    "apellido",
+    "precio",
+    "telefono",
+    "notas",
+    "desde",
+    "ultimoAumento",
+    "frecuenciaDias",
+    "mesesAumento",
+    "historia",
+    "contactoReferencia",
+    "consentimientoFirmado",
+    "fechaConsentimiento",
+    "tipoPago"
+  ];
+  const CAMPOS_TURNO = ["id", "pacienteId", "fecha", "hora", "estado"];
+  const CAMPOS_COBRO = ["id", "pacienteId", "fecha", "monto", "estado"];
   function normalizarPaciente(p) {
-    return { ...p, id: Number(p.id), precio: Number(p.precio) };
+    const base = normalizarClaves(p, CAMPOS_PACIENTE);
+    return { ...base, id: Number(base.id), precio: Number(base.precio) || 0 };
   }
   function normalizarTurno(t) {
-    return { ...t, id: Number(t.id), pacienteId: Number(t.pacienteId) };
+    const base = normalizarClaves(t, CAMPOS_TURNO);
+    return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId) };
   }
   function normalizarCobro(c) {
-    return { ...c, id: Number(c.id), pacienteId: Number(c.pacienteId), monto: Number(c.monto) };
+    const base = normalizarClaves(c, CAMPOS_COBRO);
+    return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId), monto: Number(base.monto) || 0 };
   }
   class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -864,7 +900,15 @@
     const [error, setError] = useState(null);
     const isMobile = useIsMobile();
     const aplicarDataset = (d) => {
-      setPacientes((d.pacientes || []).map(normalizarPaciente));
+      const pacientesNorm = (d.pacientes || []).map(normalizarPaciente);
+      const idsInvalidos = pacientesNorm.filter((p) => !Number.isFinite(p.id));
+      if (idsInvalidos.length > 0) {
+        setError(
+          `Hay ${idsInvalidos.length} paciente(s) sin un "id" num\xE9rico v\xE1lido en el Google Sheet. Revis\xE1 que la primera columna de la hoja Pacientes se llame exactamente "id" y que todas las filas tengan un n\xFAmero.`
+        );
+        return;
+      }
+      setPacientes(pacientesNorm);
       setTurnos((d.turnos || []).map(normalizarTurno));
       setCobros((d.cobros || []).map(normalizarCobro));
     };
