@@ -728,6 +728,19 @@
     const setEstadoTurno = conManejoDeError(async (id, estado) => {
       const res = await apiCall("Turnos", "update", { id, data: { estado } });
       aplicarDataset(res);
+      if (estado === "realizado") {
+        const turnoActualizado = res.turnos.map(normalizarTurno).find((t) => t.id === id);
+        if (turnoActualizado) {
+          const yaExiste = res.cobros.map(normalizarCobro).some((c) => c.pacienteId === turnoActualizado.pacienteId && c.fecha === turnoActualizado.fecha);
+          if (!yaExiste) {
+            const paciente = res.pacientes.map(normalizarPaciente).find((p) => p.id === turnoActualizado.pacienteId);
+            if (paciente) {
+              const res2 = await apiCall("Cobros", "create", { data: { pacienteId: turnoActualizado.pacienteId, fecha: turnoActualizado.fecha, monto: paciente.precio, estado: "pendiente" } });
+              aplicarDataset(res2);
+            }
+          }
+        }
+      }
     });
     const duplicarTurnoSemana = conManejoDeError(async (turno) => {
       const nuevaFecha = fmtKey(addDays(parseISO(turno.fecha), 7));
