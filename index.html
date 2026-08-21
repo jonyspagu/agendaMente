@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Consultorio — App</title>
+<title>Consultorio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <style>
@@ -665,7 +665,7 @@
   const rowGrid = { display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr 1fr 1.3fr", alignItems: "center", gap: 8 };
   const summaryCard = { flex: 1, minWidth: 200, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 };
   const markBtn = { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
-  const API_URL = "PONER_AQUI_LA_URL_DEL_WEB_APP_DE_APPS_SCRIPT";
+  const API_URL = "https://script.google.com/macros/s/AKfycbw2Zu828mSLiqB3NIk_3QiE8JB2FoEHHSX1X3umDvJxGJ17AI2U6uFx2yxS-ol1lWYS4Q/exec";
   async function apiCall(sheet, action, { id, data } = {}) {
     const res = await fetch(API_URL, {
       method: "POST",
