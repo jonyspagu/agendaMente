@@ -507,7 +507,7 @@
         setCopiado(true);
       }
     };
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { background: "yellow", border: "3px solid red", padding: 10, marginBottom: 14, fontSize: 13, fontFamily: "monospace" } }, "DEBUG \u2192 selected: ", String(selected), " | p encontrado: ", p ? nombreCompleto(p) : "NINGUNO", " | total pacientes: ", pacientes.length, " | isMobile: ", String(isMobile)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", gap: 12, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "Pacientes"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", gap: 12, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "Pacientes"), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setMostrandoNuevo((s) => !s),
@@ -868,19 +868,32 @@
       setTurnos((d.turnos || []).map(normalizarTurno));
       setCobros((d.cobros || []).map(normalizarCobro));
     };
-    useEffect(() => {
+    const cargarDatos = () => {
+      setCargando(true);
+      setError(null);
       if (API_URL.startsWith("PONER_AQUI")) {
         setError("Falta conectar el backend: configur\xE1 API_URL con la URL de tu Web App de Apps Script.");
         setCargando(false);
         return;
       }
-      fetch(API_URL).then((r) => r.json()).then((d) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2e4);
+      fetch(API_URL, { signal: controller.signal }).then((r) => {
+        clearTimeout(timeoutId);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      }).then((d) => {
         aplicarDataset(d);
         setCargando(false);
-      }).catch(() => {
-        setError("No se pudo conectar con la base de datos. Revis\xE1 que la Web App de Apps Script est\xE9 publicada y accesible.");
+      }).catch((e) => {
+        clearTimeout(timeoutId);
+        const msg = e.name === "AbortError" ? "La base de datos tard\xF3 demasiado en responder (m\xE1s de 20 segundos). Puede ser una demora de Google Apps Script." : "No se pudo conectar con la base de datos: " + e.message;
+        setError(msg);
         setCargando(false);
       });
+    };
+    useEffect(() => {
+      cargarDatos();
     }, []);
     const conManejoDeError = (fn) => async (...args) => {
       try {
@@ -999,10 +1012,17 @@
       return res.id;
     });
     if (cargando) {
-      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "#8B6B76" } }, "Cargando datos del consultorio...");
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "#8B6B76", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15 } }, "Cargando datos del consultorio..."), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "#A98B94" } }, "Si tarda m\xE1s de 20 segundos, se va a cancelar solo."));
     }
     if (error) {
-      return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "40px auto", padding: 24, fontFamily: "-apple-system, sans-serif", background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33" } }, /* @__PURE__ */ React.createElement("strong", null, "No se pudo cargar la app."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5 } }, error));
+      return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "40px auto", padding: 24, fontFamily: "-apple-system, sans-serif", background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33" } }, /* @__PURE__ */ React.createElement("strong", null, "No se pudo cargar la app."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5 } }, error), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: cargarDatos,
+          style: { marginTop: 8, border: "1px solid #7A2E33", background: "#fff", color: "#7A2E33", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }
+        },
+        "Reintentar"
+      ));
     }
     return /* @__PURE__ */ React.createElement(
       "div",
