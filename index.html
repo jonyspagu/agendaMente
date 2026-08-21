@@ -587,6 +587,7 @@
         {
           key: pac.id,
           onClick: () => {
+            window.alert("DIAGNOSTICO: click detectado en " + pac.nombre);
             setSelected(pac.id);
             setEditandoNotas(false);
             setAgregandoHistoria(false);
