@@ -36,7 +36,7 @@
   const Search = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "11", cy: "11", r: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "21", y1: "21", x2: "16.65", y2: "16.65" })) });
   const BarChart3 = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "3", x2: "3", y2: "21" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "21", x2: "21", y2: "21" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "12", width: "3", height: "6" }), /* @__PURE__ */ React.createElement("rect", { x: "12", y: "8", width: "3", height: "10" }), /* @__PURE__ */ React.createElement("rect", { x: "17", y: "5", width: "3", height: "13" })) });
   const Pencil = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" })) });
-  const { useState, useMemo, useEffect } = React;
+  const { useState, useMemo, useEffect, useRef } = React;
   const HOY = /* @__PURE__ */ new Date("2026-08-20");
   function mesesDesde(fechaStr) {
     const f = new Date(fechaStr);
@@ -221,77 +221,31 @@
     const t = tones[tone];
     return /* @__PURE__ */ React.createElement("span", { style: { background: t.bg, color: t.color, fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, padding: "3px 9px", borderRadius: 20, letterSpacing: 0.2, whiteSpace: "nowrap" } }, children);
   }
-  function PacienteSearchSelect({ pacientes, value, onChange }) {
-    const [open, setOpen] = useState(false);
-    const [query, setQuery] = useState("");
+  function PacienteSearchSelect({ pacientes, value, onChange, inputId }) {
+    const ordenados = useMemo(() => ordenAlfabetico(pacientes), [pacientes]);
     const selected = pacientes.find((p) => p.id === value);
-    const lista = useMemo(() => {
-      const ordenados = ordenAlfabetico(pacientes);
-      if (!query) return ordenados;
-      const q = normalizar(query);
-      return ordenados.filter((p) => normalizar(nombreCompleto(p)).includes(q));
-    }, [pacientes, query]);
-    const seleccionar = (p) => {
-      onChange(p.id);
-      setOpen(false);
-      setQuery("");
+    const [texto, setTexto] = useState(selected ? nombreCompleto(selected) : "");
+    useEffect(() => {
+      const p = pacientes.find((x) => x.id === value);
+      setTexto(p ? nombreCompleto(p) : "");
+    }, [value, pacientes]);
+    const manejarCambio = (e) => {
+      const val = e.target.value;
+      setTexto(val);
+      const match = ordenados.find((p) => nombreCompleto(p) === val);
+      if (match) onChange(match.id);
     };
-    return /* @__PURE__ */ React.createElement("div", { style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { position: "relative", display: "flex", alignItems: "center" } }, /* @__PURE__ */ React.createElement(Search, { size: 13, color: "var(--muted)", style: { position: "absolute", left: 9, pointerEvents: "none" } }), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { style: { position: "relative", display: "flex", alignItems: "center" } }, /* @__PURE__ */ React.createElement(Search, { size: 13, color: "var(--muted)", style: { position: "absolute", left: 9, pointerEvents: "none" } }), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
-        value: open ? query : selected ? nombreCompleto(selected) : "",
-        onChange: (e) => {
-          setQuery(e.target.value);
-          setOpen(true);
-        },
-        onFocus: () => {
-          setQuery("");
-          setOpen(true);
-        },
-        onBlur: () => setTimeout(() => setOpen(false), 180),
-        placeholder: "Buscar paciente...",
+        list: inputId,
+        value: texto,
+        onChange: manejarCambio,
+        placeholder: "Escrib\xED para buscar...",
         style: { ...selectStyle, paddingLeft: 27 }
       }
-    )), open && /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        style: {
-          position: "absolute",
-          top: "calc(100% + 4px)",
-          left: 0,
-          right: 0,
-          background: "#fff",
-          border: "1px solid var(--line)",
-          borderRadius: 8,
-          maxHeight: 220,
-          overflowY: "auto",
-          zIndex: 30,
-          boxShadow: "0 6px 18px rgba(74,42,56,0.16)"
-        }
-      },
-      lista.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { padding: "9px 11px", fontSize: 12.5, color: "var(--muted)" } }, "Sin resultados"),
-      lista.map((p) => /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          key: p.id,
-          onMouseDown: (e) => e.preventDefault(),
-          onClick: () => seleccionar(p),
-          style: {
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "9px 11px",
-            fontSize: 13,
-            cursor: "pointer",
-            color: "var(--ink)",
-            background: p.id === value ? "var(--paper2)" : "transparent"
-          }
-        },
-        /* @__PURE__ */ React.createElement("span", null, nombreCompleto(p)),
-        /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: "var(--muted)", fontFamily: "var(--mono)" } }, "$", p.precio.toLocaleString("es-AR"))
-      ))
-    ));
+    ), /* @__PURE__ */ React.createElement("datalist", { id: inputId }, ordenados.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.id, value: nombreCompleto(p) }))));
   }
   function AgendaView({ turnos, pacientes, onAdd, onEstado, onDuplicarSemana, onEliminarTurno, isMobile }) {
     var _a;
@@ -393,7 +347,7 @@
         },
         "Deshacer"
       )
-    ), showForm && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20, display: "flex", gap: 12, alignItems: isMobile ? "stretch" : "flex-end", flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: isMobile ? "1 1 auto" : "2 1 220px" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Paciente"), /* @__PURE__ */ React.createElement(PacienteSearchSelect, { pacientes, value: form.pacienteId, onChange: (id) => setForm({ ...form, pacienteId: id }) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: isMobile ? "1 1 auto" : "1 1 150px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement(
+    ), showForm && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20, display: "flex", gap: 12, alignItems: isMobile ? "stretch" : "flex-end", flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: isMobile ? "1 1 auto" : "2 1 220px" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Paciente"), /* @__PURE__ */ React.createElement(PacienteSearchSelect, { pacientes, value: form.pacienteId, onChange: (id) => setForm({ ...form, pacienteId: id }), inputId: "lista-pacientes-turno" })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: isMobile ? "1 1 auto" : "1 1 150px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setForm({ ...form, fecha: fmtKey(HOY) }),
@@ -459,6 +413,7 @@
     onAgregarPaciente,
     onActualizarTelefono,
     onActualizarFrecuencia,
+    onActualizarMesesAumento,
     onActualizarHistoria,
     onActualizarContacto,
     onActualizarTipoPago,
@@ -468,7 +423,6 @@
   }) {
     var _a, _b;
     const [selected, setSelected] = useState((_b = (_a = pacientes[0]) == null ? void 0 : _a.id) != null ? _b : null);
-    const [mesesConfig, setMesesConfig] = useState(6);
     const [pctAumento, setPctAumento] = useState(15);
     const [mensajePreview, setMensajePreview] = useState(null);
     const [copiado, setCopiado] = useState(false);
@@ -483,7 +437,7 @@
     const [agregandoHistoria, setAgregandoHistoria] = useState(false);
     const [fechaHistoria, setFechaHistoria] = useState(fmtKey(HOY));
     const [textoHistoria, setTextoHistoria] = useState("");
-    const [mostrarDetalleMobile, setMostrarDetalleMobile] = useState(false);
+    const detalleRef = useRef(null);
     const pendientesDe = (id) => cobros.filter((c) => c.pacienteId === id && c.estado === "pendiente");
     const montoPendienteDe = (id) => pendientesDe(id).reduce((s, c) => s + c.monto, 0);
     const pacientesOrdenados = useMemo(
@@ -494,7 +448,8 @@
       }),
       [pacientes, cobros]
     );
-    const pacientesEnAumento = useMemo(() => ordenAlfabetico(pacientes.filter((pac) => mesesDesde(pac.ultimoAumento) >= mesesConfig)), [pacientes, mesesConfig]);
+    const mesesUmbral = (pac) => Number(pac.mesesAumento) || 6;
+    const pacientesEnAumento = useMemo(() => ordenAlfabetico(pacientes.filter((pac) => mesesDesde(pac.ultimoAumento) >= mesesUmbral(pac))), [pacientes]);
     const pacientesSinConsentimiento = useMemo(() => ordenAlfabetico(pacientes.filter((pac) => pac.consentimientoFirmado !== "SI")), [pacientes]);
     const p = pacientes.find((x) => x.id === selected);
     const sugerenciaAumento = (precio) => Math.round(precio * (1 + pctAumento / 100) / 500) * 500;
@@ -619,9 +574,9 @@
         style: { alignSelf: "flex-start", border: "1px solid var(--pine)", background: copiadoPlantilla === "aldia" ? "var(--pine)" : "#fff", color: copiadoPlantilla === "aldia" ? "#fff" : "var(--pine)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       copiadoPlantilla === "aldia" ? "Copiado \u2713" : "Copiar"
-    ))), pacientesSinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(156,53,71,0.1)", border: "1px solid var(--rust)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 8 } }, pacientesSinConsentimiento.length, " paciente", pacientesSinConsentimiento.length > 1 ? "s" : "", " sin consentimiento firmado"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesSinConsentimiento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac), " ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--muted)", fontSize: 12 } }, "(desde ", pac.desde, ")")), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarConsentimiento(pac), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "3px 9px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "Marcar recibido"))))), pacientesEnAumento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(201,129,79,0.12)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ochre-dark)" } }, pacientesEnAumento.length, " paciente", pacientesEnAumento.length > 1 ? "s" : "", " con aumento sugerido"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)" } }, "Cada", /* @__PURE__ */ React.createElement("input", { type: "number", min: "1", value: mesesConfig, onChange: (e) => setMesesConfig(Number(e.target.value) || 1), style: miniInputStyle }), "meses"), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)" } }, "Sugerir +", /* @__PURE__ */ React.createElement("input", { type: "number", min: "1", value: pctAumento, onChange: (e) => setPctAumento(Number(e.target.value) || 1), style: miniInputStyle }), "%"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesEnAumento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ochre-dark)", fontFamily: "var(--mono)", fontSize: 12 } }, "hace ", mesesDesde(pac.ultimoAumento), "m \xB7 $", pac.precio.toLocaleString("es-AR"), " \u2192 $", sugerenciaAumento(pac.precio).toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(pac), style: miniActionBtnStyle }, "Marcar aumentado")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", gap: 24, alignItems: "flex-start" } }, (!isMobile || !mostrarDetalleMobile) && /* @__PURE__ */ React.createElement("div", { style: { width: isMobile ? "100%" : 300, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesOrdenados.map((pac) => {
+    ))), pacientesSinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(156,53,71,0.1)", border: "1px solid var(--rust)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 8 } }, pacientesSinConsentimiento.length, " paciente", pacientesSinConsentimiento.length > 1 ? "s" : "", " sin consentimiento firmado"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesSinConsentimiento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac), " ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--muted)", fontSize: 12 } }, "(desde ", pac.desde, ")")), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarConsentimiento(pac), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "3px 9px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "Marcar recibido"))))), pacientesEnAumento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(201,129,79,0.12)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ochre-dark)" } }, pacientesEnAumento.length, " paciente", pacientesEnAumento.length > 1 ? "s" : "", " con aumento sugerido"), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)" } }, "Sugerir +", /* @__PURE__ */ React.createElement("input", { type: "number", min: "1", value: pctAumento, onChange: (e) => setPctAumento(Number(e.target.value) || 1), style: miniInputStyle }), "%")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesEnAumento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ochre-dark)", fontFamily: "var(--mono)", fontSize: 12 } }, "hace ", mesesDesde(pac.ultimoAumento), "m (cada ", mesesUmbral(pac), "m) \xB7 $", pac.precio.toLocaleString("es-AR"), " \u2192 $", sugerenciaAumento(pac.precio).toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(pac), style: miniActionBtnStyle }, "Marcar aumentado")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", gap: 24, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { width: isMobile ? "100%" : 300, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesOrdenados.map((pac) => {
       const montoPend = montoPendienteDe(pac.id);
-      const enAumento = mesesDesde(pac.ultimoAumento) >= mesesConfig;
+      const enAumento = mesesDesde(pac.ultimoAumento) >= mesesUmbral(pac);
       return /* @__PURE__ */ React.createElement(
         "button",
         {
@@ -632,7 +587,10 @@
             setAgregandoHistoria(false);
             setFechaHistoria(fmtKey(HOY));
             setTextoHistoria("");
-            if (isMobile) setMostrarDetalleMobile(true);
+            setTimeout(() => {
+              var _a2;
+              return (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 50);
           },
           style: {
             display: "flex",
@@ -650,20 +608,12 @@
         /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontFamily: "var(--mono)", marginTop: 2 } }, "$", pac.precio.toLocaleString("es-AR"), pac.tipoPago === "mensual" ? "/mes" : "/sesi\xF3n")),
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, enAumento && /* @__PURE__ */ React.createElement(Pill, { tone: "ochre" }, "Aumentar"), montoPend > 0 && /* @__PURE__ */ React.createElement(Pill, { tone: "rust" }, "$", montoPend.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement(ChevronRight, { size: 15, color: "var(--muted)" }))
       );
-    }))), p && (!isMobile || mostrarDetalleMobile) && /* @__PURE__ */ React.createElement("div", { style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: isMobile ? 18 : 26 } }, isMobile && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => setMostrarDetalleMobile(false),
-        style: { display: "flex", alignItems: "center", gap: 4, border: "none", background: "none", color: "var(--pine)", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 14 }
-      },
-      /* @__PURE__ */ React.createElement(ChevronLeft, { size: 14 }),
-      " Volver a la lista"
-    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
+    }))), p && /* @__PURE__ */ React.createElement("div", { ref: detalleRef, style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "2px solid var(--pine)", borderRadius: 12, padding: isMobile ? 18 : 26, scrollMarginTop: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
       const real = turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length;
       const canc = turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length;
       const total = real + canc;
       return total ? `${Math.round(real / total * 100)}%` : "\u2014";
-    })())), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Deuda pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16, color: montoPendienteDe(p.id) ? "var(--rust)" : "var(--verde)" } }, "$", montoPendienteDe(p.id).toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "\xDAltimo aumento"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 15, color: mesesDesde(p.ultimoAumento) >= mesesConfig ? "var(--ochre-dark)" : "var(--pine)" } }, "hace ", mesesDesde(p.ultimoAumento), "m"), mesesDesde(p.ultimoAumento) >= mesesConfig && /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(p), style: { ...miniActionBtnStyle, marginTop: 6 } }, "Marcar aumentado"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Tel: ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefono || "sin cargar")), /* @__PURE__ */ React.createElement(
+    })())), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Deuda pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16, color: montoPendienteDe(p.id) ? "var(--rust)" : "var(--verde)" } }, "$", montoPendienteDe(p.id).toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "\xDAltimo aumento"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 15, color: mesesDesde(p.ultimoAumento) >= mesesUmbral(p) ? "var(--ochre-dark)" : "var(--pine)" } }, "hace ", mesesDesde(p.ultimoAumento), "m"), mesesDesde(p.ultimoAumento) >= mesesUmbral(p) && /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(p), style: { ...miniActionBtnStyle, marginTop: 6 } }, "Marcar aumentado"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Tel: ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefono || "sin cargar")), /* @__PURE__ */ React.createElement(
       "button",
       {
         title: "Editar tel\xE9fono",
@@ -695,6 +645,18 @@
       /* @__PURE__ */ React.createElement("option", { value: 7 }, "Semanal"),
       /* @__PURE__ */ React.createElement("option", { value: 14 }, "Quincenal"),
       /* @__PURE__ */ React.createElement("option", { value: 30 }, "Mensual")
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)" } }, /* @__PURE__ */ React.createElement("span", null, "Aumentar cada:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: p.mesesAumento || 6,
+        onChange: (e) => onActualizarMesesAumento(p.id, Number(e.target.value)),
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: 3 }, "3 meses"),
+      /* @__PURE__ */ React.createElement("option", { value: 4 }, "4 meses"),
+      /* @__PURE__ */ React.createElement("option", { value: 6 }, "6 meses"),
+      /* @__PURE__ */ React.createElement("option", { value: 9 }, "9 meses"),
+      /* @__PURE__ */ React.createElement("option", { value: 12 }, "12 meses")
     )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)" } }, /* @__PURE__ */ React.createElement("span", null, "Tipo de pago:"), /* @__PURE__ */ React.createElement(
       "select",
       {
@@ -961,6 +923,10 @@
       const res = await apiCall("Pacientes", "update", { id, data: { frecuenciaDias } });
       aplicarDataset(res);
     });
+    const actualizarMesesAumento = conManejoDeError(async (id, mesesAumento) => {
+      const res = await apiCall("Pacientes", "update", { id, data: { mesesAumento } });
+      aplicarDataset(res);
+    });
     const actualizarHistoria = conManejoDeError(async (id, historia) => {
       const res = await apiCall("Pacientes", "update", { id, data: { historia } });
       aplicarDataset(res);
@@ -994,6 +960,7 @@
           desde,
           ultimoAumento: HOY.toISOString().slice(0, 10),
           frecuenciaDias: 7,
+          mesesAumento: 6,
           historia: "[]",
           contactoReferencia: "",
           consentimientoFirmado: "NO",
@@ -1054,6 +1021,7 @@
           onAgregarPaciente: agregarPaciente,
           onActualizarTelefono: actualizarTelefono,
           onActualizarFrecuencia: actualizarFrecuencia,
+          onActualizarMesesAumento: actualizarMesesAumento,
           onActualizarHistoria: actualizarHistoria,
           onActualizarContacto: actualizarContacto,
           onActualizarTipoPago: actualizarTipoPago,
