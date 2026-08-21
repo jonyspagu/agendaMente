@@ -439,6 +439,8 @@
     onActualizarMesesAumento,
     onActualizarHistoria,
     onActualizarContacto,
+    onActualizarParentesco,
+    onActualizarTelefonoReferencia,
     onActualizarTipoPago,
     onMarcarConsentimiento,
     onActualizarLinkConsentimiento,
@@ -632,13 +634,29 @@
         style: pencilBtnStyle
       },
       /* @__PURE__ */ React.createElement(Pencil, { size: 11 })
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Contacto de referencia: ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)" } }, p.contactoReferencia || "sin cargar")), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Contacto de referencia:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: p.parentescoReferencia || "",
+        onChange: (e) => onActualizarParentesco(p.id, e.target.value),
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "\u2014 Parentesco \u2014"),
+      /* @__PURE__ */ React.createElement("option", { value: "Madre" }, "Madre"),
+      /* @__PURE__ */ React.createElement("option", { value: "Padre" }, "Padre"),
+      /* @__PURE__ */ React.createElement("option", { value: "Hermano/a" }, "Hermano/a"),
+      /* @__PURE__ */ React.createElement("option", { value: "Pareja" }, "Pareja"),
+      /* @__PURE__ */ React.createElement("option", { value: "Hijo/a" }, "Hijo/a"),
+      /* @__PURE__ */ React.createElement("option", { value: "Tutor/a legal" }, "Tutor/a legal"),
+      /* @__PURE__ */ React.createElement("option", { value: "Amigo/a" }, "Amigo/a"),
+      /* @__PURE__ */ React.createElement("option", { value: "Otro" }, "Otro")
+    ), /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefonoReferencia || "sin tel\xE9fono"), /* @__PURE__ */ React.createElement(
       "button",
       {
-        title: "Editar contacto de referencia",
+        title: "Editar tel\xE9fono de referencia",
         onClick: () => {
-          const input = window.prompt(`Contacto de referencia/emergencia para ${nombreCompleto(p)} (nombre y tel\xE9fono):`, p.contactoReferencia || "");
-          if (input !== null) onActualizarContacto(p.id, input.trim());
+          const input = window.prompt(`Tel\xE9fono del contacto de referencia de ${nombreCompleto(p)}:`, p.telefonoReferencia || "");
+          if (input !== null) onActualizarTelefonoReferencia(p.id, input.trim());
         },
         style: pencilBtnStyle
       },
@@ -931,6 +949,8 @@
     "mesesAumento",
     "historia",
     "contactoReferencia",
+    "parentescoReferencia",
+    "telefonoReferencia",
     "consentimientoFirmado",
     "fechaConsentimiento",
     "tipoPago",
@@ -940,6 +960,16 @@
   const CAMPOS_COBRO = ["id", "pacienteId", "fecha", "monto", "estado"];
   function normalizarPaciente(p) {
     const base = normalizarClaves(p, CAMPOS_PACIENTE);
+    if (!base.parentescoReferencia && !base.telefonoReferencia && base.contactoReferencia) {
+      const texto = String(base.contactoReferencia);
+      const partes = texto.split(":");
+      if (partes.length >= 2) {
+        base.parentescoReferencia = partes[0].trim();
+        base.telefonoReferencia = partes.slice(1).join(":").trim();
+      } else {
+        base.telefonoReferencia = texto.trim();
+      }
+    }
     return { ...base, id: Number(base.id), precio: Number(base.precio) || 0 };
   }
   function normalizarTurno(t) {
@@ -1088,6 +1118,8 @@
     const actualizarMesesAumento = (id, mesesAumento) => actualizarPacienteOptimista(id, { mesesAumento });
     const actualizarHistoria = (id, historia) => actualizarPacienteOptimista(id, { historia });
     const actualizarContacto = (id, contactoReferencia) => actualizarPacienteOptimista(id, { contactoReferencia });
+    const actualizarParentesco = (id, parentescoReferencia) => actualizarPacienteOptimista(id, { parentescoReferencia });
+    const actualizarTelefonoReferencia = (id, telefonoReferencia) => actualizarPacienteOptimista(id, { telefonoReferencia });
     const actualizarTipoPago = (id, tipoPago) => actualizarPacienteOptimista(id, { tipoPago });
     const actualizarLinkConsentimiento = (id, linkConsentimiento) => actualizarPacienteOptimista(id, { linkConsentimiento });
     const marcarConsentimiento = (id, fecha, historia) => actualizarPacienteOptimista(id, { consentimientoFirmado: "SI", fechaConsentimiento: fecha, historia });
@@ -1111,6 +1143,8 @@
           mesesAumento: 6,
           historia: "[]",
           contactoReferencia: "",
+          parentescoReferencia: "",
+          telefonoReferencia: "",
           consentimientoFirmado: "NO",
           fechaConsentimiento: "",
           tipoPago: "sesion",
@@ -1179,6 +1213,8 @@
           onActualizarMesesAumento: actualizarMesesAumento,
           onActualizarHistoria: actualizarHistoria,
           onActualizarContacto: actualizarContacto,
+          onActualizarParentesco: actualizarParentesco,
+          onActualizarTelefonoReferencia: actualizarTelefonoReferencia,
           onActualizarTipoPago: actualizarTipoPago,
           onMarcarConsentimiento: marcarConsentimiento,
           onActualizarLinkConsentimiento: actualizarLinkConsentimiento,
