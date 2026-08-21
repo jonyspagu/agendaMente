@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Consultorio — Mockup CRM</title>
+<title>Consultorio — App</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <style>
@@ -37,14 +37,6 @@
   const BarChart3 = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "3", x2: "3", y2: "21" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "21", x2: "21", y2: "21" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "12", width: "3", height: "6" }), /* @__PURE__ */ React.createElement("rect", { x: "12", y: "8", width: "3", height: "10" }), /* @__PURE__ */ React.createElement("rect", { x: "17", y: "5", width: "3", height: "13" })) });
   const Pencil = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" })) });
   const { useState, useMemo, useEffect } = React;
-  const initialPacientes = [
-    { id: 1, nombre: "Luc\xEDa", apellido: "Ferreyra", precio: 18e3, desde: "Mar 2024", notas: "Sesi\xF3n semanal, martes.", telefono: "5491122334455", ultimoAumento: "2026-02-01" },
-    { id: 2, nombre: "Mart\xEDn", apellido: "Odena", precio: 15e3, desde: "Ago 2024", notas: "Quincenal.", telefono: "5491133445566", ultimoAumento: "2026-06-01" },
-    { id: 3, nombre: "Camila", apellido: "Su\xE1rez", precio: 2e4, desde: "Ene 2025", notas: "Sesi\xF3n semanal, jueves.", telefono: "5491144556677", ultimoAumento: "2025-11-01" },
-    { id: 4, nombre: "Federico", apellido: "Bianchi", precio: 18e3, desde: "Jun 2025", notas: "Semanal, mi\xE9rcoles temprano.", telefono: "5491155667788", ultimoAumento: "2026-07-01" },
-    { id: 5, nombre: "Roc\xEDo", apellido: "Palacios", precio: 15e3, desde: "Nov 2023", notas: "Quincenal, viernes.", telefono: "5491166778899", ultimoAumento: "2025-08-01" },
-    { id: 6, nombre: "Tom\xE1s", apellido: "Guiraldes", precio: 2e4, desde: "Feb 2026", notas: "Semanal.", telefono: "5491177889900", ultimoAumento: "2026-08-01" }
-  ];
   const HOY = /* @__PURE__ */ new Date("2026-08-20");
   function mesesDesde(fechaStr) {
     const f = new Date(fechaStr);
@@ -137,27 +129,6 @@
     return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${y}`;
   }
   const BASE_MONDAY = getMonday(HOY);
-  const initialTurnos = [
-    { id: 1, pacienteId: 1, fecha: "2026-08-17", hora: "19:00", estado: "agendado" },
-    { id: 2, pacienteId: 1, fecha: "2026-08-17", hora: "10:00", estado: "realizado" },
-    { id: 3, pacienteId: 1, fecha: "2026-08-18", hora: "10:00", estado: "agendado" },
-    { id: 4, pacienteId: 4, fecha: "2026-08-19", hora: "08:30", estado: "realizado" },
-    { id: 5, pacienteId: 3, fecha: "2026-08-20", hora: "17:00", estado: "agendado" },
-    { id: 6, pacienteId: 2, fecha: "2026-08-21", hora: "11:00", estado: "agendado" },
-    { id: 7, pacienteId: 5, fecha: "2026-08-21", hora: "16:00", estado: "cancelado" },
-    { id: 8, pacienteId: 2, fecha: "2026-08-25", hora: "11:00", estado: "agendado" },
-    { id: 9, pacienteId: 3, fecha: "2026-08-27", hora: "17:00", estado: "agendado" }
-  ];
-  const initialCobros = [
-    { id: 1, pacienteId: 1, fecha: "2026-08-12", monto: 18e3, estado: "pagado" },
-    { id: 2, pacienteId: 3, fecha: "2026-08-14", monto: 2e4, estado: "pendiente" },
-    { id: 3, pacienteId: 4, fecha: "2026-08-13", monto: 18e3, estado: "pendiente" },
-    { id: 4, pacienteId: 2, fecha: "2026-08-08", monto: 15e3, estado: "pagado" },
-    { id: 5, pacienteId: 6, fecha: "2026-08-17", monto: 2e4, estado: "pendiente" },
-    { id: 6, pacienteId: 5, fecha: "2026-08-01", monto: 15e3, estado: "pagado" },
-    { id: 7, pacienteId: 1, fecha: "2026-09-02", monto: 18e3, estado: "pendiente" },
-    { id: 8, pacienteId: 3, fecha: "2026-09-04", monto: 2e4, estado: "pagado" }
-  ];
   function periodoLabel(fecha) {
     return `Sesi\xF3n ${formatFechaCorta(fecha)}`;
   }
@@ -694,64 +665,118 @@
   const rowGrid = { display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr 1fr 1.3fr", alignItems: "center", gap: 8 };
   const summaryCard = { flex: 1, minWidth: 200, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 };
   const markBtn = { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
+  const API_URL = "PONER_AQUI_LA_URL_DEL_WEB_APP_DE_APPS_SCRIPT";
+  async function apiCall(sheet, action, { id, data } = {}) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ sheet, action, id, data })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || "Error desconocido del backend");
+    return json;
+  }
+  function normalizarPaciente(p) {
+    return { ...p, id: Number(p.id), precio: Number(p.precio) };
+  }
+  function normalizarTurno(t) {
+    return { ...t, id: Number(t.id), pacienteId: Number(t.pacienteId) };
+  }
+  function normalizarCobro(c) {
+    return { ...c, id: Number(c.id), pacienteId: Number(c.pacienteId), monto: Number(c.monto) };
+  }
   function App() {
     const [tab, setTab] = useState("agenda");
-    const [pacientes, setPacientes] = useState(initialPacientes);
-    const [turnos, setTurnos] = useState(initialTurnos);
-    const [cobros, setCobros] = useState(initialCobros);
+    const [pacientes, setPacientes] = useState([]);
+    const [turnos, setTurnos] = useState([]);
+    const [cobros, setCobros] = useState([]);
+    const [cargando, setCargando] = useState(true);
+    const [error, setError] = useState(null);
     const isMobile = useIsMobile();
-    const addTurno = (form) => {
-      const nuevoId = Math.max(0, ...turnos.map((t) => t.id)) + 1;
-      setTurnos((prev) => [...prev, { id: nuevoId, pacienteId: form.pacienteId, fecha: form.fecha, hora: form.hora, estado: "agendado" }]);
-      return nuevoId;
+    const aplicarDataset = (d) => {
+      setPacientes((d.pacientes || []).map(normalizarPaciente));
+      setTurnos((d.turnos || []).map(normalizarTurno));
+      setCobros((d.cobros || []).map(normalizarCobro));
     };
-    const setEstadoTurno = (id, estado) => {
-      setTurnos((prev) => prev.map((t) => t.id === id ? { ...t, estado } : t));
+    useEffect(() => {
+      if (API_URL.startsWith("PONER_AQUI")) {
+        setError("Falta conectar el backend: configur\xE1 API_URL con la URL de tu Web App de Apps Script.");
+        setCargando(false);
+        return;
+      }
+      fetch(API_URL).then((r) => r.json()).then((d) => {
+        aplicarDataset(d);
+        setCargando(false);
+      }).catch(() => {
+        setError("No se pudo conectar con la base de datos. Revis\xE1 que la Web App de Apps Script est\xE9 publicada y accesible.");
+        setCargando(false);
+      });
+    }, []);
+    const conManejoDeError = (fn) => async (...args) => {
+      try {
+        return await fn(...args);
+      } catch (e) {
+        window.alert("Hubo un problema guardando en la base de datos:\n\n" + e.message + "\n\nEl cambio no se guard\xF3, prob\xE1 de nuevo.");
+        return null;
+      }
     };
-    const duplicarTurnoSemana = (turno) => {
+    const addTurno = conManejoDeError(async (form) => {
+      const res = await apiCall("Turnos", "create", { data: { pacienteId: form.pacienteId, fecha: form.fecha, hora: form.hora, estado: "agendado" } });
+      aplicarDataset(res);
+      return res.id;
+    });
+    const setEstadoTurno = conManejoDeError(async (id, estado) => {
+      const res = await apiCall("Turnos", "update", { id, data: { estado } });
+      aplicarDataset(res);
+    });
+    const duplicarTurnoSemana = conManejoDeError(async (turno) => {
       const nuevaFecha = fmtKey(addDays(parseISO(turno.fecha), 7));
-      const nuevoId = Math.max(0, ...turnos.map((t) => t.id)) + 1;
-      setTurnos((prev) => [...prev, { id: nuevoId, pacienteId: turno.pacienteId, fecha: nuevaFecha, hora: turno.hora, estado: "agendado" }]);
-      return nuevoId;
-    };
-    const eliminarTurno = (id) => {
-      setTurnos((prev) => prev.filter((t) => t.id !== id));
-    };
-    const marcarCobro = (id) => {
-      setCobros((prev) => prev.map((c) => c.id === id ? { ...c, estado: "pagado" } : c));
-    };
-    const marcarAumento = (id) => {
-      setPacientes((prev) => prev.map((p) => p.id === id ? { ...p, ultimoAumento: HOY.toISOString().slice(0, 10) } : p));
-    };
-    const actualizarPrecio = (id, nuevoPrecio) => {
-      setPacientes((prev) => prev.map((p) => p.id === id ? { ...p, precio: nuevoPrecio } : p));
-    };
-    const aplicarAumento = (id, nuevoPrecio) => {
-      setPacientes((prev) => prev.map((p) => p.id === id ? { ...p, precio: nuevoPrecio, ultimoAumento: HOY.toISOString().slice(0, 10) } : p));
-    };
-    const actualizarNotas = (id, notas) => {
-      setPacientes((prev) => prev.map((p) => p.id === id ? { ...p, notas } : p));
-    };
-    const actualizarTelefono = (id, telefono) => {
-      setPacientes((prev) => prev.map((p) => p.id === id ? { ...p, telefono } : p));
-    };
-    const agregarPaciente = (datos) => {
-      const nuevoId = Math.max(0, ...pacientes.map((p) => p.id)) + 1;
+      const res = await apiCall("Turnos", "create", { data: { pacienteId: turno.pacienteId, fecha: nuevaFecha, hora: turno.hora, estado: "agendado" } });
+      aplicarDataset(res);
+      return res.id;
+    });
+    const eliminarTurno = conManejoDeError(async (id) => {
+      const res = await apiCall("Turnos", "delete", { id });
+      aplicarDataset(res);
+    });
+    const marcarCobro = conManejoDeError(async (id) => {
+      const res = await apiCall("Cobros", "update", { id, data: { estado: "pagado" } });
+      aplicarDataset(res);
+    });
+    const marcarAumento = conManejoDeError(async (id) => {
+      const res = await apiCall("Pacientes", "update", { id, data: { ultimoAumento: HOY.toISOString().slice(0, 10) } });
+      aplicarDataset(res);
+    });
+    const actualizarPrecio = conManejoDeError(async (id, nuevoPrecio) => {
+      const res = await apiCall("Pacientes", "update", { id, data: { precio: nuevoPrecio } });
+      aplicarDataset(res);
+    });
+    const aplicarAumento = conManejoDeError(async (id, nuevoPrecio) => {
+      const res = await apiCall("Pacientes", "update", { id, data: { precio: nuevoPrecio, ultimoAumento: HOY.toISOString().slice(0, 10) } });
+      aplicarDataset(res);
+    });
+    const actualizarNotas = conManejoDeError(async (id, notas) => {
+      const res = await apiCall("Pacientes", "update", { id, data: { notas } });
+      aplicarDataset(res);
+    });
+    const actualizarTelefono = conManejoDeError(async (id, telefono) => {
+      const res = await apiCall("Pacientes", "update", { id, data: { telefono } });
+      aplicarDataset(res);
+    });
+    const agregarPaciente = conManejoDeError(async (datos) => {
       const desde = `${MESES[HOY.getMonth()].charAt(0).toUpperCase()}${MESES[HOY.getMonth()].slice(1, 3)} ${HOY.getFullYear()}`;
-      setPacientes((prev) => [
-        ...prev,
-        {
-          id: nuevoId,
-          nombre: datos.nombre,
-          apellido: datos.apellido,
-          precio: datos.precio,
-          telefono: datos.telefono,
-          notas: datos.notas,
-          desde,
-          ultimoAumento: HOY.toISOString().slice(0, 10)
-        }
-      ]);
-    };
+      const res = await apiCall("Pacientes", "create", {
+        data: { nombre: datos.nombre, apellido: datos.apellido, precio: datos.precio, telefono: datos.telefono, notas: datos.notas, desde, ultimoAumento: HOY.toISOString().slice(0, 10) }
+      });
+      aplicarDataset(res);
+      return res.id;
+    });
+    if (cargando) {
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "#8B6B76" } }, "Cargando datos del consultorio...");
+    }
+    if (error) {
+      return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "40px auto", padding: 24, fontFamily: "-apple-system, sans-serif", background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33" } }, /* @__PURE__ */ React.createElement("strong", null, "No se pudo cargar la app."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5 } }, error));
+    }
     return /* @__PURE__ */ React.createElement(
       "div",
       {
