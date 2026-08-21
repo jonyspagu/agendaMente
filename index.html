@@ -507,7 +507,7 @@
         setCopiado(true);
       }
     };
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", gap: 12, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "Pacientes"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { background: "yellow", border: "3px solid red", padding: 10, marginBottom: 14, fontSize: 13, fontFamily: "monospace" } }, "DEBUG \u2192 selected: ", String(selected), " | p encontrado: ", p ? nombreCompleto(p) : "NINGUNO", " | total pacientes: ", pacientes.length, " | isMobile: ", String(isMobile)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", gap: 12, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "Pacientes"), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setMostrandoNuevo((s) => !s),
@@ -587,7 +587,6 @@
         {
           key: pac.id,
           onClick: () => {
-            window.alert("DIAGNOSTICO: click detectado en " + pac.nombre);
             setSelected(pac.id);
             setEditandoNotas(false);
             setAgregandoHistoria(false);
