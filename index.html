@@ -139,7 +139,7 @@
     if (mismoSlot.length > 0) return { tipo: "otro", turno: mismoSlot[0] };
     return null;
   }
-  function Sidebar({ tab, setTab, isMobile }) {
+  function Sidebar({ tab, setTab, isMobile, onCerrarSesion }) {
     const items = [
       { id: "agenda", label: "Agenda", icon: Calendar },
       { id: "pacientes", label: "Pacientes", icon: Users },
@@ -204,7 +204,24 @@
         /* @__PURE__ */ React.createElement(IconComp, { size: 16, strokeWidth: 2 }),
         it.label
       );
-    }));
+    }), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: onCerrarSesion,
+        style: {
+          marginTop: "auto",
+          border: "none",
+          background: "none",
+          color: "var(--muted)",
+          fontSize: 12.5,
+          fontFamily: "var(--sans)",
+          cursor: "pointer",
+          textAlign: "left",
+          padding: "9px 10px"
+        }
+      },
+      "Cerrar sesi\xF3n"
+    ));
   }
   function Pill({ children, tone = "neutral" }) {
     const tones = {
@@ -1019,11 +1036,12 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const undoBtn = { border: "1px solid var(--muted)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
   const markBtn = { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
   const API_URL = "https://script.google.com/macros/s/AKfycbw2Zu828mSLiqB3NIk_3QiE8JB2FoEHHSX1X3umDvJxGJ17AI2U6uFx2yxS-ol1lWYS4Q/exec";
+  let CLAVE_SESION = "";
   async function apiCall(sheet, action, { id, data } = {}) {
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ sheet, action, id, data })
+      body: JSON.stringify({ sheet, action, id, data, clave: CLAVE_SESION })
     });
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || "Error desconocido del backend");
@@ -1115,6 +1133,9 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [turnos, setTurnos] = useState([]);
     const [cobros, setCobros] = useState([]);
     const [cargando, setCargando] = useState(true);
+    const [autenticado, setAutenticado] = useState(false);
+    const [claveInput, setClaveInput] = useState("");
+    const [errorLogin, setErrorLogin] = useState("");
     const [error, setError] = useState(null);
     const isMobile = useIsMobile();
     const aplicarDataset = (d) => {
@@ -1130,7 +1151,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       setTurnos((d.turnos || []).map(normalizarTurno));
       setCobros((d.cobros || []).map(normalizarCobro));
     };
-    const cargarDatos = () => {
+    const cargarDatos = (clave) => {
       setCargando(true);
       setError(null);
       if (API_URL.startsWith("PONER_AQUI")) {
@@ -1140,22 +1161,44 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       }
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2e4);
-      fetch(API_URL, { signal: controller.signal }).then((r) => {
+      fetch(API_URL + "?clave=" + encodeURIComponent(clave), { signal: controller.signal }).then((r) => {
         clearTimeout(timeoutId);
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.json();
       }).then((d) => {
+        if (d.error === "NO_AUTORIZADO") {
+          setErrorLogin("Contrase\xF1a incorrecta.");
+          setAutenticado(false);
+          setCargando(false);
+          return;
+        }
+        CLAVE_SESION = clave;
+        try {
+          sessionStorage.setItem("claveConsultorio", clave);
+        } catch (err) {
+        }
+        setAutenticado(true);
+        setErrorLogin("");
         aplicarDataset(d);
         setCargando(false);
       }).catch((e) => {
         clearTimeout(timeoutId);
-        const msg = e.name === "AbortError" ? "La base de datos tard\xF3 demasiado en responder (m\xE1s de 20 segundos). Puede ser una demora de Google Apps Script." : "No se pudo conectar con la base de datos: " + e.message;
+        const msg = e.name === "AbortError" ? "El servidor tard\xF3 demasiado en responder. Prob\xE1 de nuevo en un momento." : "No se pudo conectar: " + e.message;
         setError(msg);
         setCargando(false);
       });
     };
     useEffect(() => {
-      cargarDatos();
+      let guardada = "";
+      try {
+        guardada = sessionStorage.getItem("claveConsultorio") || "";
+      } catch (err) {
+      }
+      if (guardada) {
+        cargarDatos(guardada);
+      } else {
+        setCargando(false);
+      }
     }, []);
     const conManejoDeError = (fn) => async (...args) => {
       try {
@@ -1261,6 +1304,68 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       aplicarDataset(res);
       return res.id;
     });
+    if (!autenticado && !cargando) {
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            maxWidth: 380,
+            margin: "60px auto",
+            padding: 32,
+            background: "#FFFBFC",
+            border: "1px solid #E6CFD6",
+            borderRadius: 14,
+            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            boxShadow: "0 4px 20px rgba(74,42,56,0.1)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 24, color: "#4A2A38", marginBottom: 4 } }, "Consultorio"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#8B6B76", marginBottom: 22 } }, "Ingres\xE1 tu contrase\xF1a para continuar"),
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "password",
+            value: claveInput,
+            onChange: (e) => setClaveInput(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === "Enter" && claveInput) cargarDatos(claveInput);
+            },
+            placeholder: "Contrase\xF1a",
+            autoFocus: true,
+            style: {
+              width: "100%",
+              border: "1px solid #E6CFD6",
+              borderRadius: 8,
+              padding: "11px 12px",
+              fontSize: 14,
+              color: "#4A2A38",
+              boxSizing: "border-box",
+              marginBottom: 12
+            }
+          }
+        ),
+        errorLogin && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#9C3547", marginBottom: 12 } }, errorLogin),
+        error && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#9C3547", marginBottom: 12 } }, error),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => claveInput && cargarDatos(claveInput),
+            style: {
+              width: "100%",
+              border: "none",
+              background: "#B34A6E",
+              color: "#fff",
+              borderRadius: 8,
+              padding: "11px 0",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer"
+            }
+          },
+          "Entrar"
+        )
+      );
+    }
     if (cargando) {
       return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "#8B6B76", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15 } }, "Cargando..."));
     }
@@ -1268,10 +1373,17 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "40px auto", padding: 24, fontFamily: "-apple-system, sans-serif", background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33" } }, /* @__PURE__ */ React.createElement("strong", null, "No se pudo cargar la app."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5 } }, error), /* @__PURE__ */ React.createElement(
         "button",
         {
-          onClick: cargarDatos,
+          onClick: () => {
+            setError(null);
+            setAutenticado(false);
+            try {
+              sessionStorage.removeItem("claveConsultorio");
+            } catch (err) {
+            }
+          },
           style: { marginTop: 8, border: "1px solid #7A2E33", background: "#fff", color: "#7A2E33", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }
         },
-        "Reintentar"
+        "Volver a intentar"
       ));
     }
     return /* @__PURE__ */ React.createElement(
@@ -1303,7 +1415,23 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           boxSizing: "border-box"
         }
       },
-      /* @__PURE__ */ React.createElement(Sidebar, { tab, setTab, isMobile }),
+      /* @__PURE__ */ React.createElement(
+        Sidebar,
+        {
+          tab,
+          setTab,
+          isMobile,
+          onCerrarSesion: () => {
+            CLAVE_SESION = "";
+            try {
+              sessionStorage.removeItem("claveConsultorio");
+            } catch (err) {
+            }
+            setAutenticado(false);
+            setClaveInput("");
+          }
+        }
+      ),
       /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box" } }, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
         PacientesView,
         {
