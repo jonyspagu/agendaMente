@@ -504,6 +504,40 @@
       }
       onActualizarPrecio(pac.id, nuevo);
     };
+    const exportarHistoriaClinica = (pac) => {
+      let prof = {};
+      try {
+        prof = JSON.parse(localStorage.getItem("datosProfesional") || "{}");
+      } catch (err) {
+        prof = {};
+      }
+      if (!prof.nombre || !prof.matricula) {
+        const nombre = window.prompt("Para generar el documento hace falta el nombre del profesional (la ley exige que figure en la historia cl\xEDnica):", prof.nombre || "");
+        if (!nombre) return;
+        const matricula = window.prompt("N\xFAmero de matr\xEDcula profesional:", prof.matricula || "");
+        if (!matricula) return;
+        prof = { nombre: nombre.trim(), matricula: matricula.trim(), especialidad: "Psicolog\xEDa" };
+        try {
+          localStorage.setItem("datosProfesional", JSON.stringify(prof));
+        } catch (err) {
+        }
+      }
+      const entradas = numerarHistoria(parseHistoria(pac.historia));
+      const hoy = /* @__PURE__ */ new Date();
+      const fechaEmision = `${String(hoy.getDate()).padStart(2, "0")}/${String(hoy.getMonth() + 1).padStart(2, "0")}/${hoy.getFullYear()}`;
+      const esc = (t) => String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const filas = entradas.map(
+        (e) => `<div class="entrada"><div class="entrada-head">Sesi\xF3n N\xB0 ${e.numero} \u2014 ${esc(formatFechaCorta(e.fecha))}</div><div class="entrada-texto">${esc(e.texto).replace(/\n/g, "<br>")}</div></div>`
+      ).join("");
+      const doc = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historia cl\xEDnica \u2014 ' + esc(nombreCompleto(pac)) + '</title><style>@page { margin: 2.2cm 2cm; }body { font-family: Georgia, "Times New Roman", serif; color: #1a1a1a; line-height: 1.55; font-size: 11.5pt; }h1 { font-size: 15pt; margin: 0 0 4px 0; }.sub { font-size: 10pt; color: #555; margin-bottom: 18px; }.bloque { border: 1px solid #bbb; padding: 12px 14px; margin-bottom: 18px; }.bloque h2 { font-size: 10pt; text-transform: uppercase; letter-spacing: .5px; margin: 0 0 8px 0; color: #444; }.campo { font-size: 10.5pt; margin-bottom: 3px; }.campo b { display: inline-block; min-width: 170px; }.entrada { border-top: 1px solid #ddd; padding: 10px 0; page-break-inside: avoid; }.entrada-head { font-size: 10pt; font-weight: bold; color: #333; margin-bottom: 4px; }.entrada-texto { font-size: 11pt; white-space: pre-wrap; }.firma-linea { border-top: 1px solid #333; width: 240px; margin-top: 60px; padding-top: 5px; font-size: 10pt; }.pie { margin-top: 28px; font-size: 8.5pt; color: #666; border-top: 1px solid #ddd; padding-top: 8px; }@media print { .noprint { display: none; } }.noprint { background: #f0f0f0; padding: 12px; margin-bottom: 20px; border-radius: 6px; font-family: sans-serif; font-size: 13px; }.noprint button { font-size: 14px; padding: 8px 18px; cursor: pointer; margin-right: 8px; }</style></head><body><div class="noprint"><button onclick="window.print()">Guardar como PDF / Imprimir</button><span>En el di\xE1logo, eleg\xED "Guardar como PDF" como destino.</span></div><h1>HISTORIA CL\xCDNICA</h1><div class="sub">Documento emitido conforme a la Ley 26.529 de Derechos del Paciente \u2014 Emitido el ' + fechaEmision + '</div><div class="bloque"><h2>Profesional interviniente</h2><div class="campo"><b>Nombre y apellido:</b> ' + esc(prof.nombre) + '</div><div class="campo"><b>Matr\xEDcula profesional:</b> ' + esc(prof.matricula) + '</div><div class="campo"><b>Especialidad:</b> ' + esc(prof.especialidad || "Psicolog\xEDa") + '</div></div><div class="bloque"><h2>Datos del paciente</h2><div class="campo"><b>Nombre y apellido:</b> ' + esc(pac.nombre) + " " + esc(pac.apellido) + '</div><div class="campo"><b>Tel\xE9fono de contacto:</b> ' + esc(pac.telefono || "\u2014") + '</div><div class="campo"><b>Contacto de referencia:</b> ' + esc(pac.parentescoReferencia || "\u2014") + (pac.telefonoReferencia ? " \u2014 " + esc(pac.telefonoReferencia) : "") + '</div><div class="campo"><b>Fecha de inicio:</b> ' + esc(pac.desde || "\u2014") + '</div><div class="campo"><b>Consentimiento informado:</b> ' + (pac.consentimientoFirmado === "SI" ? "Firmado el " + esc(formatFechaCorta(pac.fechaConsentimiento)) : "No registrado") + '</div><div class="campo"><b>Sesiones registradas:</b> ' + entradas.length + '</div></div><h2 style="font-size:11pt;text-transform:uppercase;letter-spacing:.5px;color:#444;margin-bottom:2px;">Registro cronol\xF3gico de sesiones</h2>' + (filas || '<p style="font-style:italic;color:#666;">Sin entradas registradas.</p>') + '<div class="firma-linea">Firma y sello del profesional</div><div class="pie">Documento generado el ' + fechaEmision + ". Contiene " + entradas.length + " registro(s) de sesi\xF3n en orden cronol\xF3gico. La historia cl\xEDnica es propiedad del paciente (Ley 26.529, Art. 14) y su contenido est\xE1 amparado por el secreto profesional.</div></body></html>";
+      const ventana = window.open("", "_blank");
+      if (!ventana) {
+        window.alert("El navegador bloque\xF3 la ventana emergente. Permitila para poder generar el documento.");
+        return;
+      }
+      ventana.document.write(doc);
+      ventana.document.close();
+    };
     const marcarConsentimiento = (pac) => {
       const ok = window.confirm(`\xBFConfirm\xE1s que ${nombreCompleto(pac)} devolvi\xF3 el documento de consentimiento firmado?`);
       if (!ok) return;
@@ -799,14 +833,22 @@
         style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 12px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Cancelar"
-    ))) : /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, margin: 0 } }, p.notas || "Sin notas."), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Historia cl\xEDnica"), /* @__PURE__ */ React.createElement(
+    ))) : /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, margin: 0 } }, p.notas || "Sin notas."), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Historia cl\xEDnica"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12, alignItems: "center" } }, parseHistoria(p.historia).length > 0 && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => exportarHistoriaClinica(p),
+        title: "Generar copia para entregar al paciente (Ley 26.529, Art. 14)",
+        style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "\u2193 Descargar"
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setAgregandoHistoria((s) => !s),
         style: { border: "none", background: "none", color: "var(--pine)", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0 }
       },
       agregandoHistoria ? "Cancelar" : "+ Agregar entrada"
-    )), agregandoHistoria && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 8, alignItems: "center" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement("input", { type: "date", value: fechaHistoria, onChange: (e) => setFechaHistoria(e.target.value), style: { ...selectStyle, width: "auto" } })), /* @__PURE__ */ React.createElement(
+    ))), agregandoHistoria && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 8, alignItems: "center" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement("input", { type: "date", value: fechaHistoria, onChange: (e) => setFechaHistoria(e.target.value), style: { ...selectStyle, width: "auto" } })), /* @__PURE__ */ React.createElement(
       "textarea",
       {
         value: textoHistoria,
