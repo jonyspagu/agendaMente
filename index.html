@@ -32,6 +32,7 @@
   const Search = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "11", cy: "11", r: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "21", y1: "21", x2: "16.65", y2: "16.65" })) });
   const BarChart3 = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "3", x2: "3", y2: "21" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "21", x2: "21", y2: "21" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "12", width: "3", height: "6" }), /* @__PURE__ */ React.createElement("rect", { x: "12", y: "8", width: "3", height: "10" }), /* @__PURE__ */ React.createElement("rect", { x: "17", y: "5", width: "3", height: "13" })) });
   const Pencil = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" })) });
+  const Sun = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "4" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M12 20v2" }), /* @__PURE__ */ React.createElement("path", { d: "m4.93 4.93 1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "m17.66 17.66 1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "m6.34 17.66-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "m19.07 4.93-1.41 1.41" })) });
   const { useState, useMemo, useEffect, useRef } = React;
   const HOY = /* @__PURE__ */ new Date("2026-08-20");
   function mesesDesde(fechaStr) {
@@ -141,6 +142,7 @@
   }
   function Sidebar({ tab, setTab, isMobile, onCerrarSesion }) {
     const items = [
+      { id: "hoy", label: "Hoy", icon: Sun },
       { id: "agenda", label: "Agenda", icon: Calendar },
       { id: "pacientes", label: "Pacientes", icon: Users },
       { id: "cobros", label: "Cobros", icon: Wallet },
@@ -260,6 +262,78 @@
       }
     ), /* @__PURE__ */ React.createElement("datalist", { id: inputId }, ordenados.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.id, value: nombreCompleto(p) }))));
   }
+  function HoyView({ turnos, pacientes, cobros, onEstado, onGuardarNota, setTab, isMobile }) {
+    const hoyKey = fmtKey(HOY);
+    const manianaKey = fmtKey(addDays(HOY, 1));
+    const nombreDe = (id) => {
+      const p = pacientes.find((x) => x.id === id);
+      return p ? nombreCompleto(p) : "\u26A0 Sin paciente asignado";
+    };
+    const sesionesHoy = useMemo(
+      () => turnos.filter((t) => t.fecha === hoyKey && t.estado !== "cancelado").sort((a, b) => String(a.hora).localeCompare(String(b.hora))),
+      [turnos, hoyKey]
+    );
+    const sesionesManiana = useMemo(
+      () => turnos.filter((t) => t.fecha === manianaKey && t.estado !== "cancelado").sort((a, b) => String(a.hora).localeCompare(String(b.hora))),
+      [turnos, manianaKey]
+    );
+    const deudaTotal = cobros.filter((c) => c.estado === "pendiente").reduce((s, c) => s + c.monto, 0);
+    const cantDeudores = new Set(cobros.filter((c) => c.estado === "pendiente").map((c) => c.pacienteId)).size;
+    const sinConsentimiento = pacientes.filter((p) => p.consentimientoFirmado !== "SI");
+    const paraAumentar = pacientes.filter((p) => mesesDesde(p.ultimoAumento) >= (Number(p.mesesAumento) || 6));
+    const cobradoMes = cobros.filter((c) => c.estado === "pagado" && c.fecha.startsWith(hoyKey.slice(0, 7))).reduce((s, c) => s + c.monto, 0);
+    const fechaLarga = `${DIAS_LARGOS[(HOY.getDay() + 6) % 7]} ${HOY.getDate()} de ${MESES[HOY.getMonth()]}`;
+    const feriadoHoy = FERIADOS_2026[hoyKey];
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: "0 0 2px 0", textTransform: "capitalize" } }, fechaLarga), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, sesionesHoy.length === 0 ? "No hay sesiones agendadas para hoy." : `${sesionesHoy.length} sesi\xF3n${sesionesHoy.length > 1 ? "es" : ""} hoy`, feriadoHoy ? ` \xB7 Feriado: ${feriadoHoy}` : ""), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 22 } }, /* @__PURE__ */ React.createElement("div", { style: { ...metricCard, borderLeft: "3px solid var(--verde)" } }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Cobrado este mes"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 19, color: "var(--verde)" } }, "$", cobradoMes.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: { ...metricCard, borderLeft: "3px solid var(--rust)", cursor: "pointer" }, onClick: () => setTab("cobros") }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Te deben"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 19, color: "var(--rust)" } }, "$", deudaTotal.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "var(--muted)", marginTop: 2 } }, cantDeudores, " paciente", cantDeudores !== 1 ? "s" : "")), /* @__PURE__ */ React.createElement("div", { style: { ...metricCard, borderLeft: "3px solid var(--pine)" } }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Pacientes activos"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 19 } }, pacientes.length))), (sinConsentimiento.length > 0 || paraAumentar.length > 0) && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(201,129,79,0.12)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "12px 16px", marginBottom: 22 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ochre-dark)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 } }, "Pendientes"), paraAumentar.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", marginBottom: 3 } }, "\xB7 ", paraAumentar.length, " paciente", paraAumentar.length > 1 ? "s" : "", " con aumento sugerido", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("pacientes"), style: linkBtn }, "ver")), sinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)" } }, "\xB7 ", sinConsentimiento.length, " sin consentimiento firmado", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("pacientes"), style: linkBtn }, "ver"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 10 } }, "Sesiones de hoy"), sesionesHoy.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: "var(--muted)", fontStyle: "italic", marginBottom: 24 } }, "Sin sesiones agendadas para hoy."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 26 } }, sesionesHoy.map((t) => /* @__PURE__ */ React.createElement(TurnoHoy, { key: t.id, turno: t, nombre: nombreDe(t.pacienteId), onEstado, onGuardarNota, isMobile }))), sesionesManiana.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 10 } }, "Ma\xF1ana"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, sesionesManiana.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 12, background: "var(--paper2)", borderRadius: 8, padding: "9px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--muted)", fontWeight: 600 } }, t.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, color: "var(--ink)" } }, nombreDe(t.pacienteId)))))));
+  }
+  function TurnoHoy({ turno, nombre, onEstado, onGuardarNota, isMobile }) {
+    const [escribiendo, setEscribiendo] = useState(false);
+    const [nota, setNota] = useState("");
+    const [guardada, setGuardada] = useState(false);
+    const marcarRealizada = () => {
+      onEstado(turno.id, "realizado");
+      setEscribiendo(true);
+    };
+    return /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[turno.estado]}`, borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 14, color: "var(--ink)", fontWeight: 600 } }, turno.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14.5, color: "var(--ink)", fontWeight: 600 } }, nombre), /* @__PURE__ */ React.createElement(Pill, { tone: turno.estado === "realizado" ? "verde" : "pine" }, estadoTurnoLabel[turno.estado])), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, turno.estado === "agendado" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: marcarRealizada, style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2713 Se hizo"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "cancelado"), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2715 Cancel\xF3")) : /* @__PURE__ */ React.createElement(React.Fragment, null, !escribiendo && !guardada && /* @__PURE__ */ React.createElement("button", { onClick: () => setEscribiendo(true), style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "+ Nota"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "agendado"), style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "\u21A9 Deshacer")))), guardada && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--verde)", marginTop: 8 } }, "\u2713 Nota guardada en la historia cl\xEDnica."), escribiendo && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        value: nota,
+        onChange: (e) => setNota(e.target.value),
+        rows: 3,
+        autoFocus: true,
+        placeholder: "Nota de la sesi\xF3n (se guarda en la historia cl\xEDnica)...",
+        style: { width: "100%", border: "1px solid var(--line)", borderRadius: 6, padding: 9, fontSize: 13.5, fontFamily: "var(--sans)", color: "var(--ink)", lineHeight: 1.5, resize: "vertical", boxSizing: "border-box" }
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          if (!nota.trim()) {
+            setEscribiendo(false);
+            return;
+          }
+          onGuardarNota(turno.pacienteId, turno.fecha, nota.trim());
+          setNota("");
+          setEscribiendo(false);
+          setGuardada(true);
+        },
+        style: { border: "none", background: "var(--pine)", color: "#fff", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Guardar nota"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          setEscribiendo(false);
+          setNota("");
+        },
+        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Ahora no"
+    ))));
+  }
+  const linkBtn = { border: "none", background: "none", color: "var(--pine)", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline" };
+  const DIAS_LARGOS = ["lunes", "martes", "mi\xE9rcoles", "jueves", "viernes", "s\xE1bado", "domingo"];
   function AgendaView({ turnos, pacientes, onAdd, onEstado, onDuplicarSemana, onEliminarTurno, isMobile }) {
     var _a;
     const [showForm, setShowForm] = useState(false);
@@ -1128,7 +1202,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     }
   }
   function App() {
-    const [tab, setTab] = useState("agenda");
+    const [tab, setTab] = useState("hoy");
     const [pacientes, setPacientes] = useState([]);
     const [turnos, setTurnos] = useState([]);
     const [cobros, setCobros] = useState([]);
@@ -1267,6 +1341,13 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const actualizarFrecuencia = (id, frecuenciaDias) => actualizarPacienteOptimista(id, { frecuenciaDias });
     const actualizarMesesAumento = (id, mesesAumento) => actualizarPacienteOptimista(id, { mesesAumento });
     const actualizarHistoria = (id, historia) => actualizarPacienteOptimista(id, { historia });
+    const guardarNotaRapida = (pacienteId, fecha, texto) => {
+      const pac = pacientes.find((p) => p.id === pacienteId);
+      if (!pac) return;
+      const entradas = parseHistoria(pac.historia);
+      entradas.push({ fecha, texto });
+      actualizarPacienteOptimista(pacienteId, { historia: JSON.stringify(entradas) });
+    };
     const actualizarContacto = (id, contactoReferencia) => actualizarPacienteOptimista(id, { contactoReferencia });
     const actualizarParentesco = (id, parentescoReferencia) => actualizarPacienteOptimista(id, { parentescoReferencia });
     const actualizarTelefonoReferencia = (id, telefonoReferencia) => actualizarPacienteOptimista(id, { telefonoReferencia });
@@ -1432,7 +1513,18 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           }
         }
       ),
-      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box" } }, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box" } }, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
+        HoyView,
+        {
+          turnos,
+          pacientes,
+          cobros,
+          onEstado: setEstadoTurno,
+          onGuardarNota: guardarNotaRapida,
+          setTab,
+          isMobile
+        }
+      ), tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
         PacientesView,
         {
           pacientes,
