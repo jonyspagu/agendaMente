@@ -40,10 +40,11 @@
     return d;
   })();
   function mesesDesde(fechaStr) {
-    const f = new Date(fechaStr);
+    const f = parseISO(fechaStr);
+    if (isNaN(f.getTime())) return 0;
     let meses = (HOY.getFullYear() - f.getFullYear()) * 12 + (HOY.getMonth() - f.getMonth());
     if (HOY.getDate() < f.getDate()) meses -= 1;
-    return meses;
+    return meses < 0 ? 0 : meses;
   }
   function nombreCompleto(p) {
     return `${p.apellido || "(sin apellido)"}, ${p.nombre || "(sin nombre)"}`;
@@ -110,11 +111,13 @@
     return `${y}-${m}-${day}`;
   }
   function parseISO(s) {
-    const [y, m, d] = s.split("-").map(Number);
+    const [y, m, d] = String(s || "").split("-").map(Number);
+    if (!y || !m || !d) return /* @__PURE__ */ new Date(NaN);
     return new Date(y, m - 1, d);
   }
   function formatFechaCorta(fechaStr) {
     const d = parseISO(fechaStr);
+    if (isNaN(d.getTime())) return "\u2014";
     return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
   }
   function formatRangoSemana(dates) {
@@ -353,7 +356,7 @@
       const m = {};
       weekDates.forEach((d) => m[fmtKey(d)] = []);
       turnos.forEach((t) => m[t.fecha] && m[t.fecha].push(t));
-      Object.values(m).forEach((arr) => arr.sort((a, b) => a.hora.localeCompare(b.hora)));
+      Object.values(m).forEach((arr) => arr.sort((a, b) => String(a.hora).localeCompare(String(b.hora))));
       return m;
     }, [turnos, weekDates]);
     const pacienteNombre = (id) => {
@@ -695,12 +698,22 @@
             window.alert("Ingres\xE1 un precio de sesi\xF3n v\xE1lido.");
             return;
           }
-          onAgregarPaciente({
-            nombre: nuevoPaciente.nombre.trim(),
-            apellido: nuevoPaciente.apellido.trim(),
-            precio: Number(nuevoPaciente.precio),
-            telefono: nuevoPaciente.telefono.trim(),
-            notas: nuevoPaciente.notas.trim()
+          Promise.resolve(
+            onAgregarPaciente({
+              nombre: nuevoPaciente.nombre.trim(),
+              apellido: nuevoPaciente.apellido.trim(),
+              precio: Number(nuevoPaciente.precio),
+              telefono: nuevoPaciente.telefono.trim(),
+              notas: nuevoPaciente.notas.trim()
+            })
+          ).then((nuevoId) => {
+            if (nuevoId) {
+              setSelected(Number(nuevoId));
+              setTimeout(() => {
+                var _a2;
+                return (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "start" });
+              }, 120);
+            }
           });
           setNuevoPaciente({ nombre: "", apellido: "", precio: "", telefono: "", notas: "" });
           setMostrandoNuevo(false);
@@ -1092,7 +1105,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const pencilBtnStyle = { border: "1px solid var(--line)", background: "#fff", borderRadius: 5, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--muted)" };
   function useMesSelector(cobros) {
     const mesesDisponibles = useMemo(() => {
-      const set = new Set(cobros.map((c) => c.fecha.slice(0, 7)));
+      const set = new Set(cobros.map((c) => String(c.fecha).slice(0, 7)));
       return Array.from(set).sort();
     }, [cobros]);
     const mesActual = fmtKey(HOY).slice(0, 7);
@@ -1108,7 +1121,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [filtroEstado, setFiltroEstado] = useState("todos");
     const [filtroPaciente, setFiltroPaciente] = useState("todos");
     const cobrosMes = useMemo(
-      () => cobros.filter((c) => c.fecha.startsWith(mes)).sort((a, b) => a.fecha.localeCompare(b.fecha)),
+      () => cobros.filter((c) => String(c.fecha).startsWith(mes)).sort((a, b) => String(a.fecha).localeCompare(String(b.fecha))),
       [cobros, mes]
     );
     const totalPendiente = cobrosMes.filter((c) => c.estado === "pendiente").reduce((s, c) => s + c.monto, 0);
@@ -1174,8 +1187,8 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   }
   function MetricasView({ pacientes, turnos, cobros, isMobile }) {
     const { mesesDisponibles, mes, setMes } = useMesSelector(cobros);
-    const cobrosMes = useMemo(() => cobros.filter((c) => c.fecha.startsWith(mes)), [cobros, mes]);
-    const turnosMes = turnos.filter((t) => t.fecha.startsWith(mes));
+    const cobrosMes = useMemo(() => cobros.filter((c) => String(c.fecha).startsWith(mes)), [cobros, mes]);
+    const turnosMes = turnos.filter((t) => String(t.fecha).startsWith(mes));
     const realizadas = turnosMes.filter((t) => t.estado === "realizado").length;
     const canceladas = turnosMes.filter((t) => t.estado === "cancelado").length;
     const agendadas = turnosMes.filter((t) => t.estado === "agendado").length;
@@ -1422,9 +1435,9 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       aplicarDataset(res);
     });
     const marcarCobro = (id, estado = "pagado") => actualizarCobroOptimista(id, { estado });
-    const marcarAumento = (id) => actualizarPacienteOptimista(id, { ultimoAumento: HOY.toISOString().slice(0, 10) });
+    const marcarAumento = (id) => actualizarPacienteOptimista(id, { ultimoAumento: fmtKey(HOY) });
     const actualizarPrecio = (id, nuevoPrecio) => actualizarPacienteOptimista(id, { precio: nuevoPrecio });
-    const aplicarAumento = (id, nuevoPrecio) => actualizarPacienteOptimista(id, { precio: nuevoPrecio, ultimoAumento: HOY.toISOString().slice(0, 10) });
+    const aplicarAumento = (id, nuevoPrecio) => actualizarPacienteOptimista(id, { precio: nuevoPrecio, ultimoAumento: fmtKey(HOY) });
     const actualizarNotas = (id, notas) => actualizarPacienteOptimista(id, { notas });
     const actualizarTelefono = (id, telefono) => actualizarPacienteOptimista(id, { telefono });
     const actualizarFrecuencia = (id, frecuenciaDias) => actualizarPacienteOptimista(id, { frecuenciaDias });
@@ -1458,7 +1471,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           telefono: datos.telefono,
           notas: datos.notas,
           desde,
-          ultimoAumento: HOY.toISOString().slice(0, 10),
+          ultimoAumento: fmtKey(HOY),
           frecuenciaDias: 7,
           mesesAumento: 6,
           historia: "[]",
