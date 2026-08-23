@@ -1211,7 +1211,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const summaryCard = { flex: 1, minWidth: 200, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 };
   const undoBtn = { border: "1px solid var(--muted)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
   const markBtn = { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
-  const API_URL = "https://script.google.com/macros/s/AKfycbxQLLbvRm8fjKgPS2EFoVpydnfT-3UR_lFnP0QL_TkU1B527UtrM4mlQlHNwhSaAWu2tQ/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbw0eON-ce0Y7z2XpEU4pEdhoR6swMfd58M5QaKG5VOzT-qY5R7brtz924jRETCaeCTsAA/exec";
   let CLAVE_SESION = "";
   async function apiCall(sheet, action, { id, data } = {}) {
     const res = await fetch(API_URL, {
