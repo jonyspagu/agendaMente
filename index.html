@@ -153,7 +153,7 @@
       { id: "metricas", label: "M\xE9tricas", icon: BarChart3 }
     ];
     if (isMobile) {
-      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", borderBottom: "1px solid var(--line)", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "16px 18px 10px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", lineHeight: 1.1 } }, "Consultorio")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", padding: "0 8px 10px 8px", gap: 4 } }, items.map((it) => {
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", borderBottom: "1px solid var(--line)", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "16px 18px 10px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", lineHeight: 1.1 } }, "Consultorio"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: { border: "none", background: "none", color: "var(--muted)", fontSize: 12, fontFamily: "var(--sans)", cursor: "pointer", padding: 0 } }, "Cerrar sesi\xF3n"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", padding: "0 8px 10px 8px", gap: 4 } }, items.map((it) => {
         const IconComp = it.icon;
         const active = tab === it.id;
         return /* @__PURE__ */ React.createElement(
@@ -215,15 +215,20 @@
       {
         onClick: onCerrarSesion,
         style: {
-          marginTop: "auto",
+          marginTop: 18,
+          paddingTop: 14,
+          borderTop: "1px solid var(--line)",
           border: "none",
+          borderTopWidth: 1,
+          borderTopStyle: "solid",
+          borderTopColor: "var(--line)",
           background: "none",
           color: "var(--muted)",
           fontSize: 12.5,
           fontFamily: "var(--sans)",
           cursor: "pointer",
           textAlign: "left",
-          padding: "9px 10px"
+          padding: "14px 10px 9px 10px"
         }
       },
       "Cerrar sesi\xF3n"
