@@ -639,6 +639,7 @@
     };
     const PLANTILLA_DEUDA = "Hola {nombre}! Te escribo para recordarte el pago pendiente de {monto}. \xA1Gracias!";
     const PLANTILLA_SIMPLE = "Hola {nombre}! Te escribo para [motivo del mensaje].";
+    const PLANTILLA_AUMENTO = "Hola {nombre}! \xBFC\xF3mo est\xE1s? Te escribo para comentarte que a partir de [mes] el valor de la sesi\xF3n pasa a ser de [nuevo valor]. El actual es de {precio}. Cualquier cosa hablamos. \xA1Gracias!";
     const leerPlantilla = (tipo) => {
       try {
         const guardada = localStorage.getItem("plantilla_" + tipo);
@@ -647,37 +648,33 @@
       }
       return tipo === "deuda" ? PLANTILLA_DEUDA : PLANTILLA_SIMPLE;
     };
-    const generarMensaje = (pac, forzarDefault) => {
+    const DEFAULTS = { deuda: PLANTILLA_DEUDA, simple: PLANTILLA_SIMPLE, aumento: PLANTILLA_AUMENTO };
+    const generarMensaje = (pac, tipo, forzarDefault) => {
+      const t = tipo || (pendientesDe(pac.id).length > 0 ? "deuda" : "simple");
+      const plantilla = forzarDefault ? DEFAULTS[t] : leerPlantilla(t);
       const pend = pendientesDe(pac.id);
-      const conDeuda = pend.length > 0;
-      const tipo = conDeuda ? "deuda" : "simple";
-      let plantilla;
-      if (forzarDefault) {
-        plantilla = conDeuda ? PLANTILLA_DEUDA : PLANTILLA_SIMPLE;
-      } else {
-        plantilla = leerPlantilla(tipo);
-      }
       const total = pend.reduce((s, c) => s + c.monto, 0);
-      return plantilla.replace(/{nombre}/g, pac.nombre || "").replace(/{monto}/g, `$${total.toLocaleString("es-AR")}`);
+      return plantilla.replace(/{nombre}/g, pac.nombre || "").replace(/{monto}/g, `$${total.toLocaleString("es-AR")}`).replace(/{precio}/g, `$${Number(pac.precio || 0).toLocaleString("es-AR")}`);
     };
-    const guardarComoPlantilla = (pac) => {
+    const guardarComoPlantilla = (pac, tipo) => {
       const pend = pendientesDe(pac.id);
-      const conDeuda = pend.length > 0;
       const total = pend.reduce((s, c) => s + c.monto, 0);
       let plantilla = mensajeEditable;
       if (pac.nombre) plantilla = plantilla.split(pac.nombre).join("{nombre}");
-      if (conDeuda) plantilla = plantilla.split(`$${total.toLocaleString("es-AR")}`).join("{monto}");
+      if (pend.length > 0) plantilla = plantilla.split(`$${total.toLocaleString("es-AR")}`).join("{monto}");
+      if (pac.precio) plantilla = plantilla.split(`$${Number(pac.precio).toLocaleString("es-AR")}`).join("{precio}");
       try {
-        localStorage.setItem("plantilla_" + (conDeuda ? "deuda" : "simple"), plantilla);
+        localStorage.setItem("plantilla_" + tipo, plantilla);
         setPlantillaGuardada(true);
         setTimeout(() => setPlantillaGuardada(false), 2200);
       } catch (err) {
         window.alert("No se pudo guardar la plantilla en este navegador.");
       }
     };
-    const recordarWhatsApp = (pac) => {
-      setMensajePreview({ pacienteId: pac.id });
-      setMensajeEditable(generarMensaje(pac));
+    const recordarWhatsApp = (pac, tipo) => {
+      const t = tipo || (pendientesDe(pac.id).length > 0 ? "deuda" : "simple");
+      setMensajePreview({ pacienteId: pac.id, tipo: t });
+      setMensajeEditable(generarMensaje(pac, t));
       setCopiado(false);
     };
     const copiarMensaje = () => {
@@ -760,7 +757,22 @@
       },
       /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ochre-dark)" } }, pacientesEnAumento.length, " paciente", pacientesEnAumento.length > 1 ? "s" : "", " con aumento sugerido"),
       /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--ochre-dark)", fontWeight: 700 } }, abrirAumentos ? "\u25B2 ocultar" : "\u25BC ver")
-    ), /* @__PURE__ */ React.createElement("div", { style: { display: abrirAumentos ? "flex" : "none", flexDirection: "column", gap: 6 } }, pacientesEnAumento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ochre-dark)", fontFamily: "var(--mono)", fontSize: 12 } }, "hace ", mesesDesde(pac.ultimoAumento), "m (cada ", mesesUmbral(pac), "m) \xB7 $", pac.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(pac), style: miniActionBtnStyle }, "Marcar aumentado")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", gap: 24, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { width: isMobile ? "100%" : 300, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesOrdenados.map((pac) => {
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: abrirAumentos ? "flex" : "none", flexDirection: "column", gap: 6 } }, pacientesEnAumento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ochre-dark)", fontFamily: "var(--mono)", fontSize: 12 } }, "hace ", mesesDesde(pac.ultimoAumento), "m (cada ", mesesUmbral(pac), "m) \xB7 $", pac.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          setSelected(pac.id);
+          recordarWhatsApp(pac, "aumento");
+          setTimeout(() => {
+            var _a2;
+            return (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 120);
+        },
+        title: "Preparar el mensaje para avisarle del aumento",
+        style: { ...miniActionBtnStyle, borderColor: "var(--pine)", color: "var(--pine)" }
+      },
+      "Avisar por WhatsApp"
+    ), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(pac), style: miniActionBtnStyle }, "Marcar aumentado")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", gap: 24, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { width: isMobile ? "100%" : 300, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesOrdenados.map((pac) => {
       const montoPend = montoPendienteDe(pac.id);
       const enAumento = mesesDesde(pac.ultimoAumento) >= mesesUmbral(pac);
       return /* @__PURE__ */ React.createElement(
@@ -1090,10 +1102,36 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         style: { border: "none", background: "none", color: "var(--pine)", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0 }
       },
       "Editar"
-    )), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", lineHeight: 1.5, whiteSpace: "pre-wrap" } }, entrada.texto)))))), mensajePreview && mensajePreview.pacienteId === p.id && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 20, background: "var(--paper2)", border: "1px solid var(--line)", borderRadius: 10, padding: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Mensaje para WhatsApp"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", lineHeight: 1.5, whiteSpace: "pre-wrap" } }, entrada.texto)))))), mensajePreview && mensajePreview.pacienteId === p.id && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 20, background: "var(--paper2)", border: "1px solid var(--line)", borderRadius: 10, padding: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Mensaje para WhatsApp"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4 } }, [
+      { id: "deuda", label: "Pago pendiente" },
+      { id: "aumento", label: "Aumento" },
+      { id: "simple", label: "Otro" }
+    ].map((op) => /* @__PURE__ */ React.createElement(
       "button",
       {
-        onClick: () => guardarComoPlantilla(p),
+        key: op.id,
+        onClick: () => {
+          setMensajePreview({ pacienteId: p.id, tipo: op.id });
+          setMensajeEditable(generarMensaje(p, op.id));
+          setCopiado(false);
+        },
+        style: {
+          border: mensajePreview.tipo === op.id ? "1px solid var(--pine)" : "1px solid var(--line)",
+          background: mensajePreview.tipo === op.id ? "var(--pine)" : "#fff",
+          color: mensajePreview.tipo === op.id ? "#fff" : "var(--muted)",
+          borderRadius: 6,
+          padding: "3px 9px",
+          fontSize: 11,
+          fontFamily: "var(--sans)",
+          fontWeight: 600,
+          cursor: "pointer"
+        }
+      },
+      op.label
+    )))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => guardarComoPlantilla(p, mensajePreview.tipo),
         title: "Guardar este texto para que aparezca siempre as\xED",
         style: { border: "1px solid var(--ochre-dark)", background: plantillaGuardada ? "var(--ochre-dark)" : "#fff", color: plantillaGuardada ? "#fff" : "var(--ochre-dark)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
@@ -1104,11 +1142,10 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         onClick: () => {
           if (window.confirm("\xBFVolver al mensaje original y borrar tu plantilla guardada?")) {
             try {
-              localStorage.removeItem("plantilla_deuda");
-              localStorage.removeItem("plantilla_simple");
+              localStorage.removeItem("plantilla_" + mensajePreview.tipo);
             } catch (err) {
             }
-            setMensajeEditable(generarMensaje(p, true));
+            setMensajeEditable(generarMensaje(p, mensajePreview.tipo, true));
           }
         },
         style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
