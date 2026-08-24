@@ -127,8 +127,9 @@
     return `Semana del ${first.getDate()} de ${MESES[first.getMonth()]} al ${last.getDate()} de ${MESES[last.getMonth()]}`;
   }
   function labelMes(mesKey) {
-    const [y, m] = mesKey.split("-").map(Number);
+    const [y, m] = String(mesKey || "").split("-").map(Number);
     const nombre = MESES[m - 1];
+    if (!nombre || !y) return "Sin fecha";
     return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${y}`;
   }
   function labelMesCorto(fecha) {
@@ -356,8 +357,9 @@
       return () => clearTimeout(timer);
     }, [deshacerId]);
     const validarYGuardar = () => {
-      if (!Number.isFinite(Number(form.pacienteId))) {
-        window.alert("Eleg\xED un paciente de la lista antes de guardar el turno.\n\nEscrib\xED parte del apellido y seleccion\xE1 una de las opciones que aparecen.");
+      const idPac = Number(form.pacienteId);
+      if (form.pacienteId === null || form.pacienteId === void 0 || form.pacienteId === "" || !Number.isFinite(idPac) || idPac <= 0) {
+        window.alert("Eleg\xED un paciente de la lista antes de guardar el turno.");
         return;
       }
       const conflicto = turnoConflicto(turnos, form.pacienteId, form.fecha, form.hora, null);
@@ -723,8 +725,8 @@
             if (nuevoId) {
               setSelected(Number(nuevoId));
               setTimeout(() => {
-                var _a2;
-                return (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "start" });
+                var _a2, _b2;
+                return (_b2 = (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView) == null ? void 0 : _b2.call(_a2, { behavior: "smooth", block: "start" });
               }, 120);
             }
           });
@@ -764,8 +766,8 @@
           setSelected(pac.id);
           recordarWhatsApp(pac, "aumento");
           setTimeout(() => {
-            var _a2;
-            return (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "start" });
+            var _a2, _b2;
+            return (_b2 = (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView) == null ? void 0 : _b2.call(_a2, { behavior: "smooth", block: "start" });
           }, 120);
         },
         title: "Preparar el mensaje para avisarle del aumento",
@@ -792,8 +794,8 @@
             setEditandoLink(false);
             setEditandoEntrada(null);
             setTimeout(() => {
-              var _a2;
-              return (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth", block: "start" });
+              var _a2, _b2;
+              return (_b2 = (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView) == null ? void 0 : _b2.call(_a2, { behavior: "smooth", block: "start" });
             }, 50);
           },
           style: {
@@ -1175,7 +1177,9 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const pencilBtnStyle = { border: "1px solid var(--line)", background: "#fff", borderRadius: 5, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--muted)" };
   function useMesSelector(cobros) {
     const mesesDisponibles = useMemo(() => {
-      const set = new Set(cobros.map((c) => String(c.fecha).slice(0, 7)));
+      const set = new Set(
+        cobros.map((c) => String(c.fecha || "").slice(0, 7)).filter((k) => /^\d{4}-\d{2}$/.test(k))
+      );
       return Array.from(set).sort();
     }, [cobros]);
     const mesActual = fmtKey(HOY).slice(0, 7);
