@@ -22,7 +22,7 @@
  * 6. Copiá la URL que te da ("Web app URL") y pasámela — con eso termino de conectar el frontend.
  */
 
-const SHEET_ID = "1VCby0fYi0w8Sa3luBtqiX97mTzOicnDAWmw8Zz6qYY0";
+const SHEET_ID = "1uSbq2qtnF1oEYMijkJMrSqO9wRLypKDQIP-tC9UJB40";
 
 // Contraseña de acceso. CAMBIALA por la que quieras usar.
 // Sin esta clave, ni la app ni nadie con la URL puede leer o escribir datos.

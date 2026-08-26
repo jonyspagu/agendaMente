@@ -1,6 +1,32 @@
 # Informe de Auditoría de Estabilidad: Sincronización Pacientes-Turnos
 
-**Feature**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **Estado**: Foundational + US1 completos y cerrados (causa raíz confirmada). US2 y US3 pendientes, fuera de alcance de esta ejecución.
+**Feature**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **Estado**: Foundational, US1 y US2 completos y cerrados. H1 y H2 confirmados, corregidos, desplegados y **verificados end-to-end en producción**. Remediación de datos ya afectados en producción hecha (adelanto de US3). US2 relevó 6 hallazgos adicionales (H3-H8), sin aplicar fixes (a pedido explícito).
+
+## Remediación de datos afectados en producción (adelanto de US3)
+
+Antes del deploy de H1, cualquier paciente creado quedaba con `id` vacío y por lo tanto **invisible** para la app (`sheetToObjects` filtra filas con id vacío al leer). Se investigó esto con una función temporal de solo lectura agregada a `Código.js` (`debugSinFiltro`, ya removida), desplegada en una implementación separada de solo para este diagnóstico (no afectó nunca la producción real).
+
+**Hallazgo**: la hoja "Pacientes" tenía 2 pacientes reales invisibles, uno de ellos triplicado por intentos repetidos de carga (síntoma clásico de H1: la usuaria no veía el paciente guardarse y reintentaba):
+
+| Paciente real | Filas encontradas | Resolución |
+|---|---|---|
+| Ayelen Núñez Leal | 3 filas casi idénticas (variaciones de tipeo) | Se conservó 1 (la confirmada por el usuario), se borraron las otras 2 duplicadas |
+| Guadalupe Arcuri | 1 fila | Se conservó, sin cambios de contenido |
+
+**Turnos huérfanos** (6 en total, `pacienteid` vacío) — no se pudo reconstruir el vínculo de forma automática (no hay ningún dato compartido entre paciente y turno más allá de fecha/hora, y ninguna fila de paciente registraba un horario preferido). Cruzando manualmente con la usuaria real (Lupita):
+- Turnos 1, 2 y 3 (25/08, todos pasados y ambiguos entre los 2 pacientes reales — mismo horario para ambos) → **se borraron**, decisión del usuario, sin intentar forzar un vínculo incierto.
+- Turnos 4, 5 y 6 (26, 27 y 28 de agosto, futuros) → **se dejaron sin vincular, intactos**, a la espera de que se asignen manualmente desde la app ahora que ambos pacientes son seleccionables.
+
+**Acciones de remediación aplicadas** (con verificación después de cada una, vía la API de producción):
+1. Se asignó `id: 2` a la fila de Ayelen elegida.
+2. Se asignó `id: 3` a la fila de Guadalupe.
+3. Se borraron las 2 filas duplicadas de Ayelen.
+4. Se borraron los turnos 1, 2 y 3.
+5. Se borraron el paciente y turno de prueba usados durante todo este proceso de diagnóstico (Pacientes Id 1 "paciente test", Turnos Id 7).
+
+**Estado final verificado en producción**: 2 pacientes reales (Ayelen Id 2, Guadalupe Id 3) y 3 turnos reales (Id 4, 5, 6), sin datos de prueba, sin duplicados, sin residuos.
+
+**Limpieza de herramientas de diagnóstico**: el código temporal (`debugSinFiltro`, `debugAsignarId`, `debugBorrarFila`, `debugColumnaId` + sus ramas en `doPost`) fue removido de `Código.js` (confirmado por diff, idéntico a la versión con solo los fixes de H1/H2) y pusheado. La implementación separada de Apps Script usada para este diagnóstico fue **eliminada** (`clasp undeploy`) — no alcanzaba con sacar el código de HEAD, ya que una implementación queda fija a la versión que tenía al desplegarse; había que borrarla o redesplegarla para que dejara de exponer las acciones de escritura/borrado por número de fila. La implementación de producción (la que usa `index.html`) no fue tocada en ningún momento por este trabajo de limpieza.
 
 **Alcance de este documento**: informe de hallazgos. No se implementó ni desplegó ninguna corrección — conforme a FR-009/FR-011 de la spec.
 
@@ -8,7 +34,7 @@
 
 *(versión parcial — se completa del todo al cerrar Polish, Phase 6, con los hallazgos de US2+US3 todavía pendientes)*
 
-**US1 cerrado.** Causa raíz del bug crítico reportado: **confirmada**. La hoja "Pacientes" tiene el header de la columna id escrito como `Id` (con mayúscula) en vez de `id`; el backend (`Código.js:138`) compara ese header contra el literal `"id"` con `===` estricto, sin normalizar mayúsculas ni espacios — por eso nunca logra escribir el ID en esa columna, y la fila del paciente queda con id vacío. Como el backend además filtra (al leer) cualquier fila con id vacío, ese paciente "desaparece" de la app en la próxima recarga, aunque sus datos sigan físicamente en el Sheet — dejando cualquier turno creado para él sin nombre visible. En "Turnos" el header sí es `id` exacto, por eso esos IDs siempre se guardaron bien. **Fix recomendado más simple: renombrar la celda A1 de "Pacientes" a `id` (todo minúscula)** — no requiere tocar código ni desplegar nada nuevo (ver Hallazgo H1). Ningún dato de producción fue modificado durante esta auditoría.
+**US1 cerrado.** Causa raíz del bug crítico reportado: **confirmada**. La hoja "Pacientes" tiene el header de la columna id escrito como `Id` (con mayúscula) en vez de `id`; el backend (`Código.js:138`) compara ese header contra el literal `"id"` con `===` estricto, sin normalizar mayúsculas ni espacios — por eso nunca logra escribir el ID en esa columna, y la fila del paciente queda con id vacío. Como el backend además filtra (al leer) cualquier fila con id vacío, ese paciente "desaparece" de la app en la próxima recarga, aunque sus datos sigan físicamente en el Sheet — dejando cualquier turno creado para él sin nombre visible. En "Turnos" el header sí es `id` exacto, por eso esos IDs siempre se guardaron bien. Se optó por el fix de robustez en el código (`buildRow`/`updateRowById` con comparación de headers normalizada) en vez de solo renombrar la celda, ya que esto además destapó un segundo bug (H2): el mismo tipo de mismatch de header (`pacienteid` vs. `pacienteId`) impedía guardar la referencia al paciente en cada turno nuevo. Ambos hallazgos (H1 y H2) quedaron **confirmados, corregidos, desplegados (nueva implementación + `API_URL` actualizada) y verificados end-to-end**: un paciente y un turno de prueba reales quedan hoy correctamente vinculados y visibles en la agenda. Ningún dato de producción quedó dañado por la auditoría en sí (los datos de prueba usados para verificar quedaron identificados y se removieron).
 
 ## Referencia interna — Estructura del backend (T006)
 
@@ -115,9 +141,69 @@ Generalizar a ambas funciones el mismo criterio de normalización usado para `id
 
 **`requiere_backend`: sí.** De aplicarse, requiere nueva implementación en Apps Script y, si cambia la URL de despliegue, actualizarla en `index.html:1284` (Principio II de la constitución).
 
-- **Estado**: ✅ aplicado en `backend-appsscript/Código.js` — se agregó un helper `normalizarHeader(h)` (`.trim().toLowerCase()`) reutilizado en `buildRow` (línea ~139, ahora busca la clave de `data` cuyo header normalizado coincida, en vez de `hasOwnProperty` exacto) y en `updateRowById` (los headers se normalizan antes de buscar el índice de columna). ✅ desplegado — nueva implementación creada y `API_URL` actualizada en `index.html:1284`. **Pendiente**: prueba end-to-end (turno con nombre vinculado, y registrar aumento en un paciente existente) antes de dar H2 por cerrado.
+- **Estado**: ✅ aplicado en `backend-appsscript/Código.js` — se agregó un helper `normalizarHeader(h)` (`.trim().toLowerCase()`) reutilizado en `buildRow` (línea ~139, ahora busca la clave de `data` cuyo header normalizado coincida, en vez de `hasOwnProperty` exacto) y en `updateRowById` (los headers se normalizan antes de buscar el índice de columna). ✅ desplegado y ✅ **verificado end-to-end**. Se hizo un test controlado directo contra la API en vivo (payload limpio `{"pacienteId":1,...}`, sin pasar por la UI) que confirmó que `buildRow` escribe `pacienteid` correctamente; se limpió ese dato de prueba de inmediato. Después el usuario creó un turno real desde la UI (Id 7) y, tras refrescar la página, la agenda mostró el nombre del paciente correctamente vinculado. **H2 cerrado.**
+
+### Nota sobre una hipótesis adicional investigada (y descartada) durante el cierre de H2
+
+Se planteó si `sheetToObjects` (lectura, `Código.js:100-111`) también necesitaba normalizar las claves de los objetos que devuelve (ya que expone el header crudo, ej. `"Id"`/`"pacienteid"`, sin convertir a camelCase). Se verificó ejecutando el código real de `index.html` (`leerCampo`/`normalizarClaves`/`normalizarPaciente`/`normalizarTurno`) contra datos reales devueltos por la API: **el frontend ya hace una búsqueda case-insensitive de claves al normalizar** (`index.html:1296-1309`), por lo que ya tolera que el backend devuelva `Id`/`pacienteid` en vez de `id`/`pacienteId`. No hizo falta ningún cambio adicional en `sheetToObjects` ni en el frontend — el síntoma remanente era solo una vista sin refrescar en el navegador, no un bug de código.
 
 **Nota**: no se revisaron los headers reales de "Cobros" (no fueron provistos) — el mismo patrón de riesgo podría aplicar ahí también (`pacienteId`).
+
+## Hallazgos adicionales — resto del flujo end-to-end (US2, T015-T020)
+
+Relevamiento del resto del código (Cobros, Métricas, `localStorage`, y toda función de guardado/lectura restante en `Código.js`/`index.html`) en busca de fragilidades similares a H1/H2. **Solo relevamiento — ningún fix aplicado todavía.**
+
+### H3 — Sin validación de integridad referencial al crear Turnos/Cobros
+
+- **Severidad**: medio
+- **Ubicación**: `Código.js` `doPost`, bloques `action === "create"` (líneas 53-62) y `"update"` (64-70)
+- **Descripción**: en ningún punto de `doPost` se verifica que `data.pacienteId` corresponda a una fila real y existente en "Pacientes" antes de guardar un Turno o un Cobro. Se acepta y persiste cualquier valor recibido tal cual.
+- **¿Cubierto por el fix de H1/H2?** **No.** Ese fix resuelve el mismatch de nombres de columna (headers); esto es un gap de validación de datos completamente distinto.
+- **Recomendación** (no aplicada): antes de `appendRow`, verificar que `pacienteId` exista en `sheetToObjects(Pacientes)`; si no, devolver `ok:false` en vez de guardar.
+
+### H4 — Asimetría de validación entre Pacientes y Turnos/Cobros (confirmado, se extiende a Cobros)
+
+- **Severidad**: medio
+- **Ubicación**: `aplicarDataset` (`index.html:1387-1399`), `normalizarTurno` (`index.html:1346-1349`), `normalizarCobro` (`index.html:1350-1353`)
+- **Descripción**: `aplicarDataset` bloquea la carga completa del dataset si algún `Paciente.id` no es numérico, pero **no aplica ningún chequeo equivalente a `Turno.pacienteId` ni a `Cobro.pacienteId`** — ambos se normalizan con `Number(...)` sin `Number.isFinite`, así que un valor inválido se convierte en `NaN` silenciosamente y nunca bloquea ni señala nada. Ya documentado como riesgo en la spec (FR-005); esta auditoría confirma que afecta también a Cobros, no solo a Turnos.
+- **¿Cubierto por el fix de H1/H2?** Parcialmente — el fix asegura que el backend **escriba** bien el id, pero no agrega ninguna validación nueva del lado del frontend. Este hallazgo sigue abierto.
+- **Relacionado**: `PacienteSearchSelect` arma el desplegable de "elegir paciente" (para Turnos) leyendo el estado `pacientes` ya cargado en memoria, sin releer del servidor en el momento de la selección — mismo patrón de "confiar en estado local sin confirmar" ya identificado en H1.
+
+### H5 — Condición de carrera al generar un cobro automático (NO relacionado a headers)
+
+- **Severidad**: medio
+- **Ubicación**: `setEstadoTurno` (`index.html:1478-1496`)
+- **Descripción**: al marcar un turno como "realizado", el chequeo `yaExiste = cobros.some(...)` (línea 1486) compara contra el estado `cobros` capturado en el cierre de la función — no contra una lectura fresca del servidor. Si la acción se dispara más de una vez seguida (doble click, dos turnos marcados casi al mismo tiempo), el chequeo puede no detectar un cobro que ya está en proceso de crearse, generando un **cobro duplicado** para la misma sesión.
+- **¿Cubierto por el fix de H1/H2?** No — es un mecanismo completamente distinto (condición de carrera en el frontend, no un problema de headers). Necesita arreglo aparte (ej. deshabilitar el botón mientras la petición está en curso, o deduplicar del lado del servidor).
+- **Estado**: ✅ **corregido y verificado con una prueba de concurrencia real**, no solo revisión de código.
+  - Primer intento: se agregó `buscarCobroExistente`/`leerCampoObjeto` en `doPost` (chequeo de duplicado contra el Sheet antes de crear un Cobro). Al probarlo en el **entorno de test** (`backend-appsscript-test/`, Sheet separado) disparando **dos requests realmente en paralelo** (no secuenciales), se descubrió que **no alcanzaba**: Apps Script puede ejecutar dos `doPost` al mismo tiempo de verdad, y ambas requests leían el Sheet "vacío" a la vez, calculando el mismo `getNextId` → **2 filas con el mismo id** en el Sheet de test (peor que el síntoma original). Este es un problema más de fondo que el propio `getNextId`, compartido por las 3 hojas, no solo Cobros.
+  - **Fix final**: se envolvió todo el bloque `create`/`update`/`delete` de `doPost` en `LockService.getScriptLock()` (`lock.waitLock(10000)` al entrar, `lock.releaseLock()` en un `finally`), serializando cualquier escritura concurrente para las 3 hojas por igual.
+  - **Verificado**: se repitió exactamente el mismo test de 2 requests en paralelo contra el Sheet de test con el fix del lock ya desplegado ahí — el Sheet quedó con **1 sola fila** (antes: 2 con id duplicado). Los datos de prueba usados se limpiaron del Sheet de test en cada paso.
+  - Código idéntico entre `backend-appsscript/` (producción) y `backend-appsscript-test/` (test) confirmado por diff (solo difieren en `SHEET_ID`). ✅ pusheado, ✅ nueva implementación creada, ✅ `API_URL` actualizada en `index.html:1284`, ✅ verificado que la implementación nueva lee correctamente el Sheet real. **Pendiente**: prueba end-to-end manual en producción (marcar un turno "realizado" dos veces rápido y confirmar que no se duplica el cobro).
+
+### H6 — Datos del profesional y plantillas de WhatsApp viven solo en `localStorage` (mecanismo de guardado totalmente distinto)
+
+- **Severidad**: bajo/medio (depende de cuántos dispositivos use Lupita)
+- **Ubicación**: `index.html:602-616` (`datosProfesional`), `index.html:645-674` (plantillas `plantilla_<tipo>`)
+- **Descripción**: ninguno de estos dos datos pasa por el Google Sheet ni por `Código.js` — se guardan y leen exclusivamente del `localStorage` del navegador. Esto implica: (a) no sincroniza entre dispositivos/navegadores distintos; (b) se pierde permanentemente si se borran los datos del sitio, sin backup; (c) el guardado de `datosProfesional` falla en silencio (`catch` vacío, línea 615-616) sin avisar al usuario, a diferencia de las plantillas que sí muestran una alerta si falla el guardado (línea 672-674).
+- **¿Cubierto por el fix de H1/H2?** No aplica — ni siquiera pasa por el código que se corrigió. Es una decisión de producto (¿vale la pena moverlo al Sheet?) más que un bug puntual.
+
+### H7 — Métricas: sin riesgo propio de sincronización
+
+- **Severidad**: informativo (no es un hallazgo de fragilidad)
+- **Ubicación**: `MetricasView` (`index.html:1262-1276`)
+- **Descripción**: es una vista puramente derivada — no hace ningún `apiCall` propio, solo calcula sobre `pacientes`/`turnos`/`cobros` ya cargados en memoria. Cualquier número incorrecto que muestre (ej. "ingreso promedio por paciente" contando turnos huérfanos) es reflejo directo de H1-H5, no un bug nuevo de Métricas.
+
+### H8 — Cobros ya queda cubierto por el fix generalizado (confirmación, no un nuevo hallazgo)
+
+- **Severidad**: informativo
+- **Ubicación**: `Código.js` — no existe código separado para "Cobros"; usa el mismo router genérico (`doPost`/`buildRow`/`updateRowById`/`sheetToObjects`) que Pacientes y Turnos.
+- **Descripción**: el fix de H1/H2 (normalización de headers en `buildRow`/`updateRowById`) aplica automáticamente a Cobros sin necesidad de ningún cambio adicional.
+- **Pendiente de verificación** (no se hizo en esta auditoría porque hoy no hay ningún cobro cargado en producción para inspeccionar sus claves crudas): revisar visualmente que el header de la columna id en "Cobros" sea razonable antes de que se cargue el primer cobro real — dado el historial de errores de tipeo ya encontrado dos veces (Pacientes, Turnos), aunque el fix ya desplegado debería tolerar cualquier variante de mayúscula/espacio.
+
+### Confirmación positiva — Principio III (flush obligatorio)
+
+`SpreadsheetApp.flush()` está presente y en el orden correcto en los 3 únicos puntos de escritura (`create`, `update`, `delete` en `doPost`, líneas 53-78), de forma centralizada para las 3 hojas por igual. **No se encontró ningún gap** — este punto ya estaba bien resuelto antes de esta auditoría.
 
 ## Nota de alcance — T002, T009-T011, T013 no fueron necesarias
 
