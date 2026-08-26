@@ -135,7 +135,7 @@ function getNextId(sh) {
 function buildRow(sh, id, data) {
   const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   return headers.map((h) => {
-    if (h === "id") return id;
+    if (String(h).trim().toLowerCase() === "id") return id;
     if (Object.prototype.hasOwnProperty.call(data, h)) return data[h];
     return "";
   });
