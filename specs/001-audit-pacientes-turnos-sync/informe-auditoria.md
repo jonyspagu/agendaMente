@@ -95,6 +95,28 @@ Hay dos correcciones independientes, ambas recomendadas (una no reemplaza a la o
 
 Además del bug hacia adelante, es esperable que **ya existan hoy en producción** filas de "Pacientes" con la columna id vacía (cualquier paciente creado mientras el header decía `Id`) y turnos que referencian esos pacientes sin poder resolver su nombre. Ese inventario y su remediación son el objeto de **US3 (T021-T024)**, todavía no ejecutada — este hallazgo H1 se limita a la causa raíz hacia adelante.
 
+## Hallazgo H2 — Bug crítico: `pacienteId` no se guarda en Turnos por mismatch de header (descubierto al validar el fix de H1)
+
+- **Severidad**: crítico
+- **Ubicación**: `backend-appsscript/Código.js:139` (`buildRow`, rama genérica de campos) y `backend-appsscript/Código.js:144-156` (`updateRowById`, mismo defecto de diseño)
+- **Estado**: **CONFIRMADO** — headers reales provistos por el usuario: Turnos = `Id, pacienteid, fecha, hora, estado` (nota: `pacienteid` sin "I" mayúscula) vs. lo que el frontend siempre envía, `pacienteId` (`index.html:1474`, `1330`)
+
+### Causa raíz
+
+El fix aplicado para H1 (línea 138) normalizó **solo** la comparación especial del header `id`. La línea 139, que copia cualquier otro campo, sigue haciendo `Object.prototype.hasOwnProperty.call(data, h)` — una búsqueda de propiedad exacta y sensible a mayúsculas. Como el header real es `pacienteid` y el frontend manda la clave `pacienteId`, la condición nunca matchea y el valor se escribe como `""`. El turno igual se crea (fecha/hora/estado sí matchean), pero con `pacienteid` vacío — de ahí "SIN PACIENTE ASIGNADO" en la agenda tras `normalizarTurno` convertir ese vacío en `NaN`.
+
+`updateRowById` (usado en `Turnos`/`update`, `Pacientes`/`update`, etc.) tiene el mismo defecto de fondo con otra forma: `headers.indexOf(key)` sobre `key` en camelCase contra headers reales — por eso también se detectó, en paralelo, que **`ultimoAumento` (frontend) vs. `ultimoaumento` (header real de "Pacientes") nunca se persiste al registrar un aumento de precio** (`marcarAumento`/`aplicarAumento`) — un bug silencioso independiente del síntoma original, ya presente antes de esta auditoría.
+
+### Recomendación (no implementada — pendiente de decisión del usuario)
+
+Generalizar a ambas funciones el mismo criterio de normalización usado para `id` en H1 (comparar `String(h).trim().toLowerCase()` contra `String(key).trim().toLowerCase()` en vez de una igualdad exacta), en:
+- `buildRow` línea 139 (creación) — resuelve el bug de `pacienteId` en Turnos.
+- `updateRowById` línea 150 (actualización) — resuelve el bug de `ultimoAumento` en Pacientes y previene cualquier otro caso latente de mismatch de header en actualizaciones.
+
+**`requiere_backend`: sí.** De aplicarse, requiere nueva implementación en Apps Script y, si cambia la URL de despliegue, actualizarla en `index.html:1284` (Principio II de la constitución).
+
+**Nota**: no se revisaron los headers reales de "Cobros" (no fueron provistos) — el mismo patrón de riesgo podría aplicar ahí también (`pacienteId`).
+
 ## Nota de alcance — T002, T009-T011, T013 no fueron necesarias
 
 Las tareas T002 (confirmar acceso de edición al Sheet), T009-T011 (crear paciente/turno de prueba en producción) y T013 (limpiar datos de prueba) **no se ejecutaron, y no hizo falta ejecutarlas**. La causa raíz de H1 quedó confirmada con una vía de menor riesgo: Jonatan verificó personalmente el texto exacto de las celdas A1 de "Pacientes" y "Turnos" (sin necesidad de que un agente navegue el Sheet de producción con historia clínica real, ni de crear/borrar datos de prueba), lo cual coincidió exactamente con la hipótesis levantada por análisis estático del código. Esto cierra US1 sin haber tocado en ningún momento los datos reales de producción.
