@@ -129,25 +129,33 @@ function getNextId(sh) {
   return max + 1;
 }
 
+// Normaliza un header/clave para compararlos sin que mayúsculas o espacios
+// (typos de tipeo al armar el Sheet) rompan silenciosamente el guardado.
+function normalizarHeader(h) {
+  return String(h).trim().toLowerCase();
+}
+
 // Arma la fila leyendo los encabezados REALES de la hoja (columna por columna),
 // en vez de tener una lista de campos fija por hoja. Así, agregar una columna
 // nueva en el Sheet ya alcanza — no hace falta tocar este archivo nunca más.
 function buildRow(sh, id, data) {
   const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const claves = Object.keys(data);
   return headers.map((h) => {
-    if (String(h).trim().toLowerCase() === "id") return id;
-    if (Object.prototype.hasOwnProperty.call(data, h)) return data[h];
-    return "";
+    const hNorm = normalizarHeader(h);
+    if (hNorm === "id") return id;
+    const clave = claves.find((k) => normalizarHeader(k) === hNorm);
+    return clave !== void 0 ? data[clave] : "";
   });
 }
 
 function updateRowById(sh, id, data) {
   const values = sh.getDataRange().getValues();
-  const headers = values[0];
+  const headers = values[0].map(normalizarHeader);
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][0]) === String(id)) {
       Object.keys(data).forEach((key) => {
-        const col = headers.indexOf(key);
+        const col = headers.indexOf(normalizarHeader(key));
         if (col >= 0) sh.getRange(i + 1, col + 1).setValue(data[key]);
       });
       break;

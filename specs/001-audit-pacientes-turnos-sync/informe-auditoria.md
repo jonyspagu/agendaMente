@@ -115,6 +115,8 @@ Generalizar a ambas funciones el mismo criterio de normalización usado para `id
 
 **`requiere_backend`: sí.** De aplicarse, requiere nueva implementación en Apps Script y, si cambia la URL de despliegue, actualizarla en `index.html:1284` (Principio II de la constitución).
 
+- **Estado**: ✅ aplicado en `backend-appsscript/Código.js` — se agregó un helper `normalizarHeader(h)` (`.trim().toLowerCase()`) reutilizado en `buildRow` (línea ~139, ahora busca la clave de `data` cuyo header normalizado coincida, en vez de `hasOwnProperty` exacto) y en `updateRowById` (los headers se normalizan antes de buscar el índice de columna). ✅ desplegado — nueva implementación creada y `API_URL` actualizada en `index.html:1284`. **Pendiente**: prueba end-to-end (turno con nombre vinculado, y registrar aumento en un paciente existente) antes de dar H2 por cerrado.
+
 **Nota**: no se revisaron los headers reales de "Cobros" (no fueron provistos) — el mismo patrón de riesgo podría aplicar ahí también (`pacienteId`).
 
 ## Nota de alcance — T002, T009-T011, T013 no fueron necesarias
