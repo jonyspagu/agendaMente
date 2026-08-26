@@ -1,14 +1,14 @@
 # Informe de Auditoría de Estabilidad: Sincronización Pacientes-Turnos
 
-**Feature**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **Estado**: En progreso (Foundational + US1 completados; US2/US3 pendientes)
+**Feature**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **Estado**: Foundational + US1 completos y cerrados (causa raíz confirmada). US2 y US3 pendientes, fuera de alcance de esta ejecución.
 
 **Alcance de este documento**: informe de hallazgos. No se implementó ni desplegó ninguna corrección — conforme a FR-009/FR-011 de la spec.
 
 ## Resumen Ejecutivo
 
-*(se completa al cerrar Polish — Phase 6, con todos los hallazgos de US1+US2+US3)*
+*(versión parcial — se completa del todo al cerrar Polish, Phase 6, con los hallazgos de US2+US3 todavía pendientes)*
 
-Avance parcial (solo US1, diagnóstico del bug crítico): se identificó una causa raíz de muy alta probabilidad mediante análisis estático del backend real, con un único punto de confirmación pendiente que requiere mirar la hoja de cálculo en vivo (ver Hallazgo H1).
+**US1 cerrado.** Causa raíz del bug crítico reportado: **confirmada**. La hoja "Pacientes" tiene el header de la columna id escrito como `Id` (con mayúscula) en vez de `id`; el backend (`Código.js:138`) compara ese header contra el literal `"id"` con `===` estricto, sin normalizar mayúsculas ni espacios — por eso nunca logra escribir el ID en esa columna, y la fila del paciente queda con id vacío. Como el backend además filtra (al leer) cualquier fila con id vacío, ese paciente "desaparece" de la app en la próxima recarga, aunque sus datos sigan físicamente en el Sheet — dejando cualquier turno creado para él sin nombre visible. En "Turnos" el header sí es `id` exacto, por eso esos IDs siempre se guardaron bien. **Fix recomendado más simple: renombrar la celda A1 de "Pacientes" a `id` (todo minúscula)** — no requiere tocar código ni desplegar nada nuevo (ver Hallazgo H1). Ningún dato de producción fue modificado durante esta auditoría.
 
 ## Referencia interna — Estructura del backend (T006)
 
@@ -94,8 +94,8 @@ Hay dos correcciones independientes, ambas recomendadas (una no reemplaza a la o
 
 Además del bug hacia adelante, es esperable que **ya existan hoy en producción** filas de "Pacientes" con la columna id vacía (cualquier paciente creado mientras el header decía `Id`) y turnos que referencian esos pacientes sin poder resolver su nombre. Ese inventario y su remediación son el objeto de **US3 (T021-T024)**, todavía no ejecutada — este hallazgo H1 se limita a la causa raíz hacia adelante.
 
-## Nota de alcance — pausa antes de reproducción en vivo (T002, T009-T011, T013)
+## Nota de alcance — T002, T009-T011, T013 no fueron necesarias
 
-Las tareas T002 (confirmar acceso de edición al Sheet), T009-T011 (crear paciente/turno de prueba en producción) y T013 (limpiar datos de prueba) **no se ejecutaron todavía**. Motivo: dado que el Hallazgo H1 ya tiene una causa raíz de muy alta confianza confirmable con un solo chequeo visual (sin crear ni borrar ningún dato), y que el Sheet de producción contiene historia clínica real de una paciente/usuaria real, se prefirió pausar y confirmar con el usuario cómo proceder antes de crear/borrar filas de prueba o de que un agente navegue directamente el Sheet de producción. Ver mensaje de cierre de esta sesión para la pregunta puntual.
+Las tareas T002 (confirmar acceso de edición al Sheet), T009-T011 (crear paciente/turno de prueba en producción) y T013 (limpiar datos de prueba) **no se ejecutaron, y no hizo falta ejecutarlas**. La causa raíz de H1 quedó confirmada con una vía de menor riesgo: Jonatan verificó personalmente el texto exacto de las celdas A1 de "Pacientes" y "Turnos" (sin necesidad de que un agente navegue el Sheet de producción con historia clínica real, ni de crear/borrar datos de prueba), lo cual coincidió exactamente con la hipótesis levantada por análisis estático del código. Esto cierra US1 sin haber tocado en ningún momento los datos reales de producción.
 
 Se detectó además, como observación aparte (fuera del alcance formal de esta auditoría — no es un hallazgo de sincronización Pacientes-Turnos): `Código.js:29` tiene la contraseña de acceso compartida (`CLAVE_ACCESO`) hardcodeada en texto plano en el archivo fuente. No se propone acción al respecto en este informe (Principio IV: no se toca el esquema de autenticación sin pedido explícito) — se deja mencionado únicamente para que quede registrado.
