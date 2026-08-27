@@ -31,6 +31,7 @@
   const TrendingUp = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("polyline", { points: "23 6 13.5 15.5 8.5 10.5 1 18" }), /* @__PURE__ */ React.createElement("polyline", { points: "17 6 23 6 23 12" })) });
   const BarChart3 = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "3", x2: "3", y2: "21" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "21", x2: "21", y2: "21" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "12", width: "3", height: "6" }), /* @__PURE__ */ React.createElement("rect", { x: "12", y: "8", width: "3", height: "10" }), /* @__PURE__ */ React.createElement("rect", { x: "17", y: "5", width: "3", height: "13" })) });
   const Pencil = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" })) });
+  const Trash2 = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M3 6h18" }), /* @__PURE__ */ React.createElement("path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" }), /* @__PURE__ */ React.createElement("path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }), /* @__PURE__ */ React.createElement("line", { x1: "10", y1: "11", x2: "10", y2: "17" }), /* @__PURE__ */ React.createElement("line", { x1: "14", y1: "11", x2: "14", y2: "17" })) });
   const Sun = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "4" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M12 20v2" }), /* @__PURE__ */ React.createElement("path", { d: "m4.93 4.93 1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "m17.66 17.66 1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "m6.34 17.66-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "m19.07 4.93-1.41 1.41" })) });
   const { useState, useMemo, useEffect, useRef } = React;
   const HOY = (() => {
@@ -406,6 +407,10 @@
         setDeshacerId(nuevoId);
       }
     };
+    const confirmarEliminarTurno = (t) => {
+      const ok = window.confirm("\xBFSeguro que quer\xE9s eliminar este turno? No se puede deshacer.");
+      if (ok) onEliminarTurno(t.id);
+    };
     return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-end", gap: isMobile ? 12 : 0, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 25, color: "var(--ink)", margin: 0 } }, formatRangoSemana(weekDates)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "4px 0 0 0" } }, turnosAgendadosSemana, " sesiones agendadas esta semana")), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowForm((s) => !s), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--pine)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Plus, { size: 15 }), " Cargar turno")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset((s) => s - 1), style: weekNavBtn }, /* @__PURE__ */ React.createElement(ChevronLeft, { size: 14 }), " ", isMobile ? "Ant." : "Semana anterior"), semanaOffset !== 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset(0), style: { ...weekNavBtn, color: "var(--pine)", borderColor: "var(--pine)" } }, "Hoy"), /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset((s) => s + 1), style: weekNavBtn }, isMobile ? "Sig." : "Semana siguiente", " ", /* @__PURE__ */ React.createElement(ChevronRight, { size: 14 }))), deshacerId !== null && /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -494,7 +499,15 @@
           style: { flex: 1, border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
         },
         "\u2715 Cancel\xF3"
-      )), /* @__PURE__ */ React.createElement("button", { title: "Repetir este turno seg\xFAn la frecuencia del paciente", onClick: () => confirmarDuplicar(t), style: repetirBtnStyle }, "\u21BB Repetir turno")))));
+      )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("button", { title: "Repetir este turno seg\xFAn la frecuencia del paciente", onClick: () => confirmarDuplicar(t), style: { ...repetirBtnStyle, flex: 1 } }, "\u21BB Repetir turno"), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          title: "Eliminar este turno",
+          onClick: () => confirmarEliminarTurno(t),
+          style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }
+        },
+        /* @__PURE__ */ React.createElement(Trash2, { size: 12 })
+      ))))));
     })));
   }
   const weekNavBtn = { display: "flex", alignItems: "center", gap: 4, border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 7, padding: "6px 11px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
@@ -532,6 +545,7 @@
     onMarcarConsentimiento,
     onActualizarLinkConsentimiento,
     onGenerarCobroMensual,
+    onEliminarPaciente,
     isMobile
   }) {
     var _a, _b;
@@ -557,6 +571,17 @@
     const detalleRef = useRef(null);
     const pendientesDe = (id) => cobros.filter((c) => c.pacienteId === id && c.estado === "pendiente");
     const montoPendienteDe = (id) => pendientesDe(id).reduce((s, c) => s + c.monto, 0);
+    const confirmarEliminarPaciente = (p) => {
+      const turnosVinculados = turnos.filter((t) => t.pacienteId === p.id).length;
+      const cobrosVinculados = cobros.filter((c) => c.pacienteId === p.id).length;
+      let mensaje;
+      if (turnosVinculados > 0 || cobrosVinculados > 0) {
+        mensaje = `Este paciente tiene ${turnosVinculados} turno(s) y ${cobrosVinculados} cobro(s) asociados — \xBFconfirm\xE1s que quer\xE9s borrarlo de todos modos? No se puede deshacer.`;
+      } else {
+        mensaje = `\xBFSeguro que quer\xE9s eliminar a ${nombreCompleto(p)}? No se puede deshacer.`;
+      }
+      if (window.confirm(mensaje)) onEliminarPaciente(p.id);
+    };
     const pacientesOrdenados = useMemo(
       () => [...pacientes].sort((a, b) => {
         const diff = montoPendienteDe(b.id) - montoPendienteDe(a.id);
@@ -814,7 +839,7 @@
         /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontFamily: "var(--mono)", marginTop: 2 } }, "$", pac.precio.toLocaleString("es-AR"), pac.tipoPago === "mensual" ? "/mes" : "/sesi\xF3n")),
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, enAumento && /* @__PURE__ */ React.createElement(Pill, { tone: "ochre" }, "Aumentar"), montoPend > 0 && /* @__PURE__ */ React.createElement(Pill, { tone: "rust" }, "$", montoPend.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement(ChevronRight, { size: 15, color: "var(--muted)" }))
       );
-    }))), p ? /* @__PURE__ */ React.createElement("div", { ref: detalleRef, style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "2px solid var(--pine)", borderRadius: 12, padding: isMobile ? 18 : 26, scrollMarginTop: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
+    }))), p ? /* @__PURE__ */ React.createElement("div", { ref: detalleRef, style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "2px solid var(--pine)", borderRadius: 12, padding: isMobile ? 18 : 26, scrollMarginTop: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp"), /* @__PURE__ */ React.createElement("button", { title: "Eliminar paciente", onClick: () => confirmarEliminarPaciente(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--rust)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--rust)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 14 }), " Eliminar"))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
       const real = turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length;
       const canc = turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length;
       const total = real + canc;
@@ -1281,7 +1306,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const summaryCard = { flex: 1, minWidth: 200, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 };
   const undoBtn = { border: "1px solid var(--muted)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
   const markBtn = { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
-  const API_URL = "https://script.google.com/macros/s/AKfycbzoBJMaCGquV0ECaDvu-aWLS1kEZ23oWyJzX5yXJPtYAJe_5aDBeUhptWJcgmYHlCK5dg/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycby0AQpAfIDOSFCxM76I6J3PReHqHgdNulvhfNPLyGnMWTUrl77jijb-lbic2sah-8Ks7w/exec";
   let CLAVE_SESION = "";
   async function apiCall(sheet, action, { id, data } = {}) {
     const res = await fetch(API_URL, {
@@ -1393,9 +1418,18 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         );
         return;
       }
+      const turnosNorm = (d.turnos || []).map(normalizarTurno);
+      const cobrosNorm = (d.cobros || []).map(normalizarCobro);
+      const turnosSinPaciente = turnosNorm.filter((t) => !Number.isFinite(t.pacienteId)).length;
+      const cobrosSinPaciente = cobrosNorm.filter((c) => !Number.isFinite(c.pacienteId)).length;
+      if (turnosSinPaciente > 0 || cobrosSinPaciente > 0) {
+        console.warn(
+          `Integridad de datos: ${turnosSinPaciente} turno(s) y ${cobrosSinPaciente} cobro(s) sin un pacienteId num\xE9rico v\xE1lido. No bloquea la carga de la app (a diferencia de Paciente.id).`
+        );
+      }
       setPacientes(pacientesNorm);
-      setTurnos((d.turnos || []).map(normalizarTurno));
-      setCobros((d.cobros || []).map(normalizarCobro));
+      setTurnos(turnosNorm);
+      setCobros(cobrosNorm);
     };
     const cargarDatos = (clave) => {
       setCargando(true);
@@ -1502,6 +1536,10 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     });
     const eliminarTurno = conManejoDeError(async (id) => {
       const res = await apiCall("Turnos", "delete", { id });
+      aplicarDataset(res);
+    });
+    const eliminarPaciente = conManejoDeError(async (id) => {
+      const res = await apiCall("Pacientes", "delete", { id });
       aplicarDataset(res);
     });
     const marcarCobro = (id, estado = "pagado") => actualizarCobroOptimista(id, { estado });
@@ -1725,6 +1763,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onMarcarConsentimiento: marcarConsentimiento,
           onActualizarLinkConsentimiento: actualizarLinkConsentimiento,
           onGenerarCobroMensual: generarCobroMensual,
+          onEliminarPaciente: eliminarPaciente,
           isMobile
         }
       ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, isMobile })))

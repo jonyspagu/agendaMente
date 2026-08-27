@@ -50,6 +50,18 @@ function doPost(e) {
     const sh = ss.getSheetByName(sheet);
     if (!sh) return jsonResponse({ ok: false, error: "Hoja no encontrada: " + sheet });
 
+    // Valida integridad referencial antes de crear un Turno o un Cobro (H3):
+    // que el pacienteId corresponda a un paciente real en "Pacientes". Se hace
+    // ANTES de tomar el lock (evita retenerlo si la request se va a rechazar).
+    if (action === "create" && (sheet === "Turnos" || sheet === "Cobros")) {
+      if (!pacienteExiste(data.pacienteId)) {
+        return jsonResponse({
+          ok: false,
+          error: `El paciente indicado (id ${data.pacienteId}) no existe. No se guardó el ${sheet === "Turnos" ? "turno" : "cobro"}.`
+        });
+      }
+    }
+
     if (action === "create" || action === "update" || action === "delete") {
       // Serializa SOLO la parte que necesita exclusividad (generar id + escribir
       // + flush) — dos requests casi simultáneas pueden correr en paralelo de
@@ -129,6 +141,15 @@ function sheetToObjects(sh) {
       headers.forEach((h, i) => (obj[h] = normalizeValue(row[i], h)));
       return obj;
     });
+}
+
+// Verifica que exista un paciente con ese id en "Pacientes" (H3).
+function pacienteExiste(pacienteId) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const pacientesSh = ss.getSheetByName("Pacientes");
+  if (!pacientesSh) return false;
+  const idNum = Number(pacienteId);
+  return sheetToObjects(pacientesSh).some((p) => Number(leerCampoObjeto(p, "id")) === idNum);
 }
 
 function getAllData() {

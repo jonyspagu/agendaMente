@@ -153,21 +153,23 @@ Se planteó si `sheetToObjects` (lectura, `Código.js:100-111`) también necesit
 
 Relevamiento del resto del código (Cobros, Métricas, `localStorage`, y toda función de guardado/lectura restante en `Código.js`/`index.html`) en busca de fragilidades similares a H1/H2. **Solo relevamiento — ningún fix aplicado todavía.**
 
-### H3 — Sin validación de integridad referencial al crear Turnos/Cobros
+### H3 — Sin validación de integridad referencial al crear Turnos/Cobros — ✅ RESUELTO
 
 - **Severidad**: medio
 - **Ubicación**: `Código.js` `doPost`, bloques `action === "create"` (líneas 53-62) y `"update"` (64-70)
 - **Descripción**: en ningún punto de `doPost` se verifica que `data.pacienteId` corresponda a una fila real y existente en "Pacientes" antes de guardar un Turno o un Cobro. Se acepta y persiste cualquier valor recibido tal cual.
 - **¿Cubierto por el fix de H1/H2?** **No.** Ese fix resuelve el mismatch de nombres de columna (headers); esto es un gap de validación de datos completamente distinto.
 - **Recomendación** (no aplicada): antes de `appendRow`, verificar que `pacienteId` exista en `sheetToObjects(Pacientes)`; si no, devolver `ok:false` en vez de guardar.
+- **Estado**: ✅ **corregido, probado en test y desplegado a producción.** Se agregó `pacienteExiste(pacienteId)` y un chequeo previo a la creación de Turnos/Cobros (antes de tomar el lock, para no retenerlo en requests que se van a rechazar). Probado en `backend-appsscript-test/`: crear un turno con `pacienteId: 9999` (inexistente) → `ok:false, "El paciente indicado (id 9999) no existe. No se guardó el turno."`, sin crear ninguna fila; crear con `pacienteId` válido → sigue funcionando normal. Código idéntico entre test y producción confirmado por diff. Desplegado en producción: `AKfycby0AQpAfIDOSFCxM76I6J3PReHqHgdNulvhfNPLyGnMWTUrl77jijb-lbic2sah-8Ks7w`, `API_URL` actualizada en `index.html:1284`, verificado que lee bien el Sheet real.
 
-### H4 — Asimetría de validación entre Pacientes y Turnos/Cobros (confirmado, se extiende a Cobros)
+### H4 — Asimetría de validación entre Pacientes y Turnos/Cobros (confirmado, se extiende a Cobros) — ✅ RESUELTO (sin bloquear)
 
 - **Severidad**: medio
 - **Ubicación**: `aplicarDataset` (`index.html:1387-1399`), `normalizarTurno` (`index.html:1346-1349`), `normalizarCobro` (`index.html:1350-1353`)
 - **Descripción**: `aplicarDataset` bloquea la carga completa del dataset si algún `Paciente.id` no es numérico, pero **no aplica ningún chequeo equivalente a `Turno.pacienteId` ni a `Cobro.pacienteId`** — ambos se normalizan con `Number(...)` sin `Number.isFinite`, así que un valor inválido se convierte en `NaN` silenciosamente y nunca bloquea ni señala nada. Ya documentado como riesgo en la spec (FR-005); esta auditoría confirma que afecta también a Cobros, no solo a Turnos.
 - **¿Cubierto por el fix de H1/H2?** Parcialmente — el fix asegura que el backend **escriba** bien el id, pero no agrega ninguna validación nueva del lado del frontend. Este hallazgo sigue abierto.
 - **Relacionado**: `PacienteSearchSelect` arma el desplegable de "elegir paciente" (para Turnos) leyendo el estado `pacientes` ya cargado en memoria, sin releer del servidor en el momento de la selección — mismo patrón de "confiar en estado local sin confirmar" ya identificado en H1.
+- **Estado**: ✅ **corregido, decisión explícita de no bloquear.** Se decidió junto al usuario (dado que hoy existen turnos reales en producción con `pacienteId` inválido, y bloquear toda la carga habría roto la app apenas se desplegara) que la extensión de esta validación **no** replique el comportamiento de `Paciente.id` (bloqueo total vía `setError`). En cambio, `aplicarDataset` (`index.html`) ahora cuenta turnos/cobros con `pacienteId` no numérico y emite un `console.warn` (visible en devtools, no bloqueante) si hay alguno — la carga de la app sigue funcionando con normalidad en cualquier caso.
 
 ### H5 — Condición de carrera al generar un cobro automático (NO relacionado a headers)
 
