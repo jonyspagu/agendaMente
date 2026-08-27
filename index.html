@@ -13,6 +13,7 @@
   button { font: inherit; }
   select, input, textarea { font: inherit; }
   @media (max-width: 720px) { #root { padding: 0; align-items: stretch; } }
+  @keyframes am-spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -1308,15 +1309,28 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const markBtn = { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
   const API_URL = "https://script.google.com/macros/s/AKfycby0AQpAfIDOSFCxM76I6J3PReHqHgdNulvhfNPLyGnMWTUrl77jijb-lbic2sah-8Ks7w/exec";
   let CLAVE_SESION = "";
+  // Conteo global de operaciones apiCall en curso, para mostrar un indicador
+  // de "Guardando..." mientras se crea/actualiza/elimina algo. _onPendingChange
+  // lo setea App() (vía useEffect) para enterarse de los cambios sin que
+  // apiCall necesite saber nada de React.
+  let _pendingCount = 0;
+  let _onPendingChange = null;
   async function apiCall(sheet, action, { id, data } = {}) {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ sheet, action, id, data, clave: CLAVE_SESION })
-    });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || "Error desconocido del backend");
-    return json;
+    _pendingCount++;
+    if (_onPendingChange) _onPendingChange(_pendingCount);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ sheet, action, id, data, clave: CLAVE_SESION })
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "Error desconocido del backend");
+      return json;
+    } finally {
+      _pendingCount--;
+      if (_onPendingChange) _onPendingChange(_pendingCount);
+    }
   }
   function leerCampo(obj, nombre) {
     if (obj[nombre] !== void 0) return obj[nombre];
@@ -1408,7 +1422,14 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [claveInput, setClaveInput] = useState("");
     const [errorLogin, setErrorLogin] = useState("");
     const [error, setError] = useState(null);
+    const [guardando, setGuardando] = useState(false);
     const isMobile = useIsMobile();
+    useEffect(() => {
+      _onPendingChange = (n) => setGuardando(n > 0);
+      return () => {
+        _onPendingChange = null;
+      };
+    }, []);
     const aplicarDataset = (d) => {
       const pacientesNorm = (d.pacientes || []).map(normalizarPaciente);
       const idsInvalidos = pacientesNorm.filter((p) => !Number.isFinite(p.id));
@@ -1713,6 +1734,30 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           boxSizing: "border-box"
         }
       },
+      guardando && /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            position: "fixed",
+            bottom: 18,
+            right: 18,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "var(--ink)",
+            color: "#fff",
+            padding: "8px 14px",
+            borderRadius: 20,
+            fontSize: 12.5,
+            fontFamily: "var(--sans)",
+            fontWeight: 600,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.25)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { width: 13, height: 13, border: "2px solid rgba(255,255,255,0.35)", borderTopColor: "#fff", borderRadius: "50%", animation: "am-spin 0.6s linear infinite" } }),
+        "Guardando…"
+      ),
       /* @__PURE__ */ React.createElement(
         Sidebar,
         {
