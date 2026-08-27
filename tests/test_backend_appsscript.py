@@ -38,7 +38,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # Implementación de TEST (backend-appsscript-test/), NUNCA la de producción.
 TEST_URL = "https://script.google.com/macros/s/AKfycbwC7TW_XZa3ea0fXm7hwjAc05R75MiImb_qSfyKGeYtzNX_YhZOdFM3VWKluY0wOrF2gg/exec"
-CLAVE = "Consul123"
+CLAVE = "AgendaDemo2026"
 
 # Prefijo inconfundible para todo dato de prueba, por si algo queda sin
 # limpiar y hay que identificarlo a simple vista en el Sheet.

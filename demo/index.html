@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgendaMente (DEMO)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #E9D3DA; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif; }
+  #root { display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+  * { box-sizing: border-box; }
+  button { font: inherit; }
+  select, input, textarea { font: inherit; }
+  @media (max-width: 720px) { #root { padding: 0; align-items: stretch; } }
+  @keyframes am-spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(() => {
+  const Icon = ({ path, size = 16, color = "currentColor", strokeWidth = 2, style }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth, strokeLinecap: "round", strokeLinejoin: "round", style }, path);
+  const Calendar = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("rect", { x: "3", y: "4", width: "18", height: "18", rx: "2" }), /* @__PURE__ */ React.createElement("line", { x1: "16", y1: "2", x2: "16", y2: "6" }), /* @__PURE__ */ React.createElement("line", { x1: "8", y1: "2", x2: "8", y2: "6" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "10", x2: "21", y2: "10" })) });
+  const Users = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" }), /* @__PURE__ */ React.createElement("circle", { cx: "9", cy: "7", r: "4" }), /* @__PURE__ */ React.createElement("path", { d: "M23 21v-2a4 4 0 0 0-3-3.87" }), /* @__PURE__ */ React.createElement("path", { d: "M16 3.13a4 4 0 0 1 0 7.75" })) });
+  const Wallet = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M21 12V7H5a2 2 0 0 1 0-4h14v4" }), /* @__PURE__ */ React.createElement("path", { d: "M3 5v14a2 2 0 0 0 2 2h16v-5" }), /* @__PURE__ */ React.createElement("path", { d: "M18 12a2 2 0 0 0 0 4h4v-4Z" })) });
+  const Plus = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "5", x2: "12", y2: "19" }), /* @__PURE__ */ React.createElement("line", { x1: "5", y1: "12", x2: "19", y2: "12" })) });
+  const ChevronRight = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement("polyline", { points: "9 18 15 12 9 6" }) });
+  const ChevronLeft = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement("polyline", { points: "15 18 9 12 15 6" }) });
+  const MessageCircle = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) });
+  const Clock = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "10" }), /* @__PURE__ */ React.createElement("polyline", { points: "12 6 12 12 16 14" })) });
+  const TrendingUp = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("polyline", { points: "23 6 13.5 15.5 8.5 10.5 1 18" }), /* @__PURE__ */ React.createElement("polyline", { points: "17 6 23 6 23 12" })) });
+  const BarChart3 = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "3", x2: "3", y2: "21" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "21", x2: "21", y2: "21" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "12", width: "3", height: "6" }), /* @__PURE__ */ React.createElement("rect", { x: "12", y: "8", width: "3", height: "10" }), /* @__PURE__ */ React.createElement("rect", { x: "17", y: "5", width: "3", height: "13" })) });
+  const Pencil = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" })) });
+  const Trash2 = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M3 6h18" }), /* @__PURE__ */ React.createElement("path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" }), /* @__PURE__ */ React.createElement("path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }), /* @__PURE__ */ React.createElement("line", { x1: "10", y1: "11", x2: "10", y2: "17" }), /* @__PURE__ */ React.createElement("line", { x1: "14", y1: "11", x2: "14", y2: "17" })) });
+  const Sun = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "4" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M12 20v2" }), /* @__PURE__ */ React.createElement("path", { d: "m4.93 4.93 1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "m17.66 17.66 1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "m6.34 17.66-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "m19.07 4.93-1.41 1.41" })) });
+  const { useState, useMemo, useEffect, useRef } = React;
+  const HOY = (() => {
+    const d = /* @__PURE__ */ new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
+  function mesesDesde(fechaStr) {
+    const f = parseISO(fechaStr);
+    if (isNaN(f.getTime())) return 0;
+    let meses = (HOY.getFullYear() - f.getFullYear()) * 12 + (HOY.getMonth() - f.getMonth());
+    if (HOY.getDate() < f.getDate()) meses -= 1;
+    return meses < 0 ? 0 : meses;
+  }
+  function nombreCompleto(p) {
+    return `${p.apellido || "(sin apellido)"}, ${p.nombre || "(sin nombre)"}`;
+  }
+  function normalizar(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+  function ordenAlfabetico(arr) {
+    return [...arr].sort((a, b) => {
+      const ap = normalizar(a.apellido).localeCompare(normalizar(b.apellido));
+      if (ap !== 0) return ap;
+      return normalizar(a.nombre).localeCompare(normalizar(b.nombre));
+    });
+  }
+  function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 720 : false);
+    useEffect(() => {
+      const onResize = () => setIsMobile(window.innerWidth < 720);
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    }, []);
+    return isMobile;
+  }
+  const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const DIAS_CORTOS = ["Lun", "Mar", "Mi\xE9", "Jue", "Vie", "S\xE1b", "Dom"];
+  const FERIADOS_2026 = {
+    "2026-01-01": "A\xF1o Nuevo",
+    "2026-02-16": "Carnaval",
+    "2026-02-17": "Carnaval",
+    "2026-03-23": "No laborable tur\xEDstico",
+    "2026-03-24": "D\xEDa de la Memoria",
+    "2026-04-02": "D\xEDa del Veterano / Jueves Santo",
+    "2026-04-03": "Viernes Santo",
+    "2026-05-01": "D\xEDa del Trabajador",
+    "2026-05-25": "Revoluci\xF3n de Mayo",
+    "2026-06-15": "Paso a la Inmortalidad de G\xFCemes",
+    "2026-06-20": "Paso a la Inmortalidad de Belgrano",
+    "2026-07-09": "D\xEDa de la Independencia",
+    "2026-07-10": "No laborable tur\xEDstico",
+    "2026-08-17": "Paso a la Inmortalidad de San Mart\xEDn",
+    "2026-10-12": "D\xEDa del Respeto a la Diversidad Cultural",
+    "2026-11-23": "D\xEDa de la Soberan\xEDa Nacional",
+    "2026-12-07": "No laborable tur\xEDstico",
+    "2026-12-08": "Inmaculada Concepci\xF3n de Mar\xEDa",
+    "2026-12-25": "Navidad"
+  };
+  function getMonday(d) {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diffToMonday = day === 0 ? 6 : day - 1;
+    date.setDate(date.getDate() - diffToMonday);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+  function addDays(date, n) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+  function fmtKey(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+  function parseISO(s) {
+    const [y, m, d] = String(s || "").split("-").map(Number);
+    if (!y || !m || !d) return /* @__PURE__ */ new Date(NaN);
+    return new Date(y, m - 1, d);
+  }
+  function formatFechaCorta(fechaStr) {
+    const d = parseISO(fechaStr);
+    if (isNaN(d.getTime())) return "\u2014";
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+  function formatRangoSemana(dates) {
+    const first = dates[0], last = dates[dates.length - 1];
+    if (first.getMonth() === last.getMonth()) {
+      return `Semana del ${first.getDate()} al ${last.getDate()} de ${MESES[first.getMonth()]}`;
+    }
+    return `Semana del ${first.getDate()} de ${MESES[first.getMonth()]} al ${last.getDate()} de ${MESES[last.getMonth()]}`;
+  }
+  function labelMes(mesKey) {
+    const [y, m] = String(mesKey || "").split("-").map(Number);
+    const nombre = MESES[m - 1];
+    if (!nombre || !y) return "Sin fecha";
+    return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${y}`;
+  }
+  function labelMesCorto(fecha) {
+    return `${MESES[fecha.getMonth()]} ${fecha.getFullYear()}`;
+  }
+  const BASE_MONDAY = getMonday(HOY);
+  function periodoLabel(fecha) {
+    return `Sesi\xF3n ${formatFechaCorta(fecha)}`;
+  }
+  const estadoTurnoColor = { agendado: "var(--pine)", realizado: "var(--muted)", cancelado: "var(--rust)" };
+  const estadoTurnoLabel = { agendado: "Agendado", realizado: "Realizada", cancelado: "Cancelado" };
+  function turnoConflicto(turnos, pacienteId, fecha, hora, excludeId) {
+    const mismoSlot = turnos.filter((t) => t.fecha === fecha && t.hora === hora && t.estado !== "cancelado" && t.id !== excludeId);
+    if (mismoSlot.some((t) => t.pacienteId === pacienteId)) return "mismo";
+    if (mismoSlot.length > 0) return { tipo: "otro", turno: mismoSlot[0] };
+    return null;
+  }
+  function Sidebar({ tab, setTab, isMobile, onCerrarSesion }) {
+    const items = [
+      { id: "hoy", label: "Hoy", icon: Sun },
+      { id: "agenda", label: "Agenda", icon: Calendar },
+      { id: "pacientes", label: "Pacientes", icon: Users },
+      { id: "cobros", label: "Cobros", icon: Wallet },
+      { id: "metricas", label: "M\xE9tricas", icon: BarChart3 }
+    ];
+    if (isMobile) {
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", borderBottom: "1px solid var(--line)", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "16px 18px 10px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", lineHeight: 1.1 } }, "AgendaMente"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: { border: "none", background: "none", color: "var(--muted)", fontSize: 12, fontFamily: "var(--sans)", cursor: "pointer", padding: 0 } }, "Cerrar sesi\xF3n"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", padding: "0 8px 10px 8px", gap: 4 } }, items.map((it) => {
+        const IconComp = it.icon;
+        const active = tab === it.id;
+        return /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            key: it.id,
+            onClick: () => setTab(it.id),
+            style: {
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              padding: "7px 4px",
+              borderRadius: 8,
+              border: "none",
+              background: active ? "var(--pine)" : "var(--paper2)",
+              color: active ? "#fff" : "var(--ink)",
+              fontSize: 10.5,
+              fontFamily: "var(--sans)",
+              fontWeight: 600,
+              cursor: "pointer"
+            }
+          },
+          /* @__PURE__ */ React.createElement(IconComp, { size: 16, strokeWidth: 2 }),
+          it.label
+        );
+      })));
+    }
+    return /* @__PURE__ */ React.createElement("div", { style: { width: 190, flexShrink: 0, borderRight: "1px solid var(--line)", padding: "28px 12px", display: "flex", flexDirection: "column", gap: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "0 10px 22px 10px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--serif)", fontSize: 19, color: "var(--ink)", lineHeight: 1.1 } }, "AgendaMente"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 2 } }, "Gesti\xF3n integral de turnos")), items.map((it) => {
+      const IconComp = it.icon;
+      const active = tab === it.id;
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: it.id,
+          onClick: () => setTab(it.id),
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "9px 10px",
+            borderRadius: 8,
+            border: "none",
+            background: active ? "var(--pine)" : "transparent",
+            color: active ? "#fff" : "var(--ink)",
+            fontSize: 14,
+            fontFamily: "var(--sans)",
+            cursor: "pointer",
+            textAlign: "left",
+            transition: "background 0.15s"
+          }
+        },
+        /* @__PURE__ */ React.createElement(IconComp, { size: 16, strokeWidth: 2 }),
+        it.label
+      );
+    }), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: onCerrarSesion,
+        style: {
+          marginTop: 18,
+          paddingTop: 14,
+          borderTop: "1px solid var(--line)",
+          border: "none",
+          borderTopWidth: 1,
+          borderTopStyle: "solid",
+          borderTopColor: "var(--line)",
+          background: "none",
+          color: "var(--muted)",
+          fontSize: 12.5,
+          fontFamily: "var(--sans)",
+          cursor: "pointer",
+          textAlign: "left",
+          padding: "14px 10px 9px 10px"
+        }
+      },
+      "Cerrar sesi\xF3n"
+    ));
+  }
+  function Pill({ children, tone = "neutral" }) {
+    const tones = {
+      neutral: { bg: "var(--paper2)", color: "var(--muted)" },
+      pine: { bg: "rgba(179,74,110,0.14)", color: "var(--pine)" },
+      ochre: { bg: "rgba(201,129,79,0.18)", color: "var(--ochre-dark)" },
+      rust: { bg: "rgba(156,53,71,0.13)", color: "var(--rust)" },
+      verde: { bg: "rgba(78,122,91,0.15)", color: "var(--verde)" }
+    };
+    const t = tones[tone];
+    return /* @__PURE__ */ React.createElement("span", { style: { background: t.bg, color: t.color, fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, padding: "3px 9px", borderRadius: 20, letterSpacing: 0.2, whiteSpace: "nowrap" } }, children);
+  }
+  function PacienteSearchSelect({ pacientes, value, onChange }) {
+    const ordenados = useMemo(() => ordenAlfabetico(pacientes), [pacientes]);
+    return /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: value == null ? "" : String(value),
+        onChange: (e) => onChange(e.target.value === "" ? null : Number(e.target.value)),
+        style: selectStyle
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "\u2014 Eleg\xED un paciente \u2014"),
+      ordenados.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.id, value: p.id }, nombreCompleto(p)))
+    );
+  }
+  function HoyView({ turnos, pacientes, cobros, onEstado, onGuardarNota, setTab, isMobile }) {
+    const hoyKey = fmtKey(HOY);
+    const manianaKey = fmtKey(addDays(HOY, 1));
+    const nombreDe = (id) => {
+      const p = pacientes.find((x) => x.id === id);
+      return p ? nombreCompleto(p) : "\u26A0 Sin paciente asignado";
+    };
+    const sesionesHoy = useMemo(
+      () => turnos.filter((t) => t.fecha === hoyKey && t.estado !== "cancelado").sort((a, b) => String(a.hora).localeCompare(String(b.hora))),
+      [turnos, hoyKey]
+    );
+    const sesionesManiana = useMemo(
+      () => turnos.filter((t) => t.fecha === manianaKey && t.estado !== "cancelado").sort((a, b) => String(a.hora).localeCompare(String(b.hora))),
+      [turnos, manianaKey]
+    );
+    const sinConsentimiento = pacientes.filter((p) => p.consentimientoFirmado !== "SI");
+    const paraAumentar = pacientes.filter((p) => mesesDesde(p.ultimoAumento) >= (Number(p.mesesAumento) || 6));
+    const fechaLarga = `${DIAS_LARGOS[(HOY.getDay() + 6) % 7]} ${HOY.getDate()} de ${MESES[HOY.getMonth()]}`;
+    const feriadoHoy = FERIADOS_2026[hoyKey];
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: "0 0 2px 0", textTransform: "capitalize" } }, fechaLarga), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, sesionesHoy.length === 0 ? "No hay sesiones agendadas para hoy." : `${sesionesHoy.length} sesi\xF3n${sesionesHoy.length > 1 ? "es" : ""} hoy`, feriadoHoy ? ` \xB7 Feriado: ${feriadoHoy}` : ""), (sinConsentimiento.length > 0 || paraAumentar.length > 0) && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(201,129,79,0.12)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "12px 16px", marginBottom: 22 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ochre-dark)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 } }, "Pendientes"), paraAumentar.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", marginBottom: 3 } }, "\xB7 ", paraAumentar.length, " paciente", paraAumentar.length > 1 ? "s" : "", " con aumento sugerido", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("pacientes"), style: linkBtn }, "ver")), sinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)" } }, "\xB7 ", sinConsentimiento.length, " sin consentimiento firmado", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("pacientes"), style: linkBtn }, "ver"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 10 } }, "Sesiones de hoy"), sesionesHoy.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: "var(--muted)", fontStyle: "italic", marginBottom: 24 } }, "Sin sesiones agendadas para hoy."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 26 } }, sesionesHoy.map((t) => /* @__PURE__ */ React.createElement(TurnoHoy, { key: t.id, turno: t, nombre: nombreDe(t.pacienteId), onEstado, onGuardarNota, isMobile }))), sesionesManiana.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 10 } }, "Ma\xF1ana"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, sesionesManiana.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 12, background: "var(--paper2)", borderRadius: 8, padding: "9px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--muted)", fontWeight: 600 } }, t.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, color: "var(--ink)" } }, nombreDe(t.pacienteId)))))));
+  }
+  function TurnoHoy({ turno, nombre, onEstado, onGuardarNota, isMobile }) {
+    const [escribiendo, setEscribiendo] = useState(false);
+    const [nota, setNota] = useState("");
+    const [guardada, setGuardada] = useState(false);
+    const marcarRealizada = () => {
+      onEstado(turno.id, "realizado");
+      setEscribiendo(true);
+    };
+    return /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[turno.estado]}`, borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 14, color: "var(--ink)", fontWeight: 600 } }, turno.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14.5, color: "var(--ink)", fontWeight: 600 } }, nombre), /* @__PURE__ */ React.createElement(Pill, { tone: turno.estado === "realizado" ? "verde" : "pine" }, estadoTurnoLabel[turno.estado])), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, turno.estado === "agendado" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: marcarRealizada, style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2713 Se hizo"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "cancelado"), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2715 Cancel\xF3")) : /* @__PURE__ */ React.createElement(React.Fragment, null, !escribiendo && !guardada && /* @__PURE__ */ React.createElement("button", { onClick: () => setEscribiendo(true), style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "+ Nota"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "agendado"), style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "\u21A9 Deshacer")))), guardada && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--verde)", marginTop: 8 } }, "\u2713 Nota guardada en la historia cl\xEDnica."), escribiendo && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        value: nota,
+        onChange: (e) => setNota(e.target.value),
+        rows: 3,
+        autoFocus: true,
+        placeholder: "Nota de la sesi\xF3n (se guarda en la historia cl\xEDnica)...",
+        style: { width: "100%", border: "1px solid var(--line)", borderRadius: 6, padding: 9, fontSize: 13.5, fontFamily: "var(--sans)", color: "var(--ink)", lineHeight: 1.5, resize: "vertical", boxSizing: "border-box" }
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          if (!nota.trim()) {
+            setEscribiendo(false);
+            return;
+          }
+          onGuardarNota(turno.pacienteId, turno.fecha, nota.trim());
+          setNota("");
+          setEscribiendo(false);
+          setGuardada(true);
+        },
+        style: { border: "none", background: "var(--pine)", color: "#fff", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Guardar nota"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          setEscribiendo(false);
+          setNota("");
+        },
+        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Ahora no"
+    ))));
+  }
+  const linkBtn = { border: "none", background: "none", color: "var(--pine)", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline" };
+  const DIAS_LARGOS = ["lunes", "martes", "mi\xE9rcoles", "jueves", "viernes", "s\xE1bado", "domingo"];
+  function AgendaView({ turnos, pacientes, onAdd, onEstado, onDuplicarSemana, onEliminarTurno, isMobile }) {
+    const [showForm, setShowForm] = useState(false);
+    const [semanaOffset, setSemanaOffset] = useState(0);
+    const [form, setForm] = useState({ pacienteId: null, fecha: fmtKey(HOY), hora: "10:00" });
+    const weekDates = useMemo(() => {
+      const start = addDays(BASE_MONDAY, semanaOffset * 7);
+      return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    }, [semanaOffset]);
+    const byFecha = useMemo(() => {
+      const m = {};
+      weekDates.forEach((d) => m[fmtKey(d)] = []);
+      turnos.forEach((t) => m[t.fecha] && m[t.fecha].push(t));
+      Object.values(m).forEach((arr) => arr.sort((a, b) => String(a.hora).localeCompare(String(b.hora))));
+      return m;
+    }, [turnos, weekDates]);
+    const pacienteNombre = (id) => {
+      const p = pacientes.find((x) => x.id === id);
+      return p ? nombreCompleto(p) : "\u26A0 Sin paciente asignado";
+    };
+    const turnosAgendadosSemana = weekDates.reduce((acc, d) => acc + (byFecha[fmtKey(d)] || []).filter((t) => t.estado === "agendado").length, 0);
+    const [deshacerId, setDeshacerId] = useState(null);
+    useEffect(() => {
+      if (deshacerId === null) return;
+      const timer = setTimeout(() => setDeshacerId(null), 7e3);
+      return () => clearTimeout(timer);
+    }, [deshacerId]);
+    const validarYGuardar = () => {
+      const idPac = Number(form.pacienteId);
+      if (form.pacienteId === null || form.pacienteId === void 0 || form.pacienteId === "" || !Number.isFinite(idPac) || idPac <= 0) {
+        window.alert("Eleg\xED un paciente de la lista antes de guardar el turno.");
+        return;
+      }
+      const conflicto = turnoConflicto(turnos, form.pacienteId, form.fecha, form.hora, null);
+      if (conflicto === "mismo") {
+        const ok = window.confirm(`Ya hay un turno cargado para ${pacienteNombre(form.pacienteId)} el ${formatFechaCorta(form.fecha)} a las ${form.hora}.
+
+\xBFConfirm\xE1s agregarlo de todas formas?`);
+        if (!ok) return;
+      } else if (conflicto && conflicto.tipo === "otro") {
+        const ok = window.confirm(`Ya hay un turno agendado a esa fecha y hora con ${pacienteNombre(conflicto.turno.pacienteId)}.
+
+\xBFConfirm\xE1s agendar igual?`);
+        if (!ok) return;
+      }
+      const avisos = [];
+      if (parseISO(form.fecha) < parseISO(fmtKey(HOY))) {
+        avisos.push(`La fecha ${formatFechaCorta(form.fecha)} ya pas\xF3. Revis\xE1 que sea la fecha correcta.`);
+      }
+      if (form.hora < "07:00" || form.hora > "23:00") {
+        avisos.push(`El horario ${form.hora} est\xE1 fuera del rango habitual (7:00 a 23:00 hs).`);
+      }
+      if (parseISO(form.fecha).getDay() === 0) {
+        avisos.push("Est\xE1s agendando un turno para el domingo, d\xEDa que normalmente no trabaj\xE1s.");
+      }
+      if (avisos.length > 0) window.alert(avisos.join("\n\n"));
+      const nuevoId = onAdd(form);
+      setDeshacerId(nuevoId);
+      setShowForm(false);
+    };
+    const confirmarDuplicar = (t) => {
+      const pac = pacientes.find((x) => x.id === t.pacienteId);
+      const dias = pac && pac.frecuenciaDias ? Number(pac.frecuenciaDias) : 7;
+      const nuevaFecha = fmtKey(addDays(parseISO(t.fecha), dias));
+      const conflicto = turnoConflicto(turnos, t.pacienteId, nuevaFecha, t.hora, null);
+      let msg = `\xBFRepetir el turno de ${pacienteNombre(t.pacienteId)} para el ${formatFechaCorta(nuevaFecha)} a las ${t.hora}? (cada ${dias} d\xEDas, seg\xFAn su frecuencia)`;
+      if (conflicto === "mismo") msg += `
+
+\u26A0 Ya existe un turno cargado para este paciente en esa fecha y hora \u2014 se va a duplicar.`;
+      if (conflicto && conflicto.tipo === "otro") msg += `
+
+\u26A0 Ya hay otro paciente (${pacienteNombre(conflicto.turno.pacienteId)}) agendado a esa hora.`;
+      if (window.confirm(msg)) {
+        const nuevoId = onDuplicarSemana(t, dias);
+        setDeshacerId(nuevoId);
+      }
+    };
+    const confirmarEliminarTurno = (t) => {
+      const ok = window.confirm("\xBFSeguro que quer\xE9s eliminar este turno? No se puede deshacer.");
+      if (ok) onEliminarTurno(t.id);
+    };
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-end", gap: isMobile ? 12 : 0, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 25, color: "var(--ink)", margin: 0 } }, formatRangoSemana(weekDates)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "4px 0 0 0" } }, turnosAgendadosSemana, " sesiones agendadas esta semana")), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowForm((s) => !s), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--pine)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Plus, { size: 15 }), " Cargar turno")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset((s) => s - 1), style: weekNavBtn }, /* @__PURE__ */ React.createElement(ChevronLeft, { size: 14 }), " ", isMobile ? "Ant." : "Semana anterior"), semanaOffset !== 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset(0), style: { ...weekNavBtn, color: "var(--pine)", borderColor: "var(--pine)" } }, "Hoy"), /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset((s) => s + 1), style: weekNavBtn }, isMobile ? "Sig." : "Semana siguiente", " ", /* @__PURE__ */ React.createElement(ChevronRight, { size: 14 }))), deshacerId !== null && /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "var(--paper2)",
+          border: "1px solid var(--line)",
+          borderRadius: 8,
+          padding: "9px 14px",
+          marginBottom: 16,
+          fontSize: 12.5,
+          color: "var(--ink)"
+        }
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Turno agregado."),
+      /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => {
+            onEliminarTurno(deshacerId);
+            setDeshacerId(null);
+          },
+          style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+        },
+        "Deshacer"
+      )
+    ), showForm && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20, display: "flex", gap: 12, alignItems: isMobile ? "stretch" : "flex-end", flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: isMobile ? "1 1 auto" : "2 1 220px" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Paciente"), /* @__PURE__ */ React.createElement(PacienteSearchSelect, { pacientes, value: form.pacienteId, onChange: (id) => setForm({ ...form, pacienteId: id }) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: isMobile ? "1 1 auto" : "1 1 150px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setForm({ ...form, fecha: fmtKey(HOY) }),
+        style: { border: "none", background: "none", color: "var(--pine)", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer", padding: 0 }
+      },
+      "Hoy"
+    )), /* @__PURE__ */ React.createElement("input", { type: "date", value: form.fecha, onChange: (e) => setForm({ ...form, fecha: e.target.value }), style: selectStyle })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: isMobile ? "1 1 auto" : "1 1 110px" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Hora"), /* @__PURE__ */ React.createElement("input", { type: "time", value: form.hora, onChange: (e) => setForm({ ...form, hora: e.target.value }), style: selectStyle })), /* @__PURE__ */ React.createElement("button", { onClick: validarYGuardar, style: { background: "var(--ink)", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", flex: isMobile ? "1 1 auto" : "0 0 auto" } }, "Guardar")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(7, minmax(0, 1fr))", gap: isMobile ? 14 : 8, overflow: "hidden" } }, weekDates.map((d) => {
+      const key = fmtKey(d);
+      const esHoy = key === fmtKey(HOY);
+      const feriado = FERIADOS_2026[key];
+      const esDomingo = d.getDay() === 0;
+      const colorHeader = feriado ? "var(--ochre-dark)" : esHoy ? "var(--pine)" : "var(--muted)";
+      return /* @__PURE__ */ React.createElement("div", { key, style: { minWidth: 0, background: esDomingo && !feriado ? "var(--paper2)" : "transparent", borderRadius: 8, padding: "6px", boxSizing: "border-box" } }, /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            fontFamily: "var(--sans)",
+            fontSize: 12.5,
+            fontWeight: 700,
+            color: colorHeader,
+            letterSpacing: 0.1,
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            marginBottom: feriado || esDomingo ? 3 : 10,
+            paddingBottom: 7,
+            borderBottom: feriado ? "2px solid var(--ochre-dark)" : esHoy ? "2px solid var(--pine)" : "1px solid var(--line)"
+          }
+        },
+        DIAS_CORTOS[(d.getDay() + 6) % 7],
+        " ",
+        String(d.getDate()).padStart(2, "0"),
+        "/",
+        String(d.getMonth() + 1).padStart(2, "0")
+      ), feriado && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "var(--ochre-dark)", fontStyle: "italic", marginBottom: 7, lineHeight: 1.25, overflowWrap: "break-word" } }, feriado), !feriado && esDomingo && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "var(--muted)", fontStyle: "italic", marginBottom: 7 } }, "No laborable"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: isMobile ? 6 : 0 } }, (byFecha[key] || []).length === 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)", fontStyle: "italic", padding: "4px 2px" } }, "Sin turnos"), (byFecha[key] || []).map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { minWidth: 0, background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[t.estado]}`, borderRadius: 7, padding: "7px 8px", boxSizing: "border-box", opacity: t.estado === "cancelado" ? 0.55 : 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--muted)", fontFamily: "var(--mono)", fontWeight: 600 } }, t.hora), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, color: "var(--ink)", fontWeight: 600, margin: "3px 0 6px 0", overflowWrap: "break-word" } }, pacienteNombre(t.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 } }, /* @__PURE__ */ React.createElement(Pill, { tone: t.estado === "cancelado" ? "rust" : t.estado === "realizado" ? "neutral" : "pine" }, estadoTurnoLabel[t.estado]), t.estado !== "agendado" && /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          title: "Volver este turno a 'Agendado'",
+          onClick: () => onEstado(t.id, "agendado"),
+          style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 5, padding: "2px 7px", fontSize: 10, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        },
+        "\u21A9 Deshacer"
+      )), t.estado === "agendado" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 5 } }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          title: "La sesi\xF3n se hizo (genera el cobro pendiente)",
+          onClick: () => onEstado(t.id, "realizado"),
+          style: { flex: 1, border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+        },
+        "\u2713 Se hizo"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          title: "La sesi\xF3n se cancel\xF3",
+          onClick: () => onEstado(t.id, "cancelado"),
+          style: { flex: 1, border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+        },
+        "\u2715 Cancel\xF3"
+      )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("button", { title: "Repetir este turno seg\xFAn la frecuencia del paciente", onClick: () => confirmarDuplicar(t), style: { ...repetirBtnStyle, flex: 1 } }, "\u21BB Repetir turno"), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          title: "Eliminar este turno",
+          onClick: () => confirmarEliminarTurno(t),
+          style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }
+        },
+        /* @__PURE__ */ React.createElement(Trash2, { size: 12 })
+      ))))));
+    })));
+  }
+  const weekNavBtn = { display: "flex", alignItems: "center", gap: 4, border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 7, padding: "6px 11px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
+  const repetirBtnStyle = { width: "100%", border: "1px dashed var(--line)", background: "transparent", color: "var(--muted)", borderRadius: 6, padding: "5px 0", fontSize: 11, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
+  const selectStyle = { border: "1px solid var(--line)", borderRadius: 6, padding: "9px 9px", fontSize: 13, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff", width: "100%", boxSizing: "border-box" };
+  function parseHistoria(raw) {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function numerarHistoria(entradas) {
+    return [...entradas].sort((a, b) => a.fecha < b.fecha ? -1 : 1).map((e, i) => ({ ...e, numero: i + 1 }));
+  }
+  function PacientesView({
+    pacientes,
+    turnos,
+    cobros,
+    onMarcarAumento,
+    onActualizarPrecio,
+    onAplicarAumento,
+    onActualizarNotas,
+    onAgregarPaciente,
+    onActualizarTelefono,
+    onActualizarFrecuencia,
+    onActualizarMesesAumento,
+    onActualizarHistoria,
+    onActualizarContacto,
+    onActualizarParentesco,
+    onActualizarTelefonoReferencia,
+    onActualizarTipoPago,
+    onMarcarConsentimiento,
+    onActualizarLinkConsentimiento,
+    onGenerarCobroMensual,
+    onEliminarPaciente,
+    isMobile
+  }) {
+    var _a, _b;
+    const [selected, setSelected] = useState((_b = (_a = pacientes[0]) == null ? void 0 : _a.id) != null ? _b : null);
+    const [mensajePreview, setMensajePreview] = useState(null);
+    const [copiado, setCopiado] = useState(false);
+    const [mensajeEditable, setMensajeEditable] = useState("");
+    const [plantillaGuardada, setPlantillaGuardada] = useState(false);
+    const [editandoLink, setEditandoLink] = useState(false);
+    const [abrirConsent, setAbrirConsent] = useState(false);
+    const [abrirAumentos, setAbrirAumentos] = useState(false);
+    const [editandoEntrada, setEditandoEntrada] = useState(null);
+    const [fechaEdit, setFechaEdit] = useState("");
+    const [textoEdit, setTextoEdit] = useState("");
+    const [linkDrive, setLinkDrive] = useState("");
+    const [editandoNotas, setEditandoNotas] = useState(false);
+    const [notasEdit, setNotasEdit] = useState("");
+    const [mostrandoNuevo, setMostrandoNuevo] = useState(false);
+    const [nuevoPaciente, setNuevoPaciente] = useState({ nombre: "", apellido: "", precio: "", telefono: "", notas: "" });
+    const [agregandoHistoria, setAgregandoHistoria] = useState(false);
+    const [fechaHistoria, setFechaHistoria] = useState(fmtKey(HOY));
+    const [textoHistoria, setTextoHistoria] = useState("");
+    const detalleRef = useRef(null);
+    const pendientesDe = (id) => cobros.filter((c) => c.pacienteId === id && c.estado === "pendiente");
+    const montoPendienteDe = (id) => pendientesDe(id).reduce((s, c) => s + c.monto, 0);
+    const confirmarEliminarPaciente = (p) => {
+      const turnosVinculados = turnos.filter((t) => t.pacienteId === p.id).length;
+      const cobrosVinculados = cobros.filter((c) => c.pacienteId === p.id).length;
+      let mensaje;
+      if (turnosVinculados > 0 || cobrosVinculados > 0) {
+        mensaje = `Este paciente tiene ${turnosVinculados} turno(s) y ${cobrosVinculados} cobro(s) asociados — \xBFconfirm\xE1s que quer\xE9s borrarlo de todos modos? No se puede deshacer.`;
+      } else {
+        mensaje = `\xBFSeguro que quer\xE9s eliminar a ${nombreCompleto(p)}? No se puede deshacer.`;
+      }
+      if (window.confirm(mensaje)) onEliminarPaciente(p.id);
+    };
+    const pacientesOrdenados = useMemo(
+      () => [...pacientes].sort((a, b) => {
+        const diff = montoPendienteDe(b.id) - montoPendienteDe(a.id);
+        if (diff !== 0) return diff;
+        return normalizar(a.apellido).localeCompare(normalizar(b.apellido)) || normalizar(a.nombre).localeCompare(normalizar(b.nombre));
+      }),
+      [pacientes, cobros]
+    );
+    const mesesUmbral = (pac) => Number(pac.mesesAumento) || 6;
+    const pacientesEnAumento = useMemo(() => ordenAlfabetico(pacientes.filter((pac) => mesesDesde(pac.ultimoAumento) >= mesesUmbral(pac))), [pacientes]);
+    const pacientesSinConsentimiento = useMemo(() => ordenAlfabetico(pacientes.filter((pac) => pac.consentimientoFirmado !== "SI")), [pacientes]);
+    const p = pacientes.find((x) => x.id === selected);
+    const yaAutoSelecciono = useRef(false);
+    useEffect(() => {
+      if (!yaAutoSelecciono.current && pacientes.length > 0 && Number.isFinite(pacientes[0].id)) {
+        yaAutoSelecciono.current = true;
+        setSelected(pacientes[0].id);
+      }
+    }, [pacientes]);
+    const marcarAumentoConPrecio = (pac) => {
+      const input = window.prompt(`Nuevo precio de sesi\xF3n para ${nombreCompleto(pac)}
+(actual: $${pac.precio.toLocaleString("es-AR")}):`, pac.precio);
+      if (input === null) return;
+      const nuevo = Number(String(input).replace(/\./g, "").replace(/,/g, ""));
+      if (!nuevo || nuevo <= 0) {
+        window.alert("Precio inv\xE1lido, no se guard\xF3 ning\xFAn cambio.");
+        return;
+      }
+      onAplicarAumento(pac.id, nuevo);
+    };
+    const editarPrecio = (pac) => {
+      const input = window.prompt(`Precio de sesi\xF3n para ${nombreCompleto(pac)}:`, pac.precio);
+      if (input === null) return;
+      const nuevo = Number(String(input).replace(/\./g, "").replace(/,/g, ""));
+      if (!nuevo || nuevo <= 0) {
+        window.alert("Precio inv\xE1lido, no se guard\xF3 ning\xFAn cambio.");
+        return;
+      }
+      onActualizarPrecio(pac.id, nuevo);
+    };
+    const exportarHistoriaClinica = (pac) => {
+      let prof = {};
+      try {
+        prof = JSON.parse(localStorage.getItem("datosProfesional") || "{}");
+      } catch (err) {
+        prof = {};
+      }
+      if (!prof.nombre || !prof.matricula) {
+        const nombre = window.prompt("Para generar el documento hace falta el nombre del profesional (la ley exige que figure en la historia cl\xEDnica):", prof.nombre || "");
+        if (!nombre) return;
+        const matricula = window.prompt("N\xFAmero de matr\xEDcula profesional:", prof.matricula || "");
+        if (!matricula) return;
+        prof = { nombre: nombre.trim(), matricula: matricula.trim(), especialidad: "Psicolog\xEDa" };
+        try {
+          localStorage.setItem("datosProfesional", JSON.stringify(prof));
+        } catch (err) {
+        }
+      }
+      const entradas = numerarHistoria(parseHistoria(pac.historia));
+      const hoy = /* @__PURE__ */ new Date();
+      const fechaEmision = `${String(hoy.getDate()).padStart(2, "0")}/${String(hoy.getMonth() + 1).padStart(2, "0")}/${hoy.getFullYear()}`;
+      const esc = (t) => String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const filas = entradas.map(
+        (e) => `<div class="entrada"><div class="entrada-head">Sesi\xF3n N\xB0 ${e.numero} \u2014 ${esc(formatFechaCorta(e.fecha))}</div><div class="entrada-texto">${esc(e.texto).replace(/\n/g, "<br>")}</div></div>`
+      ).join("");
+      const doc = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historia cl\xEDnica \u2014 ' + esc(nombreCompleto(pac)) + '</title><style>@page { margin: 2.2cm 2cm; }body { font-family: Georgia, "Times New Roman", serif; color: #1a1a1a; line-height: 1.55; font-size: 11.5pt; }h1 { font-size: 15pt; margin: 0 0 4px 0; }.sub { font-size: 10pt; color: #555; margin-bottom: 18px; }.bloque { border: 1px solid #bbb; padding: 12px 14px; margin-bottom: 18px; }.bloque h2 { font-size: 10pt; text-transform: uppercase; letter-spacing: .5px; margin: 0 0 8px 0; color: #444; }.campo { font-size: 10.5pt; margin-bottom: 3px; }.campo b { display: inline-block; min-width: 170px; }.entrada { border-top: 1px solid #ddd; padding: 10px 0; page-break-inside: avoid; }.entrada-head { font-size: 10pt; font-weight: bold; color: #333; margin-bottom: 4px; }.entrada-texto { font-size: 11pt; white-space: pre-wrap; }.firma-linea { border-top: 1px solid #333; width: 240px; margin-top: 60px; padding-top: 5px; font-size: 10pt; }.pie { margin-top: 28px; font-size: 8.5pt; color: #666; border-top: 1px solid #ddd; padding-top: 8px; }@media print { .noprint { display: none; } }.noprint { background: #f0f0f0; padding: 12px; margin-bottom: 20px; border-radius: 6px; font-family: sans-serif; font-size: 13px; }.noprint button { font-size: 14px; padding: 8px 18px; cursor: pointer; margin-right: 8px; }</style></head><body><div class="noprint"><button onclick="window.print()">Guardar como PDF / Imprimir</button><span>En el di\xE1logo, eleg\xED "Guardar como PDF" como destino.</span></div><h1>HISTORIA CL\xCDNICA</h1><div class="sub">Documento emitido conforme a la Ley 26.529 de Derechos del Paciente \u2014 Emitido el ' + fechaEmision + '</div><div class="bloque"><h2>Profesional interviniente</h2><div class="campo"><b>Nombre y apellido:</b> ' + esc(prof.nombre) + '</div><div class="campo"><b>Matr\xEDcula profesional:</b> ' + esc(prof.matricula) + '</div><div class="campo"><b>Especialidad:</b> ' + esc(prof.especialidad || "Psicolog\xEDa") + '</div></div><div class="bloque"><h2>Datos del paciente</h2><div class="campo"><b>Nombre y apellido:</b> ' + esc(pac.nombre) + " " + esc(pac.apellido) + '</div><div class="campo"><b>Tel\xE9fono de contacto:</b> ' + esc(pac.telefono || "\u2014") + '</div><div class="campo"><b>Contacto de referencia:</b> ' + esc(pac.parentescoReferencia || "\u2014") + (pac.telefonoReferencia ? " \u2014 " + esc(pac.telefonoReferencia) : "") + '</div><div class="campo"><b>Fecha de inicio:</b> ' + esc(pac.desde || "\u2014") + '</div><div class="campo"><b>Consentimiento informado:</b> ' + (pac.consentimientoFirmado === "SI" ? "Firmado el " + esc(formatFechaCorta(pac.fechaConsentimiento)) : "No registrado") + '</div><div class="campo"><b>Sesiones registradas:</b> ' + entradas.length + '</div></div><h2 style="font-size:11pt;text-transform:uppercase;letter-spacing:.5px;color:#444;margin-bottom:2px;">Registro cronol\xF3gico de sesiones</h2>' + (filas || '<p style="font-style:italic;color:#666;">Sin entradas registradas.</p>') + '<div class="firma-linea">Firma y sello del profesional</div><div class="pie">Documento generado el ' + fechaEmision + ". Contiene " + entradas.length + " registro(s) de sesi\xF3n en orden cronol\xF3gico. La historia cl\xEDnica es propiedad del paciente (Ley 26.529, Art. 14) y su contenido est\xE1 amparado por el secreto profesional.</div></body></html>";
+      const ventana = window.open("", "_blank");
+      if (!ventana) {
+        window.alert("El navegador bloque\xF3 la ventana emergente. Permitila para poder generar el documento.");
+        return;
+      }
+      ventana.document.write(doc);
+      ventana.document.close();
+    };
+    const marcarConsentimiento = (pac) => {
+      const ok = window.confirm(`\xBFConfirm\xE1s que ${nombreCompleto(pac)} devolvi\xF3 el documento de consentimiento firmado?`);
+      if (!ok) return;
+      const hoy = fmtKey(HOY);
+      const entradas = parseHistoria(pac.historia);
+      entradas.push({ fecha: hoy, texto: "Consentimiento informado firmado \u2014 recibido y archivado." });
+      onMarcarConsentimiento(pac.id, hoy, JSON.stringify(entradas));
+    };
+    const PLANTILLA_DEUDA = "Hola {nombre}! Te escribo para recordarte el pago pendiente de {monto}. \xA1Gracias!";
+    const PLANTILLA_SIMPLE = "Hola {nombre}! Te escribo para [motivo del mensaje].";
+    const PLANTILLA_AUMENTO = "Hola {nombre}! \xBFC\xF3mo est\xE1s? Te escribo para comentarte que a partir de [mes] el valor de la sesi\xF3n pasa a ser de [nuevo valor]. El actual es de {precio}. Cualquier cosa hablamos. \xA1Gracias!";
+    const leerPlantilla = (tipo) => {
+      try {
+        const guardada = localStorage.getItem("plantilla_" + tipo);
+        if (guardada) return guardada;
+      } catch (err) {
+      }
+      return tipo === "deuda" ? PLANTILLA_DEUDA : PLANTILLA_SIMPLE;
+    };
+    const DEFAULTS = { deuda: PLANTILLA_DEUDA, simple: PLANTILLA_SIMPLE, aumento: PLANTILLA_AUMENTO };
+    const generarMensaje = (pac, tipo, forzarDefault) => {
+      const t = tipo || (pendientesDe(pac.id).length > 0 ? "deuda" : "simple");
+      const plantilla = forzarDefault ? DEFAULTS[t] : leerPlantilla(t);
+      const pend = pendientesDe(pac.id);
+      const total = pend.reduce((s, c) => s + c.monto, 0);
+      return plantilla.replace(/{nombre}/g, pac.nombre || "").replace(/{monto}/g, `$${total.toLocaleString("es-AR")}`).replace(/{precio}/g, `$${Number(pac.precio || 0).toLocaleString("es-AR")}`);
+    };
+    const guardarComoPlantilla = (pac, tipo) => {
+      const pend = pendientesDe(pac.id);
+      const total = pend.reduce((s, c) => s + c.monto, 0);
+      let plantilla = mensajeEditable;
+      if (pac.nombre) plantilla = plantilla.split(pac.nombre).join("{nombre}");
+      if (pend.length > 0) plantilla = plantilla.split(`$${total.toLocaleString("es-AR")}`).join("{monto}");
+      if (pac.precio) plantilla = plantilla.split(`$${Number(pac.precio).toLocaleString("es-AR")}`).join("{precio}");
+      try {
+        localStorage.setItem("plantilla_" + tipo, plantilla);
+        setPlantillaGuardada(true);
+        setTimeout(() => setPlantillaGuardada(false), 2200);
+      } catch (err) {
+        window.alert("No se pudo guardar la plantilla en este navegador.");
+      }
+    };
+    const recordarWhatsApp = (pac, tipo) => {
+      const t = tipo || (pendientesDe(pac.id).length > 0 ? "deuda" : "simple");
+      setMensajePreview({ pacienteId: pac.id, tipo: t });
+      setMensajeEditable(generarMensaje(pac, t));
+      setCopiado(false);
+    };
+    const copiarMensaje = () => {
+      var _a2;
+      (_a2 = navigator.clipboard) == null ? void 0 : _a2.writeText(mensajeEditable);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 1800);
+    };
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", gap: 12, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "Pacientes"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setMostrandoNuevo((s) => !s),
+        style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--pine)", color: "#fff", border: "none", borderRadius: 8, padding: "9px 14px", fontSize: 13, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      /* @__PURE__ */ React.createElement(Plus, { size: 14 }),
+      " Nuevo paciente"
+    )), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 18, marginTop: 8 } }, /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: 0 } }, pacientes.length, " activos \xB7 ordenados por monto adeudado")), mostrandoNuevo && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4 } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Nombre"), /* @__PURE__ */ React.createElement("input", { type: "text", value: nuevoPaciente.nombre, onChange: (e) => setNuevoPaciente({ ...nuevoPaciente, nombre: e.target.value }), style: selectStyle, placeholder: "Ej: Luc\xEDa" })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4 } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Apellido"), /* @__PURE__ */ React.createElement("input", { type: "text", value: nuevoPaciente.apellido, onChange: (e) => setNuevoPaciente({ ...nuevoPaciente, apellido: e.target.value }), style: selectStyle, placeholder: "Ej: Ferreyra" })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4 } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("input", { type: "number", value: nuevoPaciente.precio, onChange: (e) => setNuevoPaciente({ ...nuevoPaciente, precio: e.target.value }), style: selectStyle, placeholder: "Ej: 18000" })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4 } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Tel\xE9fono (WhatsApp)"), /* @__PURE__ */ React.createElement("input", { type: "text", value: nuevoPaciente.telefono, onChange: (e) => setNuevoPaciente({ ...nuevoPaciente, telefono: e.target.value }), style: selectStyle, placeholder: "Ej: 5491122334455" }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Notas (opcional)"), /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        value: nuevoPaciente.notas,
+        onChange: (e) => setNuevoPaciente({ ...nuevoPaciente, notas: e.target.value }),
+        rows: 2,
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: 8, fontSize: 13, fontFamily: "var(--sans)", resize: "vertical" }
+      }
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          if (!nuevoPaciente.nombre.trim() || !nuevoPaciente.apellido.trim()) {
+            window.alert("Nombre y apellido son obligatorios.");
+            return;
+          }
+          if (!nuevoPaciente.precio || Number(nuevoPaciente.precio) <= 0) {
+            window.alert("Ingres\xE1 un precio de sesi\xF3n v\xE1lido.");
+            return;
+          }
+          Promise.resolve(
+            onAgregarPaciente({
+              nombre: nuevoPaciente.nombre.trim(),
+              apellido: nuevoPaciente.apellido.trim(),
+              precio: Number(nuevoPaciente.precio),
+              telefono: nuevoPaciente.telefono.trim(),
+              notas: nuevoPaciente.notas.trim()
+            })
+          ).then((nuevoId) => {
+            if (nuevoId) {
+              setSelected(Number(nuevoId));
+              setTimeout(() => {
+                var _a2, _b2;
+                return (_b2 = (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView) == null ? void 0 : _b2.call(_a2, { behavior: "smooth", block: "start" });
+              }, 120);
+            }
+          });
+          setNuevoPaciente({ nombre: "", apellido: "", precio: "", telefono: "", notas: "" });
+          setMostrandoNuevo(false);
+        },
+        style: { background: "var(--ink)", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Guardar paciente"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setMostrandoNuevo(false),
+        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Cancelar"
+    ))), pacientesSinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(156,53,71,0.1)", border: "1px solid var(--rust)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setAbrirConsent((v) => !v),
+        style: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", border: "none", background: "none", padding: 0, cursor: "pointer", marginBottom: abrirConsent ? 8 : 0 }
+      },
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--rust)" } }, pacientesSinConsentimiento.length, " paciente", pacientesSinConsentimiento.length > 1 ? "s" : "", " sin consentimiento firmado"),
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--rust)", fontWeight: 700 } }, abrirConsent ? "\u25B2 ocultar" : "\u25BC ver")
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: abrirConsent ? "flex" : "none", flexDirection: "column", gap: 6 } }, pacientesSinConsentimiento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac), " ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--muted)", fontSize: 12 } }, "(desde ", pac.desde, ")")), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarConsentimiento(pac), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "3px 9px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "Marcar recibido"))))), pacientesEnAumento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(201,129,79,0.12)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setAbrirAumentos((v) => !v),
+        style: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", border: "none", background: "none", padding: 0, cursor: "pointer", marginBottom: abrirAumentos ? 8 : 0 }
+      },
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ochre-dark)" } }, pacientesEnAumento.length, " paciente", pacientesEnAumento.length > 1 ? "s" : "", " con aumento sugerido"),
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--ochre-dark)", fontWeight: 700 } }, abrirAumentos ? "\u25B2 ocultar" : "\u25BC ver")
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: abrirAumentos ? "flex" : "none", flexDirection: "column", gap: 6 } }, pacientesEnAumento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ochre-dark)", fontFamily: "var(--mono)", fontSize: 12 } }, "hace ", mesesDesde(pac.ultimoAumento), "m (cada ", mesesUmbral(pac), "m) \xB7 $", pac.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          setSelected(pac.id);
+          recordarWhatsApp(pac, "aumento");
+          setTimeout(() => {
+            var _a2, _b2;
+            return (_b2 = (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView) == null ? void 0 : _b2.call(_a2, { behavior: "smooth", block: "start" });
+          }, 120);
+        },
+        title: "Preparar el mensaje para avisarle del aumento",
+        style: { ...miniActionBtnStyle, borderColor: "var(--pine)", color: "var(--pine)" }
+      },
+      "Avisar por WhatsApp"
+    ), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(pac), style: miniActionBtnStyle }, "Marcar aumentado")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", gap: 24, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { width: isMobile ? "100%" : 300, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesOrdenados.map((pac) => {
+      const montoPend = montoPendienteDe(pac.id);
+      const enAumento = mesesDesde(pac.ultimoAumento) >= mesesUmbral(pac);
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: pac.id,
+          onClick: () => {
+            if (selected === pac.id) {
+              setSelected(null);
+              return;
+            }
+            setSelected(pac.id);
+            setEditandoNotas(false);
+            setAgregandoHistoria(false);
+            setFechaHistoria(fmtKey(HOY));
+            setTextoHistoria("");
+            setEditandoLink(false);
+            setEditandoEntrada(null);
+            setTimeout(() => {
+              var _a2, _b2;
+              return (_b2 = (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView) == null ? void 0 : _b2.call(_a2, { behavior: "smooth", block: "start" });
+            }, 50);
+          },
+          style: {
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "11px 12px",
+            borderRadius: 8,
+            border: selected === pac.id ? "2px solid var(--pine)" : "1px solid var(--line)",
+            background: selected === pac.id ? "rgba(179,74,110,0.14)" : "transparent",
+            boxShadow: selected === pac.id ? "0 2px 6px rgba(179,74,110,0.25)" : "none",
+            cursor: "pointer",
+            textAlign: "left"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontFamily: "var(--mono)", marginTop: 2 } }, "$", pac.precio.toLocaleString("es-AR"), pac.tipoPago === "mensual" ? "/mes" : "/sesi\xF3n")),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, enAumento && /* @__PURE__ */ React.createElement(Pill, { tone: "ochre" }, "Aumentar"), montoPend > 0 && /* @__PURE__ */ React.createElement(Pill, { tone: "rust" }, "$", montoPend.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement(ChevronRight, { size: 15, color: "var(--muted)" }))
+      );
+    }))), p ? /* @__PURE__ */ React.createElement("div", { ref: detalleRef, style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "2px solid var(--pine)", borderRadius: 12, padding: isMobile ? 18 : 26, scrollMarginTop: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp"), /* @__PURE__ */ React.createElement("button", { title: "Eliminar paciente", onClick: () => confirmarEliminarPaciente(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--rust)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--rust)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 14 }), " Eliminar"))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
+      const real = turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length;
+      const canc = turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length;
+      const total = real + canc;
+      return total ? `${Math.round(real / total * 100)}%` : "\u2014";
+    })())), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Deuda pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16, color: montoPendienteDe(p.id) ? "var(--rust)" : "var(--verde)" } }, "$", montoPendienteDe(p.id).toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "\xDAltimo aumento"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 15, color: mesesDesde(p.ultimoAumento) >= mesesUmbral(p) ? "var(--ochre-dark)" : "var(--pine)" } }, "hace ", mesesDesde(p.ultimoAumento), "m"), mesesDesde(p.ultimoAumento) >= mesesUmbral(p) && /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(p), style: { ...miniActionBtnStyle, fontSize: 10.5, padding: "2px 7px" } }, "Aumentar")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Tel: ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefono || "sin cargar")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        title: "Editar tel\xE9fono",
+        onClick: () => {
+          const input = window.prompt(`Tel\xE9fono de WhatsApp para ${nombreCompleto(p)} (con c\xF3digo de pa\xEDs, sin espacios):`, p.telefono || "");
+          if (input !== null) onActualizarTelefono(p.id, input.trim());
+        },
+        style: pencilBtnStyle
+      },
+      /* @__PURE__ */ React.createElement(Pencil, { size: 11 })
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Contacto de referencia:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: p.parentescoReferencia || "",
+        onChange: (e) => onActualizarParentesco(p.id, e.target.value),
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "\u2014 Parentesco \u2014"),
+      /* @__PURE__ */ React.createElement("option", { value: "Madre" }, "Madre"),
+      /* @__PURE__ */ React.createElement("option", { value: "Padre" }, "Padre"),
+      /* @__PURE__ */ React.createElement("option", { value: "Hermano/a" }, "Hermano/a"),
+      /* @__PURE__ */ React.createElement("option", { value: "Pareja" }, "Pareja"),
+      /* @__PURE__ */ React.createElement("option", { value: "Hijo/a" }, "Hijo/a"),
+      /* @__PURE__ */ React.createElement("option", { value: "Tutor/a legal" }, "Tutor/a legal"),
+      /* @__PURE__ */ React.createElement("option", { value: "Amigo/a" }, "Amigo/a"),
+      /* @__PURE__ */ React.createElement("option", { value: "Otro" }, "Otro")
+    ), /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefonoReferencia || "sin tel\xE9fono"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        title: "Editar tel\xE9fono de referencia",
+        onClick: () => {
+          const input = window.prompt(`Tel\xE9fono del contacto de referencia de ${nombreCompleto(p)}:`, p.telefonoReferencia || "");
+          if (input !== null) onActualizarTelefonoReferencia(p.id, input.trim());
+        },
+        style: pencilBtnStyle
+      },
+      /* @__PURE__ */ React.createElement(Pencil, { size: 11 })
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 20, marginBottom: 12, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)" } }, /* @__PURE__ */ React.createElement("span", null, "Frecuencia:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: p.frecuenciaDias || 7,
+        onChange: (e) => onActualizarFrecuencia(p.id, Number(e.target.value)),
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: 7 }, "Semanal"),
+      /* @__PURE__ */ React.createElement("option", { value: 14 }, "Quincenal"),
+      /* @__PURE__ */ React.createElement("option", { value: 30 }, "Mensual")
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)" } }, /* @__PURE__ */ React.createElement("span", null, "Aumentar cada:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: p.mesesAumento || 6,
+        onChange: (e) => onActualizarMesesAumento(p.id, Number(e.target.value)),
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: 3 }, "3 meses"),
+      /* @__PURE__ */ React.createElement("option", { value: 4 }, "4 meses"),
+      /* @__PURE__ */ React.createElement("option", { value: 6 }, "6 meses"),
+      /* @__PURE__ */ React.createElement("option", { value: 9 }, "9 meses"),
+      /* @__PURE__ */ React.createElement("option", { value: 12 }, "12 meses")
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)" } }, /* @__PURE__ */ React.createElement("span", null, "Tipo de pago:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: p.tipoPago || "sesion",
+        onChange: (e) => onActualizarTipoPago(p.id, e.target.value),
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "sesion" }, "Por sesi\xF3n"),
+      /* @__PURE__ */ React.createElement("option", { value: "mensual" }, "Mensual")
+    )), p.tipoPago === "mensual" && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          const ok = window.confirm(`\xBFGenerar el cobro mensual de $${p.precio.toLocaleString("es-AR")} para ${nombreCompleto(p)} correspondiente a ${labelMesCorto(HOY)}?`);
+          if (ok) onGenerarCobroMensual(p.id, p.precio);
+        },
+        style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Generar cobro del mes"
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" } }, p.consentimientoFirmado === "SI" ? /* @__PURE__ */ React.createElement(Pill, { tone: "verde" }, "Consentimiento firmado (", formatFechaCorta(p.fechaConsentimiento), ")") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Pill, { tone: "rust" }, "Falta consentimiento firmado"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => marcarConsentimiento(p),
+        style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "3px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Marcar recibido"
+    )), p.linkConsentimiento ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          const url = String(p.linkConsentimiento).trim();
+          if (!/^https?:\/\//i.test(url)) {
+            window.alert("El link guardado no es una direcci\xF3n web v\xE1lida:\n\n" + url + "\n\nEditalo con el l\xE1piz y peg\xE1 el v\xEDnculo completo de Drive (tiene que empezar con https://).");
+            return;
+          }
+          window.open(url, "_blank");
+        },
+        style: { border: "none", background: "var(--pine)", color: "#fff", borderRadius: 6, padding: "4px 11px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Ver documento"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        title: "Cambiar link",
+        onClick: () => {
+          setLinkDrive(p.linkConsentimiento);
+          setEditandoLink(true);
+        },
+        style: pencilBtnStyle
+      },
+      /* @__PURE__ */ React.createElement(Pencil, { size: 11 })
+    )) : !editandoLink && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          setLinkDrive("");
+          setEditandoLink(true);
+        },
+        style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--muted)", borderRadius: 6, padding: "4px 11px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "+ Adjuntar link de Drive"
+    )), editandoLink && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--paper2)", border: "1px solid var(--line)", borderRadius: 8, padding: 12, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", marginBottom: 8, lineHeight: 1.5 } }, "Sub\xED el consentimiento firmado a Google Drive \u2192 clic derecho sobre el archivo \u2192 ", /* @__PURE__ */ React.createElement("strong", null, "Compartir"), " \u2192 ", /* @__PURE__ */ React.createElement("strong", null, "Copiar v\xEDnculo"), ", y pegalo ac\xE1:"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: linkDrive,
+        onChange: (e) => setLinkDrive(e.target.value),
+        placeholder: "https://drive.google.com/...",
+        autoFocus: true,
+        style: { ...selectStyle, marginBottom: 8 }
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          onActualizarLinkConsentimiento(p.id, linkDrive.trim());
+          setEditandoLink(false);
+          setEditandoEntrada(null);
+        },
+        style: { border: "none", background: "var(--pine)", color: "#fff", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Guardar link"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setEditandoLink(false),
+        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Cancelar"
+    ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Notas"), !editandoNotas && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          setNotasEdit(p.notas);
+          setEditandoNotas(true);
+        },
+        style: { border: "none", background: "none", color: "var(--pine)", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0 }
+      },
+      "Editar"
+    )), editandoNotas ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        value: notasEdit,
+        onChange: (e) => setNotasEdit(e.target.value),
+        rows: 3,
+        style: { width: "100%", border: "1px solid var(--line)", borderRadius: 6, padding: 8, fontSize: 13.5, fontFamily: "var(--sans)", color: "var(--ink)", resize: "vertical", boxSizing: "border-box" }
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          onActualizarNotas(p.id, notasEdit);
+          setEditandoNotas(false);
+        },
+        style: { border: "none", background: "var(--pine)", color: "#fff", borderRadius: 6, padding: "6px 12px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Guardar"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setEditandoNotas(false),
+        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 12px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Cancelar"
+    ))) : /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, margin: 0 } }, p.notas || "Sin notas."), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Historia cl\xEDnica"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12, alignItems: "center" } }, parseHistoria(p.historia).length > 0 && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => exportarHistoriaClinica(p),
+        title: "Generar copia para entregar al paciente (Ley 26.529, Art. 14)",
+        style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "\u2193 Descargar"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setAgregandoHistoria((s) => !s),
+        style: { border: "none", background: "none", color: "var(--pine)", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0 }
+      },
+      agregandoHistoria ? "Cancelar" : "+ Agregar entrada"
+    ))), agregandoHistoria && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 8, alignItems: "center" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement("input", { type: "date", value: fechaHistoria, onChange: (e) => setFechaHistoria(e.target.value), style: { ...selectStyle, width: "auto" } })), /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        value: textoHistoria,
+        onChange: (e) => setTextoHistoria(e.target.value),
+        rows: 3,
+        placeholder: "Notas de la sesi\xF3n...",
+        style: { width: "100%", border: "1px solid var(--line)", borderRadius: 6, padding: 8, fontSize: 13.5, fontFamily: "var(--sans)", color: "var(--ink)", resize: "vertical", boxSizing: "border-box" }
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          if (!textoHistoria.trim()) {
+            window.alert("Escrib\xED algo antes de guardar.");
+            return;
+          }
+          const entradas = parseHistoria(p.historia);
+          entradas.push({ fecha: fechaHistoria, texto: textoHistoria.trim() });
+          onActualizarHistoria(p.id, JSON.stringify(entradas));
+          setTextoHistoria("");
+          setAgregandoHistoria(false);
+        },
+        style: { marginTop: 8, border: "none", background: "var(--pine)", color: "#fff", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Guardar entrada"
+    )), parseHistoria(p.historia).length === 0 && !agregandoHistoria && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: "var(--muted)", fontStyle: "italic", margin: 0 } }, "Todav\xEDa no hay entradas cargadas."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, numerarHistoria(parseHistoria(p.historia)).slice().sort((a, b) => a.fecha < b.fecha ? 1 : -1).map((entrada) => /* @__PURE__ */ React.createElement("div", { key: entrada.numero, style: { background: "var(--paper2)", borderRadius: 8, padding: "10px 12px" } }, editandoEntrada === entrada.numero ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement("input", { type: "date", value: fechaEdit, onChange: (e) => setFechaEdit(e.target.value), style: { ...selectStyle, width: "auto" } })), /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        value: textoEdit,
+        onChange: (e) => setTextoEdit(e.target.value),
+        rows: 3,
+        style: { width: "100%", border: "1px solid var(--line)", borderRadius: 6, padding: 8, fontSize: 13, fontFamily: "var(--sans)", color: "var(--ink)", resize: "vertical", boxSizing: "border-box" }
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          if (!textoEdit.trim()) {
+            window.alert("La entrada no puede quedar vac\xEDa.");
+            return;
+          }
+          const todas = numerarHistoria(parseHistoria(p.historia));
+          const actualizadas = todas.map(
+            (e) => e.numero === entrada.numero ? { fecha: fechaEdit, texto: textoEdit.trim() } : { fecha: e.fecha, texto: e.texto }
+          );
+          onActualizarHistoria(p.id, JSON.stringify(actualizadas));
+          setEditandoEntrada(null);
+        },
+        style: { border: "none", background: "var(--pine)", color: "#fff", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Guardar cambios"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setEditandoEntrada(null),
+        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Cancelar"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          if (!window.confirm(`\xBFEliminar la sesi\xF3n N\xB0${entrada.numero} del ${formatFechaCorta(entrada.fecha)}?
+
+Esta acci\xF3n no se puede deshacer.`)) return;
+          const todas = numerarHistoria(parseHistoria(p.historia));
+          const restantes = todas.filter((e) => e.numero !== entrada.numero).map((e) => ({ fecha: e.fecha, texto: e.texto }));
+          onActualizarHistoria(p.id, JSON.stringify(restantes));
+          setEditandoEntrada(null);
+        },
+        style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", marginLeft: "auto" }
+      },
+      "Eliminar"
+    ))) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "var(--muted)", fontFamily: "var(--mono)" } }, "Sesi\xF3n N\xB0", entrada.numero, " \u2014 ", formatFechaCorta(entrada.fecha)), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        title: "Editar esta entrada",
+        onClick: () => {
+          setEditandoEntrada(entrada.numero);
+          setFechaEdit(entrada.fecha);
+          setTextoEdit(entrada.texto);
+        },
+        style: { border: "none", background: "none", color: "var(--pine)", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0 }
+      },
+      "Editar"
+    )), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", lineHeight: 1.5, whiteSpace: "pre-wrap" } }, entrada.texto)))))), mensajePreview && mensajePreview.pacienteId === p.id && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 20, background: "var(--paper2)", border: "1px solid var(--line)", borderRadius: 10, padding: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Mensaje para WhatsApp"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4 } }, [
+      { id: "deuda", label: "Pago pendiente" },
+      { id: "aumento", label: "Aumento" },
+      { id: "simple", label: "Otro" }
+    ].map((op) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: op.id,
+        onClick: () => {
+          setMensajePreview({ pacienteId: p.id, tipo: op.id });
+          setMensajeEditable(generarMensaje(p, op.id));
+          setCopiado(false);
+        },
+        style: {
+          border: mensajePreview.tipo === op.id ? "1px solid var(--pine)" : "1px solid var(--line)",
+          background: mensajePreview.tipo === op.id ? "var(--pine)" : "#fff",
+          color: mensajePreview.tipo === op.id ? "#fff" : "var(--muted)",
+          borderRadius: 6,
+          padding: "3px 9px",
+          fontSize: 11,
+          fontFamily: "var(--sans)",
+          fontWeight: 600,
+          cursor: "pointer"
+        }
+      },
+      op.label
+    )))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => guardarComoPlantilla(p, mensajePreview.tipo),
+        title: "Guardar este texto para que aparezca siempre as\xED",
+        style: { border: "1px solid var(--ochre-dark)", background: plantillaGuardada ? "var(--ochre-dark)" : "#fff", color: plantillaGuardada ? "#fff" : "var(--ochre-dark)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      plantillaGuardada ? "Guardado \u2713" : "Guardar plantilla"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          if (window.confirm("\xBFVolver al mensaje original y borrar tu plantilla guardada?")) {
+            try {
+              localStorage.removeItem("plantilla_" + mensajePreview.tipo);
+            } catch (err) {
+            }
+            setMensajeEditable(generarMensaje(p, mensajePreview.tipo, true));
+          }
+        },
+        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Restaurar"
+    ), /* @__PURE__ */ React.createElement("button", { onClick: copiarMensaje, style: { border: "1px solid var(--pine)", background: copiado ? "var(--pine)" : "#fff", color: copiado ? "#fff" : "var(--pine)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, copiado ? "Copiado \u2713" : "Copiar"), p.telefono && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => window.open(`https://wa.me/${String(p.telefono).replace(/\D/g, "")}?text=${encodeURIComponent(mensajeEditable)}`, "_blank"),
+        style: { border: "none", background: "var(--verde)", color: "#fff", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+      },
+      "Abrir WhatsApp"
+    ))), /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        value: mensajeEditable,
+        onChange: (e) => setMensajeEditable(e.target.value),
+        rows: 3,
+        style: { width: "100%", border: "1px solid var(--line)", borderRadius: 6, padding: 9, fontSize: 13.5, fontFamily: "var(--sans)", color: "var(--ink)", lineHeight: 1.5, resize: "vertical", boxSizing: "border-box" }
+      }
+    ), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11.5, color: "var(--muted)", marginTop: 6, marginBottom: 0 } }, 'El nombre y el monto se completan solos. Si edit\xE1s el texto y toc\xE1s "Guardar plantilla", queda as\xED para todos los pacientes.'))) : /* @__PURE__ */ React.createElement("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200, border: "1px dashed var(--line)", borderRadius: 12, color: "var(--muted)", fontSize: 13.5 } }, "Toc\xE1 un paciente de la lista para ver su ficha.")));
+  }
+  const statBox = { background: "var(--paper2)", borderRadius: 8, padding: "12px 14px", minHeight: 72, display: "flex", flexDirection: "column", justifyContent: "center" };
+  const statLabel = { fontSize: 11, color: "var(--muted)", marginBottom: 4 };
+  const statValue = { fontSize: 19, fontFamily: "var(--mono)", color: "var(--ink)", fontWeight: 600 };
+  const miniActionBtnStyle = { border: "1px solid var(--ochre-dark)", background: "#fff", color: "var(--ochre-dark)", borderRadius: 6, padding: "3px 9px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
+  const pencilBtnStyle = { border: "1px solid var(--line)", background: "#fff", borderRadius: 5, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--muted)" };
+  function useMesSelector(cobros) {
+    const mesesDisponibles = useMemo(() => {
+      const set = new Set(
+        cobros.map((c) => String(c.fecha || "").slice(0, 7)).filter((k) => /^\d{4}-\d{2}$/.test(k))
+      );
+      return Array.from(set).sort();
+    }, [cobros]);
+    const mesActual = fmtKey(HOY).slice(0, 7);
+    const inicial = mesesDisponibles.includes(mesActual) ? mesActual : mesesDisponibles[mesesDisponibles.length - 1] || mesActual;
+    const [mes, setMes] = useState(inicial);
+    return { mesesDisponibles, mes, setMes };
+  }
+  function MesSelector({ mesesDisponibles, mes, setMes }) {
+    return /* @__PURE__ */ React.createElement("select", { value: mes, onChange: (e) => setMes(e.target.value), style: { ...selectStyle, width: "auto", fontWeight: 600 } }, mesesDisponibles.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, labelMes(m))));
+  }
+  function CobrosView({ cobros, pacientes, onMarcar, isMobile }) {
+    const { mesesDisponibles, mes, setMes } = useMesSelector(cobros);
+    const [filtroEstado, setFiltroEstado] = useState("todos");
+    const [filtroPaciente, setFiltroPaciente] = useState("todos");
+    const cobrosMes = useMemo(
+      () => cobros.filter((c) => String(c.fecha).startsWith(mes)).sort((a, b) => String(a.fecha).localeCompare(String(b.fecha))),
+      [cobros, mes]
+    );
+    const totalPendiente = cobrosMes.filter((c) => c.estado === "pendiente").reduce((s, c) => s + c.monto, 0);
+    const totalCobrado = cobrosMes.filter((c) => c.estado === "pagado").reduce((s, c) => s + c.monto, 0);
+    const cobrosFiltrados = useMemo(
+      () => cobrosMes.filter((c) => {
+        if (filtroEstado !== "todos" && c.estado !== filtroEstado) return false;
+        if (filtroPaciente !== "todos" && String(c.pacienteId) !== String(filtroPaciente)) return false;
+        return true;
+      }),
+      [cobrosMes, filtroEstado, filtroPaciente]
+    );
+    const pacientesConCobros = useMemo(() => {
+      const ids = new Set(cobrosMes.map((c) => c.pacienteId));
+      return ordenAlfabetico(pacientes.filter((p) => ids.has(p.id)));
+    }, [cobrosMes, pacientes]);
+    const pacienteNombre = (id) => {
+      const p = pacientes.find((x) => x.id === id);
+      return p ? nombreCompleto(p) : "\u26A0 Sin paciente asignado";
+    };
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 18 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "Cobros"), /* @__PURE__ */ React.createElement(MesSelector, { mesesDisponibles, mes, setMes })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, marginBottom: 22, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { ...summaryCard, borderLeft: "3px solid var(--verde)" } }, /* @__PURE__ */ React.createElement(TrendingUp, { size: 16, color: "var(--verde)" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Cobrado en ", labelMes(mes)), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 21, color: "var(--verde)" } }, "$", totalCobrado.toLocaleString("es-AR")))), /* @__PURE__ */ React.createElement("div", { style: { ...summaryCard, borderLeft: "3px solid var(--rust)" } }, /* @__PURE__ */ React.createElement(Clock, { size: 16, color: "var(--rust)" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Pendiente de cobro"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 21, color: "var(--rust)" } }, "$", totalPendiente.toLocaleString("es-AR"))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, [
+      { id: "todos", label: "Todos" },
+      { id: "pendiente", label: "Pendientes" },
+      { id: "pagado", label: "Pagados" }
+    ].map((f) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: f.id,
+        onClick: () => setFiltroEstado(f.id),
+        style: {
+          border: filtroEstado === f.id ? "1px solid var(--pine)" : "1px solid var(--line)",
+          background: filtroEstado === f.id ? "var(--pine)" : "#fff",
+          color: filtroEstado === f.id ? "#fff" : "var(--muted)",
+          borderRadius: 7,
+          padding: "5px 12px",
+          fontSize: 12.5,
+          fontFamily: "var(--sans)",
+          fontWeight: 600,
+          cursor: "pointer"
+        }
+      },
+      f.label
+    ))), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: filtroPaciente,
+        onChange: (e) => setFiltroPaciente(e.target.value),
+        style: { border: "1px solid var(--line)", borderRadius: 7, padding: "6px 9px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "todos" }, "Todos los pacientes"),
+      pacientesConCobros.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.id, value: p.id }, nombreCompleto(p)))
+    ), (filtroEstado !== "todos" || filtroPaciente !== "todos") && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          setFiltroEstado("todos");
+          setFiltroPaciente("todos");
+        },
+        style: { border: "none", background: "none", color: "var(--pine)", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0 }
+      },
+      "Limpiar filtros"
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--muted)", marginLeft: "auto" } }, cobrosFiltrados.length, " de ", cobrosMes.length)), cobrosFiltrados.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, fontStyle: "italic" } }, "No hay cobros que coincidan con los filtros."), isMobile ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, cobrosFiltrados.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontFamily: "var(--mono)", fontWeight: 600, color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, c.estado === "pagado" ? "Pagado" : "Pendiente")), c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: { ...markBtn, width: "100%", marginTop: 10 } }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: { ...undoBtn, width: "100%", marginTop: 10 } }, "\u21A9 Deshacer (volver a pendiente)")))) : cobrosFiltrados.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, overflow: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { minWidth: 560 } }, /* @__PURE__ */ React.createElement("div", { style: { ...rowGrid, padding: "10px 18px", background: "var(--paper2)" } }, ["Paciente", "Sesi\xF3n", "Monto", "Estado", ""].map((h) => /* @__PURE__ */ React.createElement("div", { key: h, style: { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase" } }, h))), cobrosFiltrados.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { ...rowGrid, padding: "12px 18px", borderTop: "1px solid var(--line)", background: i % 2 === 0 ? "transparent" : "var(--paper2)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontFamily: "var(--mono)", color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, c.estado === "pagado" ? "Pagado" : "Pendiente")), /* @__PURE__ */ React.createElement("div", null, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: markBtn }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: undoBtn, title: "Volver este cobro a pendiente" }, "\u21A9 Deshacer")))))));
+  }
+  function MetricasView({ pacientes, turnos, cobros, isMobile }) {
+    const { mesesDisponibles, mes, setMes } = useMesSelector(cobros);
+    const cobrosMes = useMemo(() => cobros.filter((c) => String(c.fecha).startsWith(mes)), [cobros, mes]);
+    const turnosMes = turnos.filter((t) => String(t.fecha).startsWith(mes));
+    const realizadas = turnosMes.filter((t) => t.estado === "realizado").length;
+    const canceladas = turnosMes.filter((t) => t.estado === "cancelado").length;
+    const agendadas = turnosMes.filter((t) => t.estado === "agendado").length;
+    const totalMes = turnosMes.length;
+    const tasaCancelacion = totalMes ? Math.round(canceladas / totalMes * 100) : 0;
+    const totalCobrado = cobrosMes.filter((c) => c.estado === "pagado").reduce((s, c) => s + c.monto, 0);
+    const totalPendiente = cobrosMes.filter((c) => c.estado === "pendiente").reduce((s, c) => s + c.monto, 0);
+    const facturacionTotal = totalCobrado + totalPendiente;
+    const precioPromedio = pacientes.length ? Math.round(pacientes.reduce((s, p) => s + p.precio, 0) / pacientes.length) : 0;
+    const ingresoPromedioPaciente = pacientes.length ? Math.round(facturacionTotal / pacientes.length) : 0;
+    const pctCobrado = facturacionTotal ? Math.round(totalCobrado / facturacionTotal * 100) : 0;
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "M\xE9tricas"), /* @__PURE__ */ React.createElement(MesSelector, { mesesDisponibles, mes, setMes })), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, "Resumen financiero de ", labelMes(mes)), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Facturaci\xF3n total"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20 } }, "$", facturacionTotal.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Cobrado"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--verde)" } }, "$", totalCobrado.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--rust)" } }, "$", totalPendiente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de cancelaci\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: tasaCancelacion > 15 ? "var(--rust)" : "var(--ink)" } }, tasaCancelacion, "%"))), /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", null, "Cobrado vs. pendiente"), /* @__PURE__ */ React.createElement("span", null, pctCobrado, "% cobrado")), /* @__PURE__ */ React.createElement("div", { style: { height: 10, borderRadius: 6, background: "var(--paper2)", overflow: "hidden", display: "flex" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${pctCobrado}%`, background: "var(--verde)" } }), /* @__PURE__ */ React.createElement("div", { style: { width: `${100 - pctCobrado}%`, background: "var(--rust)" } }))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio promedio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", precioPromedio.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Ingreso promedio por paciente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", ingresoPromedioPaciente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones del mes"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, realizadas, " realiz. \xB7 ", agendadas, " agend. \xB7 ", canceladas, " cancel."))));
+  }
+  const metricCard = { background: "var(--paper2)", borderRadius: 10, padding: "14px 16px" };
+  const rowGrid = { display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr 1fr 1.3fr", alignItems: "center", gap: 8 };
+  const summaryCard = { flex: 1, minWidth: 200, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 };
+  const undoBtn = { border: "1px solid var(--muted)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
+  const markBtn = { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
+  const API_URL = "https://script.google.com/macros/s/AKfycbwC7TW_XZa3ea0fXm7hwjAc05R75MiImb_qSfyKGeYtzNX_YhZOdFM3VWKluY0wOrF2gg/exec";
+  let CLAVE_SESION = "";
+  // Conteo global de operaciones apiCall en curso, para mostrar un indicador
+  // de "Guardando..." mientras se crea/actualiza/elimina algo. _onPendingChange
+  // lo setea App() (vía useEffect) para enterarse de los cambios sin que
+  // apiCall necesite saber nada de React.
+  let _pendingCount = 0;
+  let _onPendingChange = null;
+  async function apiCall(sheet, action, { id, data } = {}) {
+    _pendingCount++;
+    if (_onPendingChange) _onPendingChange(_pendingCount);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ sheet, action, id, data, clave: CLAVE_SESION })
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "Error desconocido del backend");
+      return json;
+    } finally {
+      _pendingCount--;
+      if (_onPendingChange) _onPendingChange(_pendingCount);
+    }
+  }
+  function leerCampo(obj, nombre) {
+    if (obj[nombre] !== void 0) return obj[nombre];
+    const objetivo = String(nombre).toLowerCase().trim();
+    const clave = Object.keys(obj).find((k) => String(k).toLowerCase().trim() === objetivo);
+    return clave !== void 0 ? obj[clave] : void 0;
+  }
+  function normalizarClaves(obj, campos) {
+    const salida = { ...obj };
+    campos.forEach((campo) => {
+      const valor = leerCampo(obj, campo);
+      if (valor !== void 0) salida[campo] = valor;
+    });
+    return salida;
+  }
+  const CAMPOS_PACIENTE = [
+    "id",
+    "nombre",
+    "apellido",
+    "precio",
+    "telefono",
+    "notas",
+    "desde",
+    "ultimoAumento",
+    "frecuenciaDias",
+    "mesesAumento",
+    "historia",
+    "contactoReferencia",
+    "parentescoReferencia",
+    "telefonoReferencia",
+    "consentimientoFirmado",
+    "fechaConsentimiento",
+    "tipoPago",
+    "linkConsentimiento"
+  ];
+  const CAMPOS_TURNO = ["id", "pacienteId", "fecha", "hora", "estado"];
+  const CAMPOS_COBRO = ["id", "pacienteId", "fecha", "monto", "estado"];
+  function normalizarPaciente(p) {
+    const base = normalizarClaves(p, CAMPOS_PACIENTE);
+    if (!base.parentescoReferencia && !base.telefonoReferencia && base.contactoReferencia) {
+      const texto = String(base.contactoReferencia);
+      const partes = texto.split(":");
+      if (partes.length >= 2) {
+        base.parentescoReferencia = partes[0].trim();
+        base.telefonoReferencia = partes.slice(1).join(":").trim();
+      } else {
+        base.telefonoReferencia = texto.trim();
+      }
+    }
+    return { ...base, id: Number(base.id), precio: Number(base.precio) || 0 };
+  }
+  function normalizarTurno(t) {
+    const base = normalizarClaves(t, CAMPOS_TURNO);
+    return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId) };
+  }
+  function normalizarCobro(c) {
+    const base = normalizarClaves(c, CAMPOS_COBRO);
+    return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId), monto: Number(base.monto) || 0 };
+  }
+  class ErrorBoundary extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = { error: null };
+    }
+    static getDerivedStateFromError(error) {
+      return { error };
+    }
+    render() {
+      if (this.state.error) {
+        return /* @__PURE__ */ React.createElement("div", { style: { padding: 24, background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33", fontFamily: "-apple-system, sans-serif" } }, /* @__PURE__ */ React.createElement("strong", null, "Esta pantalla no pudo cargar por un dato inesperado."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, lineHeight: 1.5 } }, "Probablemente alg\xFAn paciente/turno/cobro tiene un campo vac\xEDo o mal cargado en el Google Sheet. Revis\xE1 que todas las filas tengan sus columnas completas."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#9C5257", fontFamily: "monospace" } }, String(this.state.error)), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => this.setState({ error: null }),
+            style: { marginTop: 8, border: "1px solid #7A2E33", background: "#fff", color: "#7A2E33", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }
+          },
+          "Reintentar"
+        ));
+      }
+      return this.props.children;
+    }
+  }
+  function App() {
+    const [tab, setTab] = useState("hoy");
+    const [pacientes, setPacientes] = useState([]);
+    const [turnos, setTurnos] = useState([]);
+    const [cobros, setCobros] = useState([]);
+    const [cargando, setCargando] = useState(true);
+    const [autenticado, setAutenticado] = useState(false);
+    const [claveInput, setClaveInput] = useState("");
+    const [errorLogin, setErrorLogin] = useState("");
+    const [error, setError] = useState(null);
+    const [guardando, setGuardando] = useState(false);
+    const isMobile = useIsMobile();
+    useEffect(() => {
+      _onPendingChange = (n) => setGuardando(n > 0);
+      return () => {
+        _onPendingChange = null;
+      };
+    }, []);
+    const aplicarDataset = (d) => {
+      const pacientesNorm = (d.pacientes || []).map(normalizarPaciente);
+      const idsInvalidos = pacientesNorm.filter((p) => !Number.isFinite(p.id));
+      if (idsInvalidos.length > 0) {
+        setError(
+          `Hay ${idsInvalidos.length} paciente(s) sin un "id" num\xE9rico v\xE1lido en el Google Sheet. Revis\xE1 que la primera columna de la hoja Pacientes se llame exactamente "id" y que todas las filas tengan un n\xFAmero.`
+        );
+        return;
+      }
+      const turnosNorm = (d.turnos || []).map(normalizarTurno);
+      const cobrosNorm = (d.cobros || []).map(normalizarCobro);
+      const turnosSinPaciente = turnosNorm.filter((t) => !Number.isFinite(t.pacienteId)).length;
+      const cobrosSinPaciente = cobrosNorm.filter((c) => !Number.isFinite(c.pacienteId)).length;
+      if (turnosSinPaciente > 0 || cobrosSinPaciente > 0) {
+        console.warn(
+          `Integridad de datos: ${turnosSinPaciente} turno(s) y ${cobrosSinPaciente} cobro(s) sin un pacienteId num\xE9rico v\xE1lido. No bloquea la carga de la app (a diferencia de Paciente.id).`
+        );
+      }
+      setPacientes(pacientesNorm);
+      setTurnos(turnosNorm);
+      setCobros(cobrosNorm);
+    };
+    const cargarDatos = (clave) => {
+      setCargando(true);
+      setError(null);
+      if (API_URL.startsWith("PONER_AQUI")) {
+        setError("Falta conectar el backend: configur\xE1 API_URL con la URL de tu Web App de Apps Script.");
+        setCargando(false);
+        return;
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2e4);
+      fetch(API_URL + "?clave=" + encodeURIComponent(clave), { signal: controller.signal }).then((r) => {
+        clearTimeout(timeoutId);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      }).then((d) => {
+        if (d.error === "NO_AUTORIZADO") {
+          setErrorLogin("Contrase\xF1a incorrecta.");
+          setAutenticado(false);
+          setCargando(false);
+          return;
+        }
+        CLAVE_SESION = clave;
+        try {
+          sessionStorage.setItem("claveConsultorio", clave);
+        } catch (err) {
+        }
+        setAutenticado(true);
+        setErrorLogin("");
+        aplicarDataset(d);
+        setCargando(false);
+      }).catch((e) => {
+        clearTimeout(timeoutId);
+        const msg = e.name === "AbortError" ? "El servidor tard\xF3 demasiado en responder. Prob\xE1 de nuevo en un momento." : "No se pudo conectar: " + e.message;
+        setError(msg);
+        setCargando(false);
+      });
+    };
+    useEffect(() => {
+      let guardada = "";
+      try {
+        guardada = sessionStorage.getItem("claveConsultorio") || "";
+      } catch (err) {
+      }
+      if (guardada) {
+        cargarDatos(guardada);
+      } else {
+        setCargando(false);
+      }
+    }, []);
+    const conManejoDeError = (fn) => async (...args) => {
+      try {
+        return await fn(...args);
+      } catch (e) {
+        window.alert("Hubo un problema guardando en la base de datos:\n\n" + e.message + "\n\nEl cambio no se guard\xF3, prob\xE1 de nuevo.");
+        return null;
+      }
+    };
+    const actualizarPacienteOptimista = (id, cambios) => {
+      const anterior = pacientes;
+      setPacientes((prev) => prev.map((p) => p.id === id ? { ...p, ...cambios } : p));
+      apiCall("Pacientes", "update", { id, data: cambios }).catch((e) => {
+        setPacientes(anterior);
+        window.alert("No se pudo guardar el cambio:\n\n" + e.message);
+      });
+    };
+    const actualizarCobroOptimista = (id, cambios) => {
+      const anterior = cobros;
+      setCobros((prev) => prev.map((c) => c.id === id ? { ...c, ...cambios } : c));
+      apiCall("Cobros", "update", { id, data: cambios }).catch((e) => {
+        setCobros(anterior);
+        window.alert("No se pudo guardar el cambio:\n\n" + e.message);
+      });
+    };
+    const addTurno = conManejoDeError(async (form) => {
+      const res = await apiCall("Turnos", "create", { data: { pacienteId: form.pacienteId, fecha: form.fecha, hora: form.hora, estado: "agendado" } });
+      aplicarDataset(res);
+      return res.id;
+    });
+    const setEstadoTurno = (id, estado) => {
+      const turnoPrevio = turnos.find((t) => t.id === id);
+      const anterior = turnos;
+      setTurnos((prev) => prev.map((t) => t.id === id ? { ...t, estado } : t));
+      apiCall("Turnos", "update", { id, data: { estado } }).then(async () => {
+        if (estado !== "realizado" || !turnoPrevio) return;
+        const paciente = pacientes.find((p) => p.id === turnoPrevio.pacienteId);
+        if (!paciente || paciente.tipoPago === "mensual") return;
+        const yaExiste = cobros.some((c) => c.pacienteId === turnoPrevio.pacienteId && c.fecha === turnoPrevio.fecha);
+        if (yaExiste) return;
+        const res = await apiCall("Cobros", "create", {
+          data: { pacienteId: turnoPrevio.pacienteId, fecha: turnoPrevio.fecha, monto: paciente.precio, estado: "pendiente" }
+        });
+        setCobros((res.cobros || []).map(normalizarCobro));
+      }).catch((e) => {
+        setTurnos(anterior);
+        window.alert("No se pudo guardar el cambio:\n\n" + e.message);
+      });
+    };
+    const duplicarTurnoSemana = conManejoDeError(async (turno, dias = 7) => {
+      const nuevaFecha = fmtKey(addDays(parseISO(turno.fecha), dias));
+      const res = await apiCall("Turnos", "create", { data: { pacienteId: turno.pacienteId, fecha: nuevaFecha, hora: turno.hora, estado: "agendado" } });
+      aplicarDataset(res);
+      return res.id;
+    });
+    const eliminarTurno = conManejoDeError(async (id) => {
+      const res = await apiCall("Turnos", "delete", { id });
+      aplicarDataset(res);
+    });
+    const eliminarPaciente = conManejoDeError(async (id) => {
+      const res = await apiCall("Pacientes", "delete", { id });
+      aplicarDataset(res);
+    });
+    const marcarCobro = (id, estado = "pagado") => actualizarCobroOptimista(id, { estado });
+    const marcarAumento = (id) => actualizarPacienteOptimista(id, { ultimoAumento: fmtKey(HOY) });
+    const actualizarPrecio = (id, nuevoPrecio) => actualizarPacienteOptimista(id, { precio: nuevoPrecio });
+    const aplicarAumento = (id, nuevoPrecio) => actualizarPacienteOptimista(id, { precio: nuevoPrecio, ultimoAumento: fmtKey(HOY) });
+    const actualizarNotas = (id, notas) => actualizarPacienteOptimista(id, { notas });
+    const actualizarTelefono = (id, telefono) => actualizarPacienteOptimista(id, { telefono });
+    const actualizarFrecuencia = (id, frecuenciaDias) => actualizarPacienteOptimista(id, { frecuenciaDias });
+    const actualizarMesesAumento = (id, mesesAumento) => actualizarPacienteOptimista(id, { mesesAumento });
+    const actualizarHistoria = (id, historia) => actualizarPacienteOptimista(id, { historia });
+    const guardarNotaRapida = (pacienteId, fecha, texto) => {
+      const pac = pacientes.find((p) => p.id === pacienteId);
+      if (!pac) return;
+      const entradas = parseHistoria(pac.historia);
+      entradas.push({ fecha, texto });
+      actualizarPacienteOptimista(pacienteId, { historia: JSON.stringify(entradas) });
+    };
+    const actualizarContacto = (id, contactoReferencia) => actualizarPacienteOptimista(id, { contactoReferencia });
+    const actualizarParentesco = (id, parentescoReferencia) => actualizarPacienteOptimista(id, { parentescoReferencia });
+    const actualizarTelefonoReferencia = (id, telefonoReferencia) => actualizarPacienteOptimista(id, { telefonoReferencia });
+    const actualizarTipoPago = (id, tipoPago) => actualizarPacienteOptimista(id, { tipoPago });
+    const actualizarLinkConsentimiento = (id, linkConsentimiento) => actualizarPacienteOptimista(id, { linkConsentimiento });
+    const marcarConsentimiento = (id, fecha, historia) => actualizarPacienteOptimista(id, { consentimientoFirmado: "SI", fechaConsentimiento: fecha, historia });
+    const generarCobroMensual = conManejoDeError(async (pacienteId, monto) => {
+      const fecha = fmtKey(HOY);
+      const res = await apiCall("Cobros", "create", { data: { pacienteId, fecha, monto, estado: "pendiente" } });
+      aplicarDataset(res);
+    });
+    const agregarPaciente = conManejoDeError(async (datos) => {
+      const desde = `${MESES[HOY.getMonth()].charAt(0).toUpperCase()}${MESES[HOY.getMonth()].slice(1, 3)} ${HOY.getFullYear()}`;
+      const nuevo = {
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        precio: datos.precio,
+        telefono: datos.telefono,
+        notas: datos.notas,
+        desde,
+        ultimoAumento: fmtKey(HOY),
+        frecuenciaDias: 7,
+        mesesAumento: 6,
+        historia: "[]",
+        contactoReferencia: "",
+        parentescoReferencia: "",
+        telefonoReferencia: "",
+        consentimientoFirmado: "NO",
+        fechaConsentimiento: "",
+        tipoPago: "sesion",
+        linkConsentimiento: ""
+      };
+      const res = await apiCall("Pacientes", "create", { data: nuevo });
+      const nuevoId = Number(res.id);
+      setPacientes((prev) => {
+        const desdeServidor = (res.pacientes || []).map(normalizarPaciente).filter((p) => Number.isFinite(p.id));
+        const lista = desdeServidor.length >= prev.length ? desdeServidor : prev;
+        if (lista.some((p) => p.id === nuevoId)) return lista;
+        return [...lista, { ...nuevo, id: nuevoId, precio: Number(nuevo.precio) || 0 }];
+      });
+      if (res.turnos) setTurnos(res.turnos.map(normalizarTurno));
+      if (res.cobros) setCobros(res.cobros.map(normalizarCobro));
+      return nuevoId;
+    });
+    if (!autenticado && !cargando) {
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            maxWidth: 380,
+            margin: "60px auto",
+            padding: 32,
+            background: "#FFFBFC",
+            border: "1px solid #E6CFD6",
+            borderRadius: 14,
+            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            boxShadow: "0 4px 20px rgba(74,42,56,0.1)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 24, color: "#4A2A38", marginBottom: 4 } }, "AgendaMente"),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "inline-block", fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: "#B34A6E", background: "rgba(179,74,110,0.12)", borderRadius: 5, padding: "2px 8px", marginBottom: 10, textTransform: "uppercase" } }, "Versi\xF3n demo — datos de prueba"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#8B6B76", marginBottom: 22 } }, "Ingres\xE1 tu contrase\xF1a para continuar"),
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "password",
+            value: claveInput,
+            onChange: (e) => setClaveInput(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === "Enter" && claveInput) cargarDatos(claveInput);
+            },
+            placeholder: "Contrase\xF1a",
+            autoFocus: true,
+            style: {
+              width: "100%",
+              border: "1px solid #E6CFD6",
+              borderRadius: 8,
+              padding: "11px 12px",
+              fontSize: 14,
+              color: "#4A2A38",
+              boxSizing: "border-box",
+              marginBottom: 12
+            }
+          }
+        ),
+        errorLogin && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#9C3547", marginBottom: 12 } }, errorLogin),
+        error && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#9C3547", marginBottom: 12 } }, error),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => claveInput && cargarDatos(claveInput),
+            style: {
+              width: "100%",
+              border: "none",
+              background: "#B34A6E",
+              color: "#fff",
+              borderRadius: 8,
+              padding: "11px 0",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer"
+            }
+          },
+          "Entrar"
+        )
+      );
+    }
+    if (cargando) {
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "#8B6B76", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15 } }, "Cargando..."));
+    }
+    if (error) {
+      return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "40px auto", padding: 24, fontFamily: "-apple-system, sans-serif", background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33" } }, /* @__PURE__ */ React.createElement("strong", null, "No se pudo cargar la app."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5 } }, error), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => {
+            setError(null);
+            setAutenticado(false);
+            try {
+              sessionStorage.removeItem("claveConsultorio");
+            } catch (err) {
+            }
+          },
+          style: { marginTop: 8, border: "1px solid #7A2E33", background: "#fff", color: "#7A2E33", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }
+        },
+        "Volver a intentar"
+      ));
+    }
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          "--paper": "#F8EEF1",
+          "--paper2": "#F0DFE4",
+          "--card": "#FFFBFC",
+          "--ink": "#4A2A38",
+          "--muted": "#8B6B76",
+          "--line": "#E6CFD6",
+          "--pine": "#B34A6E",
+          "--ochre-dark": "#C07A47",
+          "--rust": "#9C3547",
+          "--verde": "#4E7A5B",
+          "--serif": "Iowan Old Style, Palatino Linotype, Georgia, ui-serif, serif",
+          "--sans": "-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica Neue, sans-serif",
+          "--mono": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          width: "100%",
+          minHeight: isMobile ? "auto" : 720,
+          maxWidth: isMobile ? 480 : "none",
+          margin: isMobile ? "0 auto" : 0,
+          background: "var(--paper)",
+          borderRadius: 14,
+          border: "1px solid var(--line)",
+          boxSizing: "border-box"
+        }
+      },
+      guardando && /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            position: "fixed",
+            bottom: 18,
+            right: 18,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "var(--ink)",
+            color: "#fff",
+            padding: "8px 14px",
+            borderRadius: 20,
+            fontSize: 12.5,
+            fontFamily: "var(--sans)",
+            fontWeight: 600,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.25)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { width: 13, height: 13, border: "2px solid rgba(255,255,255,0.35)", borderTopColor: "#fff", borderRadius: "50%", animation: "am-spin 0.6s linear infinite" } }),
+        "Guardando…"
+      ),
+      /* @__PURE__ */ React.createElement(
+        Sidebar,
+        {
+          tab,
+          setTab,
+          isMobile,
+          onCerrarSesion: () => {
+            CLAVE_SESION = "";
+            try {
+              sessionStorage.removeItem("claveConsultorio");
+            } catch (err) {
+            }
+            setAutenticado(false);
+            setClaveInput("");
+          }
+        }
+      ),
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box", minHeight: isMobile ? "auto" : 720 } }, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
+        HoyView,
+        {
+          turnos,
+          pacientes,
+          cobros,
+          onEstado: setEstadoTurno,
+          onGuardarNota: guardarNotaRapida,
+          setTab,
+          isMobile
+        }
+      ), tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
+        PacientesView,
+        {
+          pacientes,
+          turnos,
+          cobros,
+          onMarcarAumento: marcarAumento,
+          onActualizarPrecio: actualizarPrecio,
+          onAplicarAumento: aplicarAumento,
+          onActualizarNotas: actualizarNotas,
+          onAgregarPaciente: agregarPaciente,
+          onActualizarTelefono: actualizarTelefono,
+          onActualizarFrecuencia: actualizarFrecuencia,
+          onActualizarMesesAumento: actualizarMesesAumento,
+          onActualizarHistoria: actualizarHistoria,
+          onActualizarContacto: actualizarContacto,
+          onActualizarParentesco: actualizarParentesco,
+          onActualizarTelefonoReferencia: actualizarTelefonoReferencia,
+          onActualizarTipoPago: actualizarTipoPago,
+          onMarcarConsentimiento: marcarConsentimiento,
+          onActualizarLinkConsentimiento: actualizarLinkConsentimiento,
+          onGenerarCobroMensual: generarCobroMensual,
+          onEliminarPaciente: eliminarPaciente,
+          isMobile
+        }
+      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, isMobile })))
+    );
+  }
+  ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+})();
+</script>
+</body>
+</html>

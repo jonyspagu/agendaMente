@@ -26,7 +26,7 @@ const SHEET_ID = "1uSbq2qtnF1oEYMijkJMrSqO9wRLypKDQIP-tC9UJB40";
 
 // Contraseña de acceso. CAMBIALA por la que quieras usar.
 // Sin esta clave, ni la app ni nadie con la URL puede leer o escribir datos.
-const CLAVE_ACCESO = "Consul123";
+const CLAVE_ACCESO = "AgendaDemo2026";
 
 function doGet(e) {
   var clave = e && e.parameter ? e.parameter.clave : null;
