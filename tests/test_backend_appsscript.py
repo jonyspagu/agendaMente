@@ -35,6 +35,7 @@ import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date, timedelta
 
 # Implementación de TEST (backend-appsscript-test/), NUNCA la de producción.
 TEST_URL = "https://script.google.com/macros/s/AKfycbwC7TW_XZa3ea0fXm7hwjAc05R75MiImb_qSfyKGeYtzNX_YhZOdFM3VWKluY0wOrF2gg/exec"
@@ -489,7 +490,55 @@ def main():
                 )
 
         # ==================================================================
-        # 7. Borrar Pacientes (feature nueva de UI: botón "Eliminar" en
+        # 7. Cobro mensual automático: a una paciente "mensual" a la que ya
+        #    se le cumplió el mes desde que arrancó (y nunca tuvo cobro), se
+        #    le genera el cobro solo al leer el Sheet (doGet) — reemplaza al
+        #    viejo botón manual "Generar cobro del mes".
+        # ==================================================================
+        fecha_desde_mensual = (date.today() - timedelta(days=40)).isoformat()
+        res, err = crear(r, "Pacientes", {
+            "nombre": TAG, "apellido": "mensual_vencido", "precio": 9000, "telefono": "000",
+            "notas": "", "desde": fecha_desde_mensual, "ultimoAumento": "", "frecuenciaDias": 7,
+            "mesesAumento": 6, "historia": "[]", "contactoReferencia": "",
+            "consentimientoFirmado": "NO", "fechaConsentimiento": "", "tipoPago": "mensual",
+            "linkConsentimiento": ""
+        })
+        paciente_mensual_id = res.get("id") if res else None
+        registrar_creado("Pacientes", paciente_mensual_id)
+        r.check(
+            "Cobro mensual automático — crear paciente mensual con el mes ya vencido",
+            res is not None and res.get("ok") is True,
+            err or f"id: {paciente_mensual_id}"
+        )
+
+        if paciente_mensual_id is None:
+            r.skip("Cobro mensual automático — se genera solo al leer, sin botón", "no se pudo crear el paciente de prueba")
+            r.skip("Cobro mensual automático — no se duplica en una segunda lectura", "no se pudo crear el paciente de prueba")
+        else:
+            data, err = leer_con_reintento(
+                r,
+                lambda d: any(_leer_paciente_id(c) == paciente_mensual_id for c in d.get("cobros", [])),
+                op_label="read_post_cobro_mensual"
+            )
+            cobros_mensual = [c for c in data.get("cobros", []) if _leer_paciente_id(c) == paciente_mensual_id] if data else []
+            for c in cobros_mensual:
+                registrar_creado("Cobros", _leer_id(c))
+            r.check(
+                "Cobro mensual automático — se genera solo al leer, sin botón (1 cobro pendiente por el precio de la paciente)",
+                len(cobros_mensual) == 1 and cobros_mensual[0].get("estado") == "pendiente" and cobros_mensual[0].get("monto") == 9000,
+                f"cobros encontrados: {cobros_mensual}"
+            )
+
+            data2, err2 = leer(r, op_label="read_getAllData")
+            cobros_mensual_2 = [c for c in data2.get("cobros", []) if _leer_paciente_id(c) == paciente_mensual_id] if data2 else []
+            r.check(
+                "Cobro mensual automático — no se duplica en una segunda lectura",
+                len(cobros_mensual_2) == len(cobros_mensual),
+                f"cobros encontrados en la 2da lectura: {cobros_mensual_2}"
+            )
+
+        # ==================================================================
+        # 8. Borrar Pacientes (feature nueva de UI: botón "Eliminar" en
         #    Pacientes) — incluye el caso con turnos/cobros vinculados, que
         #    es justo el escenario que dispara el aviso en el frontend antes
         #    de confirmar. El conteo/aviso en sí es lógica de frontend (no

@@ -33,6 +33,7 @@ function doGet(e) {
   if (clave !== CLAVE_ACCESO) {
     return jsonResponse({ ok: false, error: "NO_AUTORIZADO" });
   }
+  procesarCobrosMensualesVencidos();
   var data = getAllData();
   data.ok = true;
   return jsonResponse(data);
@@ -150,6 +151,86 @@ function pacienteExiste(pacienteId) {
   if (!pacientesSh) return false;
   const idNum = Number(pacienteId);
   return sheetToObjects(pacientesSh).some((p) => Number(leerCampoObjeto(p, "id")) === idNum);
+}
+
+// Genera solo el cobro mensual de cada paciente con tipoPago="mensual" cuando se
+// cumple un mes desde su último cobro (o desde que arrancó, si todavía no tuvo
+// ninguno). Así queda simétrico con las pacientes por sesión, donde el cobro
+// también se genera solo (al marcar el turno "realizado" en la Agenda) sin que la
+// profesional tenga que acordarse de apretar nada. Si estuvo varios meses sin
+// generarse, pone al día todos los meses vencidos (con un tope de seguridad).
+function procesarCobrosMensualesVencidos() {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (lockErr) {
+    return;
+  }
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const pacientesSh = ss.getSheetByName("Pacientes");
+    const cobrosSh = ss.getSheetByName("Cobros");
+    if (!pacientesSh || !cobrosSh) return;
+
+    const pacientes = sheetToObjects(pacientesSh);
+    const cobros = sheetToObjects(cobrosSh);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    pacientes.forEach((p) => {
+      if (normalizarHeader(leerCampoObjeto(p, "tipoPago")) !== "mensual") return;
+      const pacienteId = Number(leerCampoObjeto(p, "id"));
+      const desde = leerCampoObjeto(p, "desde");
+      const precio = Number(leerCampoObjeto(p, "precio")) || 0;
+      if (!desde || !precio) return;
+
+      let referencia = parsearFecha(desde);
+      if (isNaN(referencia.getTime())) return; // "desde" con formato no reconocido: no se puede calcular, se salta sin romper nada
+      cobros
+        .filter((c) => Number(leerCampoObjeto(c, "pacienteId")) === pacienteId)
+        .forEach((c) => {
+          const f = parsearFecha(leerCampoObjeto(c, "fecha"));
+          if (!isNaN(f.getTime()) && f > referencia) referencia = f;
+        });
+
+      let iteraciones = 0;
+      while (iteraciones < 24) {
+        const proxima = sumarUnMes(referencia);
+        if (proxima > hoy) break;
+        const nuevoId = getNextId(cobrosSh);
+        const row = buildRow(cobrosSh, nuevoId, {
+          pacienteId: pacienteId,
+          fecha: formatearFecha(proxima),
+          monto: precio,
+          estado: "pendiente"
+        });
+        cobrosSh.appendRow(row);
+        SpreadsheetApp.flush();
+        referencia = proxima;
+        iteraciones++;
+      }
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function parsearFecha(s) {
+  const partes = String(s).split("-").map(Number);
+  return new Date(partes[0], partes[1] - 1, partes[2]);
+}
+
+function formatearFecha(d) {
+  return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd");
+}
+
+// Suma un mes calendario respetando fin de mes (31/1 + 1 mes = 28 o 29/2, no 3/3).
+function sumarUnMes(d) {
+  const dia = d.getDate();
+  const res = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  const ultimoDiaMes = new Date(res.getFullYear(), res.getMonth() + 1, 0).getDate();
+  res.setDate(Math.min(dia, ultimoDiaMes));
+  return res;
 }
 
 function getAllData() {
