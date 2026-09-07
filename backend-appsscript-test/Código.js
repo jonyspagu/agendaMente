@@ -48,6 +48,7 @@ function doPost(e) {
       return jsonResponse({ ok: false, error: "NO_AUTORIZADO" });
     }
     const ss = SpreadsheetApp.openById(SHEET_ID);
+    if (sheet === "Config") ensureConfigSheet(ss);
     const sh = ss.getSheetByName(sheet);
     if (!sh) return jsonResponse({ ok: false, error: "Hoja no encontrada: " + sheet });
 
@@ -233,12 +234,31 @@ function sumarUnMes(d) {
   return res;
 }
 
+// Datos del profesional (nombre/matrícula/especialidad) y las plantillas de
+// WhatsApp: antes vivían solo en el localStorage del navegador (se perdían si
+// Guada cambiaba de compu/navegador). Ahora quedan en una fila única de esta
+// hoja, igual que el resto de los datos. Se autocrea la primera vez que hace
+// falta, para no depender de un paso manual de setup en el Sheet.
+function ensureConfigSheet(ss) {
+  let sh = ss.getSheetByName("Config");
+  if (!sh) {
+    sh = ss.insertSheet("Config");
+    sh.getRange(1, 1, 1, 7).setValues([
+      ["id", "nombreProfesional", "matricula", "especialidad", "plantillaDeuda", "plantillaSimple", "plantillaAumento"]
+    ]);
+    sh.appendRow([1, "", "", "", "", "", ""]);
+    SpreadsheetApp.flush();
+  }
+  return sh;
+}
+
 function getAllData() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   return {
     pacientes: sheetToObjects(ss.getSheetByName("Pacientes")),
     turnos: sheetToObjects(ss.getSheetByName("Turnos")),
     cobros: sheetToObjects(ss.getSheetByName("Cobros")),
+    config: sheetToObjects(ensureConfigSheet(ss))[0] || {},
   };
 }
 

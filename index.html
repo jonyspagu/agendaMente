@@ -543,6 +543,8 @@
     onMarcarConsentimiento,
     onActualizarLinkConsentimiento,
     onEliminarPaciente,
+    config,
+    onActualizarConfig,
     isMobile
   }) {
     var _a, _b;
@@ -620,22 +622,18 @@
       onActualizarPrecio(pac.id, nuevo);
     };
     const exportarHistoriaClinica = (pac) => {
-      let prof = {};
-      try {
-        prof = JSON.parse(localStorage.getItem("datosProfesional") || "{}");
-      } catch (err) {
-        prof = {};
-      }
+      let prof = {
+        nombre: config.nombreProfesional || "",
+        matricula: config.matricula || "",
+        especialidad: config.especialidad || "Psicolog\xEDa"
+      };
       if (!prof.nombre || !prof.matricula) {
-        const nombre = window.prompt("Para generar el documento hace falta el nombre del profesional (la ley exige que figure en la historia cl\xEDnica):", prof.nombre || "");
+        const nombre = window.prompt("Para generar el documento hace falta el nombre del profesional (la ley exige que figure en la historia cl\xEDnica):", prof.nombre);
         if (!nombre) return;
-        const matricula = window.prompt("N\xFAmero de matr\xEDcula profesional:", prof.matricula || "");
+        const matricula = window.prompt("N\xFAmero de matr\xEDcula profesional:", prof.matricula);
         if (!matricula) return;
         prof = { nombre: nombre.trim(), matricula: matricula.trim(), especialidad: "Psicolog\xEDa" };
-        try {
-          localStorage.setItem("datosProfesional", JSON.stringify(prof));
-        } catch (err) {
-        }
+        onActualizarConfig({ nombreProfesional: prof.nombre, matricula: prof.matricula, especialidad: prof.especialidad });
       }
       const entradas = numerarHistoria(parseHistoria(pac.historia));
       const hoy = /* @__PURE__ */ new Date();
@@ -664,15 +662,13 @@
     const PLANTILLA_DEUDA = "Hola {nombre}! Te escribo para recordarte el pago pendiente de {monto}. \xA1Gracias!";
     const PLANTILLA_SIMPLE = "Hola {nombre}! Te escribo para [motivo del mensaje].";
     const PLANTILLA_AUMENTO = "Hola {nombre}! \xBFC\xF3mo est\xE1s? Te escribo para comentarte que a partir de [mes] el valor de la sesi\xF3n pasa a ser de [nuevo valor]. El actual es de {precio}. Cualquier cosa hablamos. \xA1Gracias!";
-    const leerPlantilla = (tipo) => {
-      try {
-        const guardada = localStorage.getItem("plantilla_" + tipo);
-        if (guardada) return guardada;
-      } catch (err) {
-      }
-      return tipo === "deuda" ? PLANTILLA_DEUDA : PLANTILLA_SIMPLE;
-    };
     const DEFAULTS = { deuda: PLANTILLA_DEUDA, simple: PLANTILLA_SIMPLE, aumento: PLANTILLA_AUMENTO };
+    const CAMPO_PLANTILLA = { deuda: "plantillaDeuda", simple: "plantillaSimple", aumento: "plantillaAumento" };
+    const leerPlantilla = (tipo) => {
+      const campo = CAMPO_PLANTILLA[tipo];
+      const guardada = campo && config ? config[campo] : null;
+      return guardada || DEFAULTS[tipo];
+    };
     const generarMensaje = (pac, tipo, forzarDefault) => {
       const t = tipo || (pendientesDe(pac.id).length > 0 ? "deuda" : "simple");
       const plantilla = forzarDefault ? DEFAULTS[t] : leerPlantilla(t);
@@ -687,13 +683,11 @@
       if (pac.nombre) plantilla = plantilla.split(pac.nombre).join("{nombre}");
       if (pend.length > 0) plantilla = plantilla.split(`$${total.toLocaleString("es-AR")}`).join("{monto}");
       if (pac.precio) plantilla = plantilla.split(`$${Number(pac.precio).toLocaleString("es-AR")}`).join("{precio}");
-      try {
-        localStorage.setItem("plantilla_" + tipo, plantilla);
-        setPlantillaGuardada(true);
-        setTimeout(() => setPlantillaGuardada(false), 2200);
-      } catch (err) {
-        window.alert("No se pudo guardar la plantilla en este navegador.");
-      }
+      const campo = CAMPO_PLANTILLA[tipo];
+      if (!campo) return;
+      onActualizarConfig({ [campo]: plantilla });
+      setPlantillaGuardada(true);
+      setTimeout(() => setPlantillaGuardada(false), 2200);
     };
     const recordarWhatsApp = (pac, tipo) => {
       const t = tipo || (pendientesDe(pac.id).length > 0 ? "deuda" : "simple");
@@ -1155,10 +1149,8 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       {
         onClick: () => {
           if (window.confirm("\xBFVolver al mensaje original y borrar tu plantilla guardada?")) {
-            try {
-              localStorage.removeItem("plantilla_" + mensajePreview.tipo);
-            } catch (err) {
-            }
+            const campo = CAMPO_PLANTILLA[mensajePreview.tipo];
+            if (campo) onActualizarConfig({ [campo]: "" });
             setMensajeEditable(generarMensaje(p, mensajePreview.tipo, true));
           }
         },
@@ -1408,6 +1400,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [pacientes, setPacientes] = useState([]);
     const [turnos, setTurnos] = useState([]);
     const [cobros, setCobros] = useState([]);
+    const [config, setConfig] = useState({});
     const [cargando, setCargando] = useState(true);
     const [autenticado, setAutenticado] = useState(false);
     const [claveInput, setClaveInput] = useState("");
@@ -1442,6 +1435,28 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       setPacientes(pacientesNorm);
       setTurnos(turnosNorm);
       setCobros(cobrosNorm);
+      setConfig(d.config || {});
+    };
+    const migrarConfigDesdeLocalStorage = (cfg) => {
+      if (cfg.matricula || cfg.plantillaDeuda || cfg.plantillaSimple || cfg.plantillaAumento) return;
+      let profLocal = {};
+      try {
+        profLocal = JSON.parse(localStorage.getItem("datosProfesional") || "{}");
+      } catch (err) {
+      }
+      const cambios = {};
+      if (profLocal.nombre) cambios.nombreProfesional = profLocal.nombre;
+      if (profLocal.matricula) cambios.matricula = profLocal.matricula;
+      if (profLocal.especialidad) cambios.especialidad = profLocal.especialidad;
+      ["deuda", "simple", "aumento"].forEach((tipo) => {
+        let guardada = null;
+        try {
+          guardada = localStorage.getItem("plantilla_" + tipo);
+        } catch (err) {
+        }
+        if (guardada) cambios["plantilla" + tipo.charAt(0).toUpperCase() + tipo.slice(1)] = guardada;
+      });
+      if (Object.keys(cambios).length > 0) actualizarConfig(cambios);
     };
     const cargarDatos = (clave) => {
       setCargando(true);
@@ -1472,6 +1487,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         setAutenticado(true);
         setErrorLogin("");
         aplicarDataset(d);
+        migrarConfigDesdeLocalStorage(d.config || {});
         setCargando(false);
       }).catch((e) => {
         clearTimeout(timeoutId);
@@ -1576,8 +1592,12 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const actualizarTipoPago = (id, tipoPago) => actualizarPacienteOptimista(id, { tipoPago });
     const actualizarLinkConsentimiento = (id, linkConsentimiento) => actualizarPacienteOptimista(id, { linkConsentimiento });
     const marcarConsentimiento = (id, fecha, historia) => actualizarPacienteOptimista(id, { consentimientoFirmado: "SI", fechaConsentimiento: fecha, historia });
+    const actualizarConfig = conManejoDeError(async (cambios) => {
+      const res = await apiCall("Config", "update", { id: 1, data: cambios });
+      aplicarDataset(res);
+    });
     const agregarPaciente = conManejoDeError(async (datos) => {
-      const desde = `${MESES[HOY.getMonth()].charAt(0).toUpperCase()}${MESES[HOY.getMonth()].slice(1, 3)} ${HOY.getFullYear()}`;
+      const desde = fmtKey(HOY);
       const nuevo = {
         nombre: datos.nombre,
         apellido: datos.apellido,
@@ -1794,6 +1814,8 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onMarcarConsentimiento: marcarConsentimiento,
           onActualizarLinkConsentimiento: actualizarLinkConsentimiento,
           onEliminarPaciente: eliminarPaciente,
+          config,
+          onActualizarConfig: actualizarConfig,
           isMobile
         }
       ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, isMobile })))
