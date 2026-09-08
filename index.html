@@ -788,26 +788,18 @@
                 }
               },
               /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--serif)", fontSize: 13.5, fontWeight: esHoy ? 700 : 400, color: feriado ? "var(--ochre-dark)" : esHoy ? "var(--pine)" : "var(--ink)" } }, dia.getDate()),
-              isMobile ? visibles.length > 0 && /* @__PURE__ */ React.createElement(
-                "div",
-                { style: { display: "flex", flexWrap: "wrap", gap: 3 } },
-                ...visibles.map((t) => /* @__PURE__ */ React.createElement("span", {
-                  key: t.id,
-                  style: { width: 6, height: 6, borderRadius: "50%", background: estadoTurnoColor[t.estado], flex: "none", opacity: t.estado === "cancelado" ? 0.5 : 1 }
-                })),
-                ocultos > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, color: "var(--muted)", fontWeight: 700 } }, "+", ocultos)
-              ) : /* @__PURE__ */ React.createElement(React.Fragment, null, ...visibles.map((t) => /* @__PURE__ */ React.createElement(
+              /* @__PURE__ */ React.createElement(React.Fragment, null, ...visibles.map((t) => /* @__PURE__ */ React.createElement(
                 "div",
                 {
                   key: t.id,
                   style: {
-                    fontSize: 9.5,
-                    lineHeight: 1.3,
+                    fontSize: isMobile ? 8.5 : 9.5,
+                    lineHeight: 1.25,
                     color: "var(--ink)",
                     background: t.estado === "cancelado" ? "transparent" : "var(--paper2)",
                     borderLeft: `2px solid ${estadoTurnoColor[t.estado]}`,
                     borderRadius: 3,
-                    padding: "1px 3px",
+                    padding: isMobile ? "1px 2px" : "1px 3px",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -815,8 +807,8 @@
                     opacity: t.estado === "cancelado" ? 0.6 : 1
                   }
                 },
-                `${t.hora} ${pacienteNombre(t.pacienteId).split(",")[0]}`
-              )), ocultos > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, color: "var(--muted)", fontWeight: 700, paddingLeft: 2 } }, "+", ocultos, " m\xE1s"))
+                isMobile ? pacienteNombre(t.pacienteId).split(",")[0] : `${t.hora} ${pacienteNombre(t.pacienteId).split(",")[0]}`
+              )), ocultos > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, color: "var(--muted)", fontWeight: 700, paddingLeft: 2 } }, "+", ocultos, isMobile ? "" : " m\xE1s"))
             );
           })
         ))
