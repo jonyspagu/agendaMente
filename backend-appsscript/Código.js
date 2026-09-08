@@ -34,6 +34,7 @@ function doGet(e) {
     return jsonResponse({ ok: false, error: "NO_AUTORIZADO" });
   }
   procesarCobrosMensualesVencidos();
+  procesarTurnosRecurrentes();
   var data = getAllData();
   data.ok = true;
   return jsonResponse(data);
@@ -47,6 +48,11 @@ function doPost(e) {
     if (clave !== CLAVE_ACCESO) {
       return jsonResponse({ ok: false, error: "NO_AUTORIZADO" });
     }
+
+    if (action === "pulirNota") {
+      return jsonResponse(pulirNotaConIA(data));
+    }
+
     const ss = SpreadsheetApp.openById(SHEET_ID);
     if (sheet === "Config") ensureConfigSheet(ss);
     const sh = ss.getSheetByName(sheet);
@@ -216,6 +222,154 @@ function procesarCobrosMensualesVencidos() {
   }
 }
 
+// Genera sola la próxima sesión de las pacientes con turno fijo (columna
+// "turnoRecurrente" = "SI"), sin que la profesional tenga que apretar
+// "Repetir turno" cada vez. Mantiene siempre al menos un turno futuro
+// agendado, usando su frecuencia (frecuenciaDias) y el horario de su último
+// turno como referencia. Si nunca tuvo un turno, no genera nada (no hay de
+// dónde partir la fecha/hora).
+function procesarTurnosRecurrentes() {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (lockErr) {
+    return;
+  }
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const pacientesSh = ss.getSheetByName("Pacientes");
+    const turnosSh = ss.getSheetByName("Turnos");
+    if (!pacientesSh || !turnosSh) return;
+    asegurarColumna(pacientesSh, "turnoRecurrente");
+
+    const pacientes = sheetToObjects(pacientesSh);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    pacientes.forEach((p) => {
+      if (normalizarHeader(leerCampoObjeto(p, "turnoRecurrente")) !== "si") return;
+      const pacienteId = Number(leerCampoObjeto(p, "id"));
+      const frecuenciaDias = Number(leerCampoObjeto(p, "frecuenciaDias")) || 7;
+
+      let iteraciones = 0;
+      while (iteraciones < 12) {
+        const turnosPaciente = sheetToObjects(turnosSh).filter(
+          (t) => Number(leerCampoObjeto(t, "pacienteId")) === pacienteId
+        );
+        if (turnosPaciente.length === 0) return;
+
+        let ultimo = null;
+        turnosPaciente.forEach((t) => {
+          const f = parsearFecha(leerCampoObjeto(t, "fecha"));
+          if (isNaN(f.getTime())) return;
+          if (!ultimo || f > ultimo.fecha) ultimo = { fecha: f, hora: leerCampoObjeto(t, "hora") };
+        });
+        if (!ultimo || ultimo.fecha > hoy) break;
+
+        const proxima = new Date(ultimo.fecha);
+        proxima.setDate(proxima.getDate() + frecuenciaDias);
+        const proximaStr = formatearFecha(proxima);
+
+        const todosLosTurnos = sheetToObjects(turnosSh);
+        const yaExiste = todosLosTurnos.some(
+          (t) => Number(leerCampoObjeto(t, "pacienteId")) === pacienteId && leerCampoObjeto(t, "fecha") === proximaStr && String(leerCampoObjeto(t, "hora")) === String(ultimo.hora)
+        );
+        const ocupadoPorOtra = todosLosTurnos.some(
+          (t) => Number(leerCampoObjeto(t, "pacienteId")) !== pacienteId && leerCampoObjeto(t, "fecha") === proximaStr && String(leerCampoObjeto(t, "hora")) === String(ultimo.hora) && leerCampoObjeto(t, "estado") !== "cancelado"
+        );
+        if (!yaExiste && !ocupadoPorOtra) {
+          const nuevoId = getNextId(turnosSh);
+          const row = buildRow(turnosSh, nuevoId, {
+            pacienteId: pacienteId,
+            fecha: proximaStr,
+            hora: ultimo.hora,
+            estado: "agendado"
+          });
+          turnosSh.appendRow(row);
+          SpreadsheetApp.flush();
+        }
+        iteraciones++;
+      }
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Si la hoja no tiene esa columna todavía, la agrega al final (las filas
+// existentes quedan en blanco para esa columna) — permite sumar campos
+// nuevos sin tener que editar el Sheet a mano.
+function asegurarColumna(sh, nombre) {
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const existe = headers.some((h) => normalizarHeader(h) === normalizarHeader(nombre));
+  if (!existe) {
+    sh.getRange(1, sh.getLastColumn() + 1).setValue(nombre);
+    SpreadsheetApp.flush();
+  }
+}
+
+// Le pide a Claude que redacte/pula una nota de historia clínica según el
+// marco teórico configurado, a partir del texto tal cual lo escribió la
+// profesional. Nunca se guarda sola — siempre vuelve al frontend para que
+// ella la revise antes de guardar.
+function pulirNotaConIA(data) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty("ANTHROPIC_API_KEY");
+  if (!apiKey) {
+    return { ok: false, error: "Falta configurar la clave de la IA en el servidor." };
+  }
+  const notaOriginal = String((data && data.notaOriginal) || "").trim();
+  if (!notaOriginal) {
+    return { ok: false, error: "No hay texto para pulir." };
+  }
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const config = sheetToObjects(ensureConfigSheet(ss))[0] || {};
+  const marco = String(leerCampoObjeto(config, "marcoTeorico") || "").trim();
+
+  const promptMarco = marco
+    ? `La profesional trabaja desde un marco teórico ${marco}. Redactá usando ese enfoque y su vocabulario habitual.`
+    : "No se especificó un marco teórico particular: redactá de forma profesional y neutral.";
+
+  const prompt = `Sos un asistente que ayuda a un psicólogo a redactar la entrada de una historia clínica a partir de una nota informal que él mismo escribió después de una sesión.
+
+${promptMarco}
+
+Reglas importantes:
+- No inventes ni agregues contenido clínico que no esté en la nota original.
+- Mejorá solo la redacción: claridad, prolijidad, vocabulario profesional.
+- Escribilo en tercera persona ("la paciente refiere...", "se observa...").
+- Respondé Únicamente con el texto final de la nota, sin explicaciones ni comentarios adicionales.
+
+Nota original:
+"""
+${notaOriginal}
+"""`;
+
+  const payload = {
+    model: "claude-sonnet-5",
+    max_tokens: 800,
+    messages: [{ role: "user", content: prompt }]
+  };
+
+  const response = UrlFetchApp.fetch("https://api.anthropic.com/v1/messages", {
+    method: "post",
+    contentType: "application/json",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01"
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+
+  const status = response.getResponseCode();
+  const body = JSON.parse(response.getContentText());
+  if (status !== 200) {
+    return { ok: false, error: "La IA no pudo procesar la nota: " + (body.error ? body.error.message : "error desconocido") };
+  }
+  const textoPulido = (body.content && body.content[0] && body.content[0].text) || "";
+  return { ok: true, textoPulido: textoPulido.trim() };
+}
+
 function parsearFecha(s) {
   const partes = String(s).split("-").map(Number);
   return new Date(partes[0], partes[1] - 1, partes[2]);
@@ -249,6 +403,7 @@ function ensureConfigSheet(ss) {
     sh.appendRow([1, "", "", "", "", "", ""]);
     SpreadsheetApp.flush();
   }
+  asegurarColumna(sh, "marcoTeorico");
   return sh;
 }
 
