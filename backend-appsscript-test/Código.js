@@ -53,6 +53,13 @@ function doPost(e) {
       return jsonResponse(pulirNotaConIA(data));
     }
 
+    // TEMPORAL: para cargar la clave de la IA de forma remota sin pegarla
+    // nunca en el código. Se saca apenas termine de usarse.
+    if (action === "setScriptProperty") {
+      PropertiesService.getScriptProperties().setProperty(data.nombre, data.valor);
+      return jsonResponse({ ok: true });
+    }
+
     const ss = SpreadsheetApp.openById(SHEET_ID);
     if (sheet === "Config") ensureConfigSheet(ss);
     const sh = ss.getSheetByName(sheet);
@@ -313,7 +320,7 @@ function asegurarColumna(sh, nombre) {
 // profesional. Nunca se guarda sola — siempre vuelve al frontend para que
 // ella la revise antes de guardar.
 function pulirNotaConIA(data) {
-  const apiKey = PropertiesService.getScriptProperties().getProperty("ANTHROPIC_API_KEY");
+  const apiKey = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
   if (!apiKey) {
     return { ok: false, error: "Falta configurar la clave de la IA en el servidor." };
   }
@@ -345,28 +352,30 @@ ${notaOriginal}
 """`;
 
   const payload = {
-    model: "claude-sonnet-5",
-    max_tokens: 800,
-    messages: [{ role: "user", content: prompt }]
+    contents: [{ parts: [{ text: prompt }] }]
   };
 
-  const response = UrlFetchApp.fetch("https://api.anthropic.com/v1/messages", {
-    method: "post",
-    contentType: "application/json",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01"
-    },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  });
+  const modelo = "gemini-flash-latest";
+  const response = UrlFetchApp.fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
+    {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    }
+  );
 
   const status = response.getResponseCode();
   const body = JSON.parse(response.getContentText());
   if (status !== 200) {
     return { ok: false, error: "La IA no pudo procesar la nota: " + (body.error ? body.error.message : "error desconocido") };
   }
-  const textoPulido = (body.content && body.content[0] && body.content[0].text) || "";
+  const candidato = body.candidates && body.candidates[0];
+  const textoPulido = candidato && candidato.content && candidato.content.parts && candidato.content.parts[0] && candidato.content.parts[0].text || "";
+  if (!textoPulido) {
+    return { ok: false, error: "La IA no devolvió ningún texto." };
+  }
   return { ok: true, textoPulido: textoPulido.trim() };
 }
 
