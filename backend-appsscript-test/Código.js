@@ -53,13 +53,6 @@ function doPost(e) {
       return jsonResponse(pulirNotaConIA(data));
     }
 
-    // TEMPORAL: para cargar la clave de la IA de forma remota sin pegarla
-    // nunca en el código. Se saca apenas termine de usarse.
-    if (action === "setScriptProperty") {
-      PropertiesService.getScriptProperties().setProperty(data.nombre, data.valor);
-      return jsonResponse({ ok: true });
-    }
-
     const ss = SpreadsheetApp.openById(SHEET_ID);
     if (sheet === "Config") ensureConfigSheet(ss);
     const sh = ss.getSheetByName(sheet);
@@ -356,18 +349,25 @@ ${notaOriginal}
   };
 
   const modelo = "gemini-flash-latest";
-  const response = UrlFetchApp.fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
-    {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
+
+  // Gemini a veces devuelve "alta demanda" (error transitorio, no de la
+  // clave ni del código) — se reintenta un par de veces antes de mostrarle
+  // un error a la profesional.
+  let status, body;
+  for (let intento = 0; intento < 3; intento++) {
+    const response = UrlFetchApp.fetch(url, {
       method: "post",
       contentType: "application/json",
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
-    }
-  );
+    });
+    status = response.getResponseCode();
+    body = JSON.parse(response.getContentText());
+    if (status === 200) break;
+    if (intento < 2) Utilities.sleep(2000);
+  }
 
-  const status = response.getResponseCode();
-  const body = JSON.parse(response.getContentText());
   if (status !== 200) {
     return { ok: false, error: "La IA no pudo procesar la nota: " + (body.error ? body.error.message : "error desconocido") };
   }
