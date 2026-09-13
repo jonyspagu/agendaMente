@@ -151,6 +151,33 @@
   function pillToneDeEstado(estado) {
     return estado === "cancelado" ? "rust" : estado === "realizado" ? "verde" : "neutral";
   }
+  function formatFechaHora(fechaIso) {
+    const [fecha, hora] = String(fechaIso || "").split("T");
+    const corta = formatFechaCorta(fecha);
+    return hora ? `${corta} ${hora.slice(0, 5)}hs` : corta;
+  }
+  function nombrePacienteHistorial(pacienteId, pacientes) {
+    const p = pacientes.find((x) => x.id === pacienteId);
+    return p ? nombreCompleto(p) : "Paciente eliminado";
+  }
+  function describirCambioHistorial(h) {
+    const antes = h.antes || {};
+    const cambios = h.cambios || {};
+    if (h.hoja === "Cobros") {
+      const monto = Number(antes.monto) || 0;
+      const fechaCobro = formatFechaCorta(antes.fecha);
+      if (h.accion === "delete") return `Cobro de $${monto.toLocaleString("es-AR")} (${fechaCobro}) eliminado`;
+      if (cambios.estado === "pagado") return `Cobro de $${monto.toLocaleString("es-AR")} (${fechaCobro}) marcado como pagado`;
+      if (cambios.estado === "pendiente") return `Cobro de $${monto.toLocaleString("es-AR")} (${fechaCobro}) vuelto a pendiente`;
+      if (cambios.monto !== void 0) return `Monto del cobro del ${fechaCobro} cambiado de $${monto.toLocaleString("es-AR")} a $${Number(cambios.monto).toLocaleString("es-AR")}`;
+      return `Cobro del ${fechaCobro} modificado`;
+    }
+    const fechaTurno = formatFechaCorta(antes.fecha);
+    if (h.accion === "delete") return `Turno del ${fechaTurno} eliminado`;
+    if (cambios.estado) return `Turno del ${fechaTurno} marcado como ${(estadoTurnoLabel[cambios.estado] || cambios.estado).replace(/^[✓✕]\s*/, "")}`;
+    if (cambios.fecha || cambios.hora) return `Turno del ${fechaTurno} reprogramado`;
+    return `Turno del ${fechaTurno} modificado`;
+  }
   function turnoConflicto(turnos, pacienteId, fecha, hora, excludeId) {
     const mismoSlot = turnos.filter((t) => t.fecha === fecha && t.hora === hora && t.estado !== "cancelado" && t.id !== excludeId);
     if (mismoSlot.some((t) => t.pacienteId === pacienteId)) return "mismo";
@@ -1789,7 +1816,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       "Limpiar filtros"
     ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--muted)", marginLeft: "auto" } }, cobrosFiltrados.length, " de ", cobrosMes.length)), cobrosFiltrados.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, fontStyle: "italic" } }, "No hay cobros que coincidan con los filtros."), isMobile ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, cobrosFiltrados.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5 } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontFamily: "var(--mono)", fontWeight: 600, color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 10 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: { ...markBtn, flex: 1 } }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: { ...undoBtn, flex: 1 } }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 13 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 13 })))))) : cobrosFiltrados.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, overflow: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { minWidth: 560 } }, /* @__PURE__ */ React.createElement("div", { style: { ...rowGrid, padding: "10px 18px", background: "var(--paper2)" } }, ["Paciente", "Sesi\xF3n", "Monto", "Estado", ""].map((h) => /* @__PURE__ */ React.createElement("div", { key: h, style: { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase" } }, h))), cobrosFiltrados.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { ...rowGrid, padding: "12px 18px", borderTop: "1px solid var(--line)", background: i % 2 === 0 ? "transparent" : "var(--paper2)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, fontFamily: "var(--mono)", color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: markBtn }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: undoBtn, title: "Volver este cobro a pendiente" }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 12 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 12 }))))))));
   }
-  function MetricasView({ pacientes, turnos, cobros, isMobile }) {
+  function MetricasView({ pacientes, turnos, cobros, historial, config, isMobile }) {
     const { mesesDisponibles, mes, setMes } = useMesSelector(cobros);
     const cobrosMes = useMemo(() => cobros.filter((c) => String(c.fecha).startsWith(mes)), [cobros, mes]);
     const turnosMes = turnos.filter((t) => String(t.fecha).startsWith(mes));
@@ -1804,7 +1831,57 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const precioPromedio = pacientes.length ? Math.round(pacientes.reduce((s, p) => s + p.precio, 0) / pacientes.length) : 0;
     const ingresoPromedioPaciente = pacientes.length ? Math.round(facturacionTotal / pacientes.length) : 0;
     const pctCobrado = facturacionTotal ? Math.round(totalCobrado / facturacionTotal * 100) : 0;
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "M\xE9tricas"), /* @__PURE__ */ React.createElement(MesSelector, { mesesDisponibles, mes, setMes })), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, "Resumen financiero de ", labelMes(mes)), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Facturaci\xF3n total"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20 } }, "$", facturacionTotal.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Cobrado"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--verde)" } }, "$", totalCobrado.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--rust)" } }, "$", totalPendiente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de cancelaci\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: tasaCancelacion > 15 ? "var(--rust)" : "var(--ink)" } }, tasaCancelacion, "%"))), /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", null, "Cobrado vs. pendiente"), /* @__PURE__ */ React.createElement("span", null, pctCobrado, "% cobrado")), /* @__PURE__ */ React.createElement("div", { style: { height: 10, borderRadius: 6, background: "var(--paper2)", overflow: "hidden", display: "flex" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${pctCobrado}%`, background: "var(--verde)" } }), /* @__PURE__ */ React.createElement("div", { style: { width: `${100 - pctCobrado}%`, background: "var(--rust)" } }))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio promedio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", precioPromedio.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Ingreso promedio por paciente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", ingresoPromedioPaciente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones del mes"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, realizadas, " realiz. \xB7 ", agendadas, " agend. \xB7 ", canceladas, " cancel."))));
+    const historialMes = useMemo(
+      () => (historial || []).filter((h) => String(h.fecha).slice(0, 7) === mes).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))),
+      [historial, mes]
+    );
+    const exportarReporteMensual = () => {
+      const esc = (t) => String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const hoy = /* @__PURE__ */ new Date();
+      const fechaEmision = `${String(hoy.getDate()).padStart(2, "0")}/${String(hoy.getMonth() + 1).padStart(2, "0")}/${hoy.getFullYear()}`;
+      const fila = (label, valor) => `<div class="fila"><span>${esc(label)}</span><span>${esc(valor)}</span></div>`;
+      const doc = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte mensual — ${esc(labelMes(mes))}</title><style>
+        @page { margin: 2.2cm 2cm; }
+        body { font-family: Georgia, "Times New Roman", serif; color: #1a1a1a; line-height: 1.5; font-size: 11.5pt; }
+        h1 { font-size: 16pt; margin: 0 0 4px 0; }
+        .sub { font-size: 10pt; color: #555; margin-bottom: 20px; }
+        .bloque { border: 1px solid #bbb; padding: 14px 16px; margin-bottom: 16px; }
+        .bloque h2 { font-size: 10pt; text-transform: uppercase; letter-spacing: .5px; margin: 0 0 10px 0; color: #444; }
+        .fila { display: flex; justify-content: space-between; font-size: 11pt; padding: 4px 0; border-bottom: 1px dashed #ddd; }
+        .fila span:last-child { font-weight: bold; }
+        .pie { margin-top: 24px; font-size: 8.5pt; color: #666; border-top: 1px solid #ddd; padding-top: 8px; }
+        @media print { .noprint { display: none; } }
+        .noprint { background: #f0f0f0; padding: 12px; margin-bottom: 20px; border-radius: 6px; font-family: sans-serif; font-size: 13px; }
+        .noprint button { font-size: 14px; padding: 8px 18px; cursor: pointer; margin-right: 8px; }
+      </style></head><body>
+      <div class="noprint"><button onclick="window.print()">Guardar como PDF / Imprimir</button><span>En el di\xE1logo, eleg\xED "Guardar como PDF" como destino.</span></div>
+      <h1>REPORTE MENSUAL — ${esc(labelMes(mes))}</h1>
+      <div class="sub">${esc(config.nombreProfesional || "")}${config.matricula ? " — Matr\xEDcula " + esc(config.matricula) : ""} — Emitido el ${fechaEmision}</div>
+      <div class="bloque"><h2>Facturaci\xF3n</h2>
+        ${fila("Facturaci\xF3n total", "$" + facturacionTotal.toLocaleString("es-AR"))}
+        ${fila("Cobrado", "$" + totalCobrado.toLocaleString("es-AR"))}
+        ${fila("Pendiente de cobro", "$" + totalPendiente.toLocaleString("es-AR"))}
+        ${fila("% cobrado", pctCobrado + "%")}
+      </div>
+      <div class="bloque"><h2>Actividad</h2>
+        ${fila("Sesiones realizadas", realizadas)}
+        ${fila("Sesiones agendadas", agendadas)}
+        ${fila("Sesiones canceladas", canceladas)}
+        ${fila("Tasa de cancelaci\xF3n", tasaCancelacion + "%")}
+        ${fila("Precio promedio de sesi\xF3n", "$" + precioPromedio.toLocaleString("es-AR"))}
+        ${fila("Ingreso promedio por paciente", "$" + ingresoPromedioPaciente.toLocaleString("es-AR"))}
+      </div>
+      <div class="pie">Documento generado el ${fechaEmision} a partir de los registros de AgendaMente.</div>
+      </body></html>`;
+      const ventana = window.open("", "_blank");
+      if (!ventana) {
+        window.alert("El navegador bloque\xF3 la ventana emergente. Permitila para poder generar el documento.");
+        return;
+      }
+      ventana.document.write(doc);
+      ventana.document.close();
+    };
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "M\xE9tricas"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(MesSelector, { mesesDisponibles, mes, setMes }), /* @__PURE__ */ React.createElement("button", { onClick: exportarReporteMensual, style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "Exportar reporte"))), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, "Resumen financiero de ", labelMes(mes)), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Facturaci\xF3n total"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20 } }, "$", facturacionTotal.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Cobrado"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--verde)" } }, "$", totalCobrado.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--rust)" } }, "$", totalPendiente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de cancelaci\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: tasaCancelacion > 15 ? "var(--rust)" : "var(--ink)" } }, tasaCancelacion, "%"))), /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", null, "Cobrado vs. pendiente"), /* @__PURE__ */ React.createElement("span", null, pctCobrado, "% cobrado")), /* @__PURE__ */ React.createElement("div", { style: { height: 10, borderRadius: 6, background: "var(--paper2)", overflow: "hidden", display: "flex" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${pctCobrado}%`, background: "var(--verde)" } }), /* @__PURE__ */ React.createElement("div", { style: { width: `${100 - pctCobrado}%`, background: "var(--rust)" } }))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio promedio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", precioPromedio.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Ingreso promedio por paciente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", ingresoPromedioPaciente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones del mes"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, realizadas, " realiz. \xB7 ", agendadas, " agend. \xB7 ", canceladas, " cancel."))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 17, color: "var(--ink)", margin: "0 0 10px 0" } }, "Historial de cambios este mes"), historialMes.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, fontStyle: "italic" } }, "No hubo ediciones ni eliminaciones de turnos o cobros en ", labelMes(mes), ".") : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, historialMes.map((h) => /* @__PURE__ */ React.createElement("div", { key: h.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 8, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)" } }, nombrePacienteHistorial(h.pacienteId, pacientes), ": ", describirCambioHistorial(h)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", marginTop: 2 } }, formatFechaHora(h.fecha))), /* @__PURE__ */ React.createElement(Pill, { tone: h.accion === "delete" ? "rust" : "ochre" }, h.accion === "delete" ? "Eliminado" : "Editado"))))));
   }
   const metricCard = { background: "var(--paper2)", borderRadius: 10, padding: "14px 16px" };
   const rowGrid = { display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr 1fr 1.3fr", alignItems: "center", gap: 8 };
@@ -1895,6 +1972,21 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const base = normalizarClaves(c, CAMPOS_COBRO);
     return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId), monto: Number(base.monto) || 0 };
   }
+  const CAMPOS_HISTORIAL = ["id", "fecha", "hoja", "accion", "pacienteId", "antes", "cambios"];
+  function normalizarHistorial(h) {
+    const base = normalizarClaves(h, CAMPOS_HISTORIAL);
+    let antes = {};
+    let cambios = {};
+    try {
+      antes = base.antes ? JSON.parse(base.antes) : {};
+    } catch (err) {
+    }
+    try {
+      cambios = base.cambios ? JSON.parse(base.cambios) : {};
+    } catch (err) {
+    }
+    return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId) || null, antes, cambios };
+  }
   class ErrorBoundary extends React.Component {
     constructor(props) {
       super(props);
@@ -1923,6 +2015,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [pacientes, setPacientes] = useState([]);
     const [turnos, setTurnos] = useState([]);
     const [cobros, setCobros] = useState([]);
+    const [historial, setHistorial] = useState([]);
     const [config, setConfig] = useState({});
     const [cargando, setCargando] = useState(true);
     const [autenticado, setAutenticado] = useState(false);
@@ -1959,6 +2052,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       setTurnos(turnosNorm);
       setCobros(cobrosNorm);
       setConfig(d.config || {});
+      setHistorial((d.historial || []).map(normalizarHistorial));
     };
     const migrarConfigDesdeLocalStorage = (cfg) => {
       if (cfg.matricula || cfg.plantillaDeuda || cfg.plantillaSimple || cfg.plantillaAumento) return;
@@ -2050,7 +2144,9 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const actualizarCobroOptimista = (id, cambios) => {
       const anterior = cobros;
       setCobros((prev) => prev.map((c) => c.id === id ? { ...c, ...cambios } : c));
-      apiCall("Cobros", "update", { id, data: cambios }).catch((e) => {
+      apiCall("Cobros", "update", { id, data: cambios }).then((res) => {
+        setHistorial((res.historial || []).map(normalizarHistorial));
+      }).catch((e) => {
         setCobros(anterior);
         window.alert("No se pudo guardar el cambio:\n\n" + e.message);
       });
@@ -2064,7 +2160,8 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       const turnoPrevio = turnos.find((t) => t.id === id);
       const anterior = turnos;
       setTurnos((prev) => prev.map((t) => t.id === id ? { ...t, estado } : t));
-      apiCall("Turnos", "update", { id, data: { estado } }).then(async () => {
+      apiCall("Turnos", "update", { id, data: { estado } }).then(async (resUpdate) => {
+        setHistorial((resUpdate.historial || []).map(normalizarHistorial));
         if (estado !== "realizado" || !turnoPrevio) return;
         const paciente = pacientes.find((p) => p.id === turnoPrevio.pacienteId);
         if (!paciente || paciente.tipoPago === "mensual") return;
@@ -2082,7 +2179,9 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const reprogramarTurno = (id, fecha, hora) => {
       const anterior = turnos;
       setTurnos((prev) => prev.map((t) => t.id === id ? { ...t, fecha, hora } : t));
-      apiCall("Turnos", "update", { id, data: { fecha, hora } }).catch((e) => {
+      apiCall("Turnos", "update", { id, data: { fecha, hora } }).then((res) => {
+        setHistorial((res.historial || []).map(normalizarHistorial));
+      }).catch((e) => {
         setTurnos(anterior);
         window.alert("No se pudo reprogramar el turno:\n\n" + e.message);
       });
@@ -2360,7 +2459,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onConsumirPacienteAAbrir: () => setPacienteAAbrir(null),
           isMobile
         }
-      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, isMobile })))
+      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, historial, config, isMobile })))
     );
   }
   ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));

@@ -28,16 +28,42 @@ const SHEET_ID = "1uSbq2qtnF1oEYMijkJMrSqO9wRLypKDQIP-tC9UJB40";
 // Sin esta clave, ni la app ni nadie con la URL puede leer o escribir datos.
 const CLAVE_ACCESO = "AgendaDemo2026";
 
-function doGet(e) {
-  var clave = e && e.parameter ? e.parameter.clave : null;
-  if (clave !== CLAVE_ACCESO) {
-    return jsonResponse({ ok: false, error: "NO_AUTORIZADO" });
+// Mail al que se avisa cuando algo se rompe de verdad en el backend (no
+// errores esperables como contraseña incorrecta).
+const EMAIL_ALERTAS = "jonatanrpagura@gmail.com";
+
+// Throttling con CacheService: como mucho 1 mail por tipo de error cada 30
+// minutos, para no inundar la bandeja si algo empieza a fallar en bucle.
+function notificarError(contexto, mensaje) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const clave = "alerta_" + contexto;
+    if (cache.get(clave)) return;
+    cache.put(clave, "1", 1800);
+    MailApp.sendEmail({
+      to: EMAIL_ALERTAS,
+      subject: "AgendaMente — error en producci\xF3n: " + contexto,
+      body: mensaje + "\n\nHora: " + new Date().toString()
+    });
+  } catch (mailErr) {
   }
-  procesarCobrosMensualesVencidos();
-  procesarTurnosRecurrentes();
-  var data = getAllData();
-  data.ok = true;
-  return jsonResponse(data);
+}
+
+function doGet(e) {
+  try {
+    var clave = e && e.parameter ? e.parameter.clave : null;
+    if (clave !== CLAVE_ACCESO) {
+      return jsonResponse({ ok: false, error: "NO_AUTORIZADO" });
+    }
+    procesarCobrosMensualesVencidos();
+    procesarTurnosRecurrentes();
+    var data = getAllData();
+    data.ok = true;
+    return jsonResponse(data);
+  } catch (err) {
+    notificarError("doGet", String(err));
+    return jsonResponse({ ok: false, error: "Error inesperado del servidor: " + String(err) });
+  }
 }
 
 function doPost(e) {
@@ -102,11 +128,17 @@ function doPost(e) {
             SpreadsheetApp.flush(); // fuerza que la escritura se confirme antes de soltar el lock
           }
         } else if (action === "update") {
+          const debeRegistrarHistorial = sheet === "Turnos" || sheet === "Cobros";
+          const filaAntes = debeRegistrarHistorial ? buscarFilaPorId(sh, id) : null;
           updateRowById(sh, id, data);
           SpreadsheetApp.flush();
+          if (filaAntes) registrarCambioHistorial(ss, sheet, "update", filaAntes, data);
         } else {
+          const debeRegistrarHistorial = sheet === "Turnos" || sheet === "Cobros";
+          const filaAntes = debeRegistrarHistorial ? buscarFilaPorId(sh, id) : null;
           deleteRowById(sh, id);
           SpreadsheetApp.flush();
+          if (filaAntes) registrarCambioHistorial(ss, sheet, "delete", filaAntes, null);
         }
       } finally {
         lock.releaseLock();
@@ -120,6 +152,7 @@ function doPost(e) {
 
     return jsonResponse({ ok: false, error: "Acción desconocida: " + action });
   } catch (err) {
+    notificarError("doPost", String(err));
     return jsonResponse({ ok: false, error: String(err) });
   }
 }
@@ -369,7 +402,9 @@ ${notaOriginal}
   }
 
   if (status !== 200) {
-    return { ok: false, error: "La IA no pudo procesar la nota: " + (body.error ? body.error.message : "error desconocido") };
+    const detalle = "La IA no pudo procesar la nota: " + (body.error ? body.error.message : "error desconocido");
+    notificarError("pulirNotaConIA", detalle);
+    return { ok: false, error: detalle };
   }
   const candidato = body.candidates && body.candidates[0];
   const textoPulido = candidato && candidato.content && candidato.content.parts && candidato.content.parts[0] && candidato.content.parts[0].text || "";
@@ -416,6 +451,21 @@ function ensureConfigSheet(ss) {
   return sh;
 }
 
+// Registro de auditoría de ediciones/eliminaciones en Cobros y Turnos (creación
+// no se loguea: es el flujo normal del día a día y sería puro ruido). Se
+// autocrea la primera vez que hace falta, igual que Config.
+function ensureHistorialSheet(ss) {
+  let sh = ss.getSheetByName("Historial");
+  if (!sh) {
+    sh = ss.insertSheet("Historial");
+    sh.getRange(1, 1, 1, 7).setValues([
+      ["id", "fecha", "hoja", "accion", "pacienteId", "antes", "cambios"]
+    ]);
+    SpreadsheetApp.flush();
+  }
+  return sh;
+}
+
 function getAllData() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   return {
@@ -423,6 +473,7 @@ function getAllData() {
     turnos: sheetToObjects(ss.getSheetByName("Turnos")),
     cobros: sheetToObjects(ss.getSheetByName("Cobros")),
     config: sheetToObjects(ensureConfigSheet(ss))[0] || {},
+    historial: sheetToObjects(ensureHistorialSheet(ss)),
   };
 }
 
@@ -472,6 +523,33 @@ function buscarCobroExistente(sh, data) {
   return sheetToObjects(sh).find(
     (o) => Number(leerCampoObjeto(o, "pacienteId")) === pacienteId && String(leerCampoObjeto(o, "fecha")) === fecha
   );
+}
+
+// Lee el estado ACTUAL de una fila por id, antes de mutarla — updateRowById y
+// deleteRowById no lo hacen, así que hace falta leerlo aparte para poder dejar
+// constancia del "antes" en el Historial.
+function buscarFilaPorId(sh, id) {
+  return sheetToObjects(sh).find((o) => String(leerCampoObjeto(o, "id")) === String(id));
+}
+
+// Deja constancia en "Historial" de un update/delete sobre Cobros o Turnos,
+// con suficiente info estructurada para que el frontend arme una frase legible
+// (paciente, qué decía antes, qué cambió). "antes" guarda la fila completa tal
+// cual estaba (genérico, sirve para cualquier hoja); "cambios" son los campos
+// que mandó el frontend en el update (vacío en un delete).
+function registrarCambioHistorial(ss, sheet, accion, filaAntes, cambios) {
+  const historialSh = ensureHistorialSheet(ss);
+  const nuevoId = getNextId(historialSh);
+  const row = buildRow(historialSh, nuevoId, {
+    fecha: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss"),
+    hoja: sheet,
+    accion: accion,
+    pacienteId: leerCampoObjeto(filaAntes, "pacienteId") || "",
+    antes: JSON.stringify(filaAntes),
+    cambios: accion === "update" ? JSON.stringify(cambios) : ""
+  });
+  historialSh.appendRow(row);
+  SpreadsheetApp.flush();
 }
 
 function updateRowById(sh, id, data) {
