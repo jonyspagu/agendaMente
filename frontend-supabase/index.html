@@ -6,9 +6,11 @@
 <title>AgendaMente</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
-  html, body { margin: 0; padding: 0; background: #E9D3DA; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif; }
+  html, body { margin: 0; padding: 0; background: var(--fondo-pagina); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif; }
   #root { display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+  :root { --paper: #F4F6F9; --paper2: #E9EDF2; --card: #FFFFFF; --ink: #1C2530; --muted: #64748B; --line: #DCE1E7; --pine: #2C5F8A; --ochre-dark: #B7791F; --rust: #B23A32; --rust-dark: #8A2A24; --verde: #4E7A5B; --fondo-pagina: #E3E8EE; }
   * { box-sizing: border-box; }
   button { font: inherit; }
   select, input, textarea { font: inherit; }
@@ -30,6 +32,7 @@
   const MessageCircle = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) });
   const Clock = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "10" }), /* @__PURE__ */ React.createElement("polyline", { points: "12 6 12 12 16 14" })) });
   const TrendingUp = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("polyline", { points: "23 6 13.5 15.5 8.5 10.5 1 18" }), /* @__PURE__ */ React.createElement("polyline", { points: "17 6 23 6 23 12" })) });
+  const Sliders = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: "21", y1: "4", x2: "14", y2: "4" }), /* @__PURE__ */ React.createElement("line", { x1: "10", y1: "4", x2: "3", y2: "4" }), /* @__PURE__ */ React.createElement("line", { x1: "21", y1: "12", x2: "12", y2: "12" }), /* @__PURE__ */ React.createElement("line", { x1: "8", y1: "12", x2: "3", y2: "12" }), /* @__PURE__ */ React.createElement("line", { x1: "21", y1: "20", x2: "16", y2: "20" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "20", x2: "3", y2: "20" }), /* @__PURE__ */ React.createElement("line", { x1: "14", y1: "2", x2: "14", y2: "6" }), /* @__PURE__ */ React.createElement("line", { x1: "8", y1: "10", x2: "8", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "16", y1: "18", x2: "16", y2: "22" })) });
   const BarChart3 = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "3", x2: "3", y2: "21" }), /* @__PURE__ */ React.createElement("line", { x1: "3", y1: "21", x2: "21", y2: "21" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "12", width: "3", height: "6" }), /* @__PURE__ */ React.createElement("rect", { x: "12", y: "8", width: "3", height: "10" }), /* @__PURE__ */ React.createElement("rect", { x: "17", y: "5", width: "3", height: "13" })) });
   const Pencil = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("path", { d: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" })) });
   const Search = (p) => /* @__PURE__ */ React.createElement(Icon, { ...p, path: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("circle", { cx: "11", cy: "11", r: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "21", y1: "21", x2: "16.65", y2: "16.65" })) });
@@ -184,16 +187,84 @@
     if (mismoSlot.length > 0) return { tipo: "otro", turno: mismoSlot[0] };
     return null;
   }
-  function Sidebar({ tab, setTab, isMobile, onCerrarSesion }) {
+  // ---- Paletas de color ----
+  // Cada tema es solo un set de variables CSS; aplicarTema() las pone en
+  // <html> y todo el resto de la app (que usa var(--...)) cambia sola.
+  const TEMAS = {
+    azul: {
+      nombre: "Azul neutro", detalle: "La paleta por defecto: sobria y clara.",
+      vars: { "--paper": "#F4F6F9", "--paper2": "#E9EDF2", "--card": "#FFFFFF", "--ink": "#1C2530", "--muted": "#64748B", "--line": "#DCE1E7", "--pine": "#2C5F8A", "--ochre-dark": "#B7791F", "--rust": "#B23A32", "--rust-dark": "#8A2A24", "--verde": "#4E7A5B", "--fondo-pagina": "#E3E8EE" }
+    },
+    rosa: {
+      nombre: "Rosa", detalle: "Tonos rosados, c\xE1lidos y suaves.",
+      vars: { "--paper": "#F8EEF1", "--paper2": "#F0DFE4", "--card": "#FFFBFC", "--ink": "#4A2A38", "--muted": "#8B6B76", "--line": "#E6CFD6", "--pine": "#B34A6E", "--ochre-dark": "#C07A47", "--rust": "#9C3547", "--rust-dark": "#7A2938", "--verde": "#4E7A5B", "--fondo-pagina": "#F1E1E7" }
+    },
+    monocromo: {
+      nombre: "Blanco y negro", detalle: "Escala de grises. Los estados (deuda, pagado) conservan su color.",
+      vars: { "--paper": "#F5F5F5", "--paper2": "#EBEBEB", "--card": "#FFFFFF", "--ink": "#111111", "--muted": "#6B6B6B", "--line": "#D9D9D9", "--pine": "#111111", "--ochre-dark": "#9A6B1A", "--rust": "#A33A34", "--rust-dark": "#7A2A26", "--verde": "#3F6B4C", "--fondo-pagina": "#E4E4E4" }
+    }
+  };
+  // Fecha de la versión vigente de los Términos y la Política (ver sitio/).
+  const VERSION_TERMINOS = "2026-09-20";
+  const CLAVE_TEMA = "agendamente_tema";
+  function temaGuardado() {
+    try {
+      const t = localStorage.getItem(CLAVE_TEMA);
+      if (t && TEMAS[t]) return t;
+    } catch (e) {
+    }
+    return "azul";
+  }
+  function aplicarTema(id) {
+    const tema = TEMAS[id] || TEMAS.azul;
+    const raiz = document.documentElement;
+    Object.keys(tema.vars).forEach((k) => raiz.style.setProperty(k, tema.vars[k]));
+    try {
+      localStorage.setItem(CLAVE_TEMA, TEMAS[id] ? id : "azul");
+    } catch (e) {
+    }
+  }
+  aplicarTema(temaGuardado());
+  function ConfigView({ temaActivo, onCambiarTema, iaActivada, onCambiarIA, onCambiarPassword, onCerrarSesion, isMobile }) {
+    const [avisoIA, setAvisoIA] = useState(false);
+    const [entendiIA, setEntendiIA] = useState(false);
+    const [errorIA, setErrorIA] = useState(null);
+    const [guardandoIA, setGuardandoIA] = useState(false);
+    const cambiarIAConAviso = async (activar) => {
+      setErrorIA(null);
+      setGuardandoIA(true);
+      try {
+        await onCambiarIA(activar);
+        setAvisoIA(false);
+        setEntendiIA(false);
+      } catch (e) {
+        setErrorIA("No se pudo guardar el cambio: " + (e.message || e));
+      } finally {
+        setGuardandoIA(false);
+      }
+    };
+    const card = { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: isMobile ? 16 : 22, marginBottom: 18 };
+    const secTitle = { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", margin: "0 0 4px 0" };
+    const secSub = { fontSize: 13, color: "var(--muted)", margin: "0 0 16px 0" };
+    const btn = { border: "1px solid var(--line)", background: "var(--card)", color: "var(--ink)", borderRadius: 8, padding: "9px 14px", fontSize: 13, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
+    return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 760 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 25, color: "var(--ink)", margin: 0 } }, "Configuraci\xF3n"), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "4px 0 20px 0" } }, "Ajust\xE1 c\xF3mo se ve tu consultorio."), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Apariencia"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Eleg\xED la paleta de colores. Se guarda en tu cuenta."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12 } }, Object.keys(TEMAS).map((id) => {
+      const t = TEMAS[id];
+      const v = t.vars;
+      const activo = temaActivo === id;
+      return /* @__PURE__ */ React.createElement("button", { key: id, onClick: () => onCambiarTema(id), "aria-pressed": activo, style: { textAlign: "left", cursor: "pointer", fontFamily: "var(--sans)", background: "var(--card)", border: activo ? "2px solid var(--pine)" : "1px solid var(--line)", borderRadius: 12, padding: activo ? 11 : 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { background: v["--paper"], border: "1px solid " + v["--line"], borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 22, height: 8, borderRadius: 4, background: v["--pine"] } }), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, height: 6, borderRadius: 3, background: v["--paper2"] } })), /* @__PURE__ */ React.createElement("div", { style: { background: v["--card"], border: "1px solid " + v["--line"], borderRadius: 6, padding: "7px 8px", display: "flex", flexDirection: "column", gap: 5 } }, /* @__PURE__ */ React.createElement("span", { style: { width: "70%", height: 6, borderRadius: 3, background: v["--ink"] } }), /* @__PURE__ */ React.createElement("span", { style: { width: "45%", height: 5, borderRadius: 3, background: v["--muted"], opacity: 0.6 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 5 } }, [v["--pine"], v["--verde"], v["--ochre-dark"], v["--rust"]].map((c, i) => /* @__PURE__ */ React.createElement("span", { key: i, style: { width: 14, height: 14, borderRadius: "50%", background: c } })))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "var(--ink)" } }, t.nombre, activo && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--pine)" } }, "✓ En uso")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 3, lineHeight: 1.4 } }, t.detalle)));
+    }))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Inteligencia artificial"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Funci\xF3n opcional, desactivada por defecto."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "var(--ink)" } }, "✨ Pulir con IA"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)", marginTop: 3, lineHeight: 1.5 } }, "Mejora la redacci\xF3n de una nota de la historia cl\xEDnica que ya escribiste, sin agregar contenido nuevo. Al usarla, el texto de esa nota se env\xEDa a un proveedor externo (Google).")), /* @__PURE__ */ React.createElement("button", { role: "switch", "aria-checked": iaActivada, "aria-label": "Activar Pulir con IA", disabled: guardandoIA, onClick: () => iaActivada ? cambiarIAConAviso(false) : setAvisoIA(true), style: { flex: "none", width: 46, height: 26, borderRadius: 13, border: "none", cursor: "pointer", padding: 3, background: iaActivada ? "var(--pine)" : "var(--line)", display: "flex", justifyContent: iaActivada ? "flex-end" : "flex-start", transition: "background 0.15s" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 20, height: 20, borderRadius: "50%", background: "#fff", display: "block", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" } }))), iaActivada && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--verde)", marginTop: 10 } }, "Activada. Pod\xE9s desactivarla cuando quieras."), errorIA && !avisoIA && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--rust)", marginTop: 10 } }, errorIA)), avisoIA && /* @__PURE__ */ React.createElement("div", { role: "dialog", "aria-modal": "true", style: { position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", borderRadius: 14, maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto", padding: isMobile ? 20 : 26, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", color: "var(--ink)", fontFamily: "var(--sans)" } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 21, margin: "0 0 10px 0" } }, "Activar “Pulir con IA”"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.55, margin: "0 0 14px 0" } }, "Esta funci\xF3n mejora la redacci\xF3n de una nota que ya escribiste: la deja m\xE1s clara y prolija, con vocabulario profesional. No agrega contenido cl\xEDnico nuevo ni hace diagn\xF3sticos."), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 6 } }, "C\xF3mo funciona"), /* @__PURE__ */ React.createElement("ul", { style: { fontSize: 13.5, lineHeight: 1.55, margin: "0 0 14px 0", paddingLeft: 20 } }, /* @__PURE__ */ React.createElement("li", null, "Solo se ejecuta cuando toc\xE1s “Pulir con IA”. Nunca corre sola ni en segundo plano."), /* @__PURE__ */ React.createElement("li", null, "Se env\xEDa \xFAnicamente el texto de esa nota (y tu marco te\xF3rico, para adaptar la redacci\xF3n) a Google (Gemini), un proveedor externo de IA, que lo procesa en sus servidores."), /* @__PURE__ */ React.createElement("li", null, /* @__PURE__ */ React.createElement("b", null, "En ese momento el texto sale de tu dispositivo sin la encriptaci\xF3n"), " de la historia cl\xEDnica."), /* @__PURE__ */ React.createElement("li", null, "AgendaMente no guarda ese texto. El resultado aparece en el cuadro de la nota y reci\xE9n se guarda, encriptado, cuando apret\xE1s “Guardar entrada”.")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 6 } }, "Tu responsabilidad"), /* @__PURE__ */ React.createElement("ul", { style: { fontSize: 13.5, lineHeight: 1.55, margin: "0 0 14px 0", paddingLeft: 20 } }, /* @__PURE__ */ React.createElement("li", null, "Contar con el consentimiento de tu paciente para este tratamiento y no incluir su nombre completo, DNI ni otros datos que lo identifiquen."), /* @__PURE__ */ React.createElement("li", null, "Revisar siempre el resultado antes de guardarlo: puede tener errores. La responsabilidad cl\xEDnica es tuya."), /* @__PURE__ */ React.createElement("li", null, "Pod\xE9s desactivarla cuando quieras desde esta pantalla.")), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13.5, cursor: "pointer", margin: "0 0 16px 0" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: entendiIA, onChange: (e) => setEntendiIA(e.target.checked), style: { marginTop: 3 } }), /* @__PURE__ */ React.createElement("span", null, "Le\xED y entiendo lo anterior.")), errorIA && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--rust)", marginBottom: 12 } }, errorIA), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => { setAvisoIA(false); setEntendiIA(false); setErrorIA(null); }, style: btn }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { disabled: !entendiIA || guardandoIA, onClick: () => cambiarIAConAviso(true), style: { ...btn, background: "var(--pine)", color: "#fff", border: "1px solid var(--pine)", opacity: !entendiIA || guardandoIA ? 0.5 : 1, cursor: !entendiIA || guardandoIA ? "default" : "pointer" } }, guardandoIA ? "Guardando…" : "Activar")))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Cuenta"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Seguridad y sesi\xF3n."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: onCambiarPassword, style: btn }, "Cambiar contrase\xF1a"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: btn }, "Cerrar sesi\xF3n"))));
+  }
+  function Sidebar({ tab, setTab, isMobile, onCerrarSesion, onCambiarPassword }) {
     const items = [
       { id: "hoy", label: "Hoy", icon: Sun },
       { id: "agenda", label: "Agenda", icon: Calendar },
       { id: "pacientes", label: "Pacientes", icon: Users },
       { id: "cobros", label: "Cobros", icon: Wallet },
-      { id: "metricas", label: "M\xE9tricas", icon: BarChart3 }
+      { id: "metricas", label: "M\xE9tricas", icon: BarChart3 },
+      { id: "config", label: isMobile ? "Ajustes" : "Configuraci\xF3n", icon: Sliders }
     ];
     if (isMobile) {
-      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", borderBottom: "1px solid var(--line)", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "16px 18px 10px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", lineHeight: 1.1 } }, "AgendaMente"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: { border: "none", background: "none", color: "var(--muted)", fontSize: 12, fontFamily: "var(--sans)", cursor: "pointer", padding: 0 } }, "Cerrar sesi\xF3n"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", padding: "0 8px 10px 8px", gap: 4 } }, items.map((it) => {
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", borderBottom: "1px solid var(--line)", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "16px 18px 10px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", lineHeight: 1.1 } }, "AgendaMente"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: onCambiarPassword, style: { border: "none", background: "none", color: "var(--muted)", fontSize: 12, fontFamily: "var(--sans)", cursor: "pointer", padding: 0 } }, "Cambiar contrase\xF1a"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: { border: "none", background: "none", color: "var(--muted)", fontSize: 12, fontFamily: "var(--sans)", cursor: "pointer", padding: 0 } }, "Cerrar sesi\xF3n")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", padding: "0 8px 10px 8px", gap: 4 } }, items.map((it) => {
         const IconComp = it.icon;
         const active = tab === it.id;
         return /* @__PURE__ */ React.createElement(
@@ -253,7 +324,7 @@
     }), /* @__PURE__ */ React.createElement(
       "button",
       {
-        onClick: onCerrarSesion,
+        onClick: onCambiarPassword,
         style: {
           marginTop: 18,
           paddingTop: 14,
@@ -268,7 +339,23 @@
           fontFamily: "var(--sans)",
           cursor: "pointer",
           textAlign: "left",
-          padding: "14px 10px 9px 10px"
+          padding: "14px 10px 3px 10px"
+        }
+      },
+      "Cambiar contrase\xF1a"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: onCerrarSesion,
+        style: {
+          border: "none",
+          background: "none",
+          color: "var(--muted)",
+          fontSize: 12.5,
+          fontFamily: "var(--sans)",
+          cursor: "pointer",
+          textAlign: "left",
+          padding: "3px 10px 9px 10px"
         }
       },
       "Cerrar sesi\xF3n"
@@ -277,10 +364,10 @@
   function Pill({ children, tone = "neutral" }) {
     const tones = {
       neutral: { bg: "var(--paper2)", color: "var(--muted)" },
-      pine: { bg: "rgba(179,74,110,0.14)", color: "var(--pine)" },
-      ochre: { bg: "rgba(201,129,79,0.18)", color: "var(--ochre-dark)" },
-      rust: { bg: "rgba(156,53,71,0.13)", color: "var(--rust)" },
-      verde: { bg: "rgba(78,122,91,0.15)", color: "var(--verde)" }
+      pine: { bg: "color-mix(in srgb, var(--pine) 14%, transparent)", color: "var(--pine)" },
+      ochre: { bg: "color-mix(in srgb, var(--ochre-dark) 18%, transparent)", color: "var(--ochre-dark)" },
+      rust: { bg: "color-mix(in srgb, var(--rust) 13%, transparent)", color: "var(--rust)" },
+      verde: { bg: "color-mix(in srgb, var(--verde) 15%, transparent)", color: "var(--verde)" }
     };
     const t = tones[tone];
     return /* @__PURE__ */ React.createElement("span", { style: { background: t.bg, color: t.color, fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, padding: "3px 9px", borderRadius: 20, letterSpacing: 0.2, whiteSpace: "nowrap" } }, children);
@@ -291,7 +378,7 @@
       "select",
       {
         value: value == null ? "" : String(value),
-        onChange: (e) => onChange(e.target.value === "" ? null : Number(e.target.value)),
+        onChange: (e) => onChange(e.target.value === "" ? null : e.target.value),
         style: selectStyle
       },
       /* @__PURE__ */ React.createElement("option", { value: "" }, "\u2014 Eleg\xED un paciente \u2014"),
@@ -320,7 +407,7 @@
     const montoVencido = cobrosVencidos.reduce((acc, c) => acc + (Number(c.monto) || 0), 0);
     const fechaLarga = `${DIAS_LARGOS[(HOY.getDay() + 6) % 7]} ${HOY.getDate()} de ${MESES[HOY.getMonth()]}`;
     const feriadoHoy = FERIADOS_2026[hoyKey];
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: "0 0 2px 0", textTransform: "capitalize" } }, fechaLarga), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, sesionesHoy.length === 0 ? "No hay sesiones agendadas para hoy." : `${sesionesHoy.length} sesi\xF3n${sesionesHoy.length > 1 ? "es" : ""} hoy`, feriadoHoy ? ` \xB7 Feriado: ${feriadoHoy}` : ""), (sinConsentimiento.length > 0 || paraAumentar.length > 0 || cobrosVencidos.length > 0) && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(201,129,79,0.12)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "12px 16px", marginBottom: 22 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ochre-dark)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 } }, "Pendientes"), paraAumentar.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", marginBottom: 3 } }, "\xB7 ", paraAumentar.length, " paciente", paraAumentar.length > 1 ? "s" : "", " con aumento sugerido", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("pacientes"), style: linkBtn }, "ver")), sinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", marginBottom: 3 } }, "\xB7 ", sinConsentimiento.length, " sin consentimiento firmado", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("pacientes"), style: linkBtn }, "ver")), cobrosVencidos.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", borderTop: (sinConsentimiento.length > 0 || paraAumentar.length > 0) ? "1px dashed var(--ochre-dark)" : "none", marginTop: (sinConsentimiento.length > 0 || paraAumentar.length > 0) ? 6 : 0, paddingTop: (sinConsentimiento.length > 0 || paraAumentar.length > 0) ? 6 : 0 } }, "\xB7 $", montoVencido.toLocaleString("es-AR"), " en cobros pendientes hace m\xE1s de ", UMBRAL_COBRO_VENCIDO, " d\xEDas", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("cobros"), style: linkBtn }, "ver"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 10 } }, "Sesiones de hoy"), sesionesHoy.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: "var(--muted)", fontStyle: "italic", marginBottom: 24 } }, "Sin sesiones agendadas para hoy."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 26 } }, sesionesHoy.map((t) => /* @__PURE__ */ React.createElement(TurnoHoy, { key: t.id, turno: t, nombre: nombreDe(t.pacienteId), onEstado, onGuardarNota, isMobile }))), sesionesManiana.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 10 } }, "Ma\xF1ana"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, sesionesManiana.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 12, background: "var(--paper2)", borderRadius: 8, padding: "9px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--muted)", fontWeight: 600 } }, t.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, color: "var(--ink)" } }, nombreDe(t.pacienteId)))))));
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: "0 0 2px 0" } }, fechaLarga.charAt(0).toUpperCase() + fechaLarga.slice(1)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, sesionesHoy.length === 0 ? "No hay sesiones agendadas para hoy." : `${sesionesHoy.length} sesi\xF3n${sesionesHoy.length > 1 ? "es" : ""} hoy`, feriadoHoy ? ` \xB7 Feriado: ${feriadoHoy}` : ""), (sinConsentimiento.length > 0 || paraAumentar.length > 0 || cobrosVencidos.length > 0) && /* @__PURE__ */ React.createElement("div", { style: { background: "color-mix(in srgb, var(--ochre-dark) 12%, transparent)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "12px 16px", marginBottom: 22 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ochre-dark)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 } }, "Pendientes"), paraAumentar.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", marginBottom: 3 } }, "\xB7 ", paraAumentar.length, " paciente", paraAumentar.length > 1 ? "s" : "", " con aumento sugerido", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("pacientes"), style: linkBtn }, "ver")), sinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", marginBottom: 3 } }, "\xB7 ", sinConsentimiento.length, " sin consentimiento firmado", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("pacientes"), style: linkBtn }, "ver")), cobrosVencidos.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)", borderTop: (sinConsentimiento.length > 0 || paraAumentar.length > 0) ? "1px dashed var(--ochre-dark)" : "none", marginTop: (sinConsentimiento.length > 0 || paraAumentar.length > 0) ? 6 : 0, paddingTop: (sinConsentimiento.length > 0 || paraAumentar.length > 0) ? 6 : 0 } }, "\xB7 $", montoVencido.toLocaleString("es-AR"), " en cobros pendientes hace m\xE1s de ", UMBRAL_COBRO_VENCIDO, " d\xEDas", " ", /* @__PURE__ */ React.createElement("button", { onClick: () => setTab("cobros"), style: linkBtn }, "ver"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 10 } }, "Sesiones de hoy"), sesionesHoy.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: "var(--muted)", fontStyle: "italic", marginBottom: 24 } }, "Sin sesiones agendadas para hoy."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 26 } }, sesionesHoy.map((t) => /* @__PURE__ */ React.createElement(TurnoHoy, { key: t.id, turno: t, nombre: nombreDe(t.pacienteId), onEstado, onGuardarNota, isMobile }))), sesionesManiana.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 10 } }, "Ma\xF1ana"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, sesionesManiana.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 12, background: "var(--paper2)", borderRadius: 8, padding: "9px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 12.5, color: "var(--muted)", fontWeight: 600 } }, t.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, color: "var(--ink)" } }, nombreDe(t.pacienteId)))))));
   }
   function TurnoHoy({ turno, nombre, onEstado, onGuardarNota, isMobile }) {
     const [escribiendo, setEscribiendo] = useState(false);
@@ -330,7 +417,7 @@
       onEstado(turno.id, "realizado");
       setEscribiendo(true);
     };
-    return /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[turno.estado]}`, borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 14, color: "var(--ink)", fontWeight: 600 } }, turno.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14.5, color: "var(--ink)", fontWeight: 600 } }, nombre), /* @__PURE__ */ React.createElement(Pill, { tone: pillToneDeEstado(turno.estado) }, estadoTurnoLabel[turno.estado])), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, turno.estado === "agendado" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: marcarRealizada, style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2713 Se hizo"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "cancelado"), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2715 Cancel\xF3")) : /* @__PURE__ */ React.createElement(React.Fragment, null, !escribiendo && !guardada && /* @__PURE__ */ React.createElement("button", { onClick: () => setEscribiendo(true), style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "+ Nota"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "agendado"), style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "\u21A9 Deshacer")))), guardada && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--verde)", marginTop: 8 } }, "\u2713 Nota guardada en la historia cl\xEDnica."), escribiendo && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[turno.estado]}`, borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 14, color: "var(--ink)", fontWeight: 600 } }, turno.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14.5, color: "var(--ink)", fontWeight: 600 } }, nombre), /* @__PURE__ */ React.createElement(Pill, { tone: pillToneDeEstado(turno.estado) }, estadoTurnoLabel[turno.estado])), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, turno.estado === "agendado" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: marcarRealizada, style: { border: "1px solid var(--verde)", background: "var(--card)", color: "var(--verde)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2713 Se hizo"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "cancelado"), style: { border: "1px solid var(--rust)", background: "var(--card)", color: "var(--rust)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2715 Cancel\xF3")) : /* @__PURE__ */ React.createElement(React.Fragment, null, !escribiendo && !guardada && /* @__PURE__ */ React.createElement("button", { onClick: () => setEscribiendo(true), style: { border: "1px solid var(--pine)", background: "var(--card)", color: "var(--pine)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "+ Nota"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "agendado"), style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "\u21A9 Deshacer")))), guardada && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--verde)", marginTop: 8 } }, "\u2713 Nota guardada en la historia cl\xEDnica."), escribiendo && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(
       "textarea",
       {
         value: nota,
@@ -363,7 +450,7 @@
           setEscribiendo(false);
           setNota("");
         },
-        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Ahora no"
     ))));
@@ -409,8 +496,7 @@
       [turnos, mesBase]
     );
     const validarYGuardar = () => {
-      const idPac = Number(form.pacienteId);
-      if (form.pacienteId === null || form.pacienteId === void 0 || form.pacienteId === "" || !Number.isFinite(idPac) || idPac <= 0) {
+      if (form.pacienteId === null || form.pacienteId === void 0 || form.pacienteId === "") {
         window.alert("Eleg\xED un paciente de la lista antes de guardar el turno.");
         return;
       }
@@ -548,7 +634,7 @@
               e.stopPropagation();
               onEstado(t.id, "realizado");
             },
-            style: { flex: 1, border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+            style: { flex: 1, border: "1px solid var(--verde)", background: "var(--card)", color: "var(--verde)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
           },
           "\u2713 Se hizo"
         ),
@@ -559,7 +645,7 @@
               e.stopPropagation();
               onEstado(t.id, "cancelado");
             },
-            style: { flex: 1, border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+            style: { flex: 1, border: "1px solid var(--rust)", background: "var(--card)", color: "var(--rust)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
           },
           "\u2715 Cancel\xF3"
         )
@@ -570,7 +656,7 @@
             e.stopPropagation();
             onEstado(t.id, "agendado");
           },
-          style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+          style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
         },
         "\u21A9 Deshacer"
       ),
@@ -637,7 +723,7 @@
                     borderLeft: "1px solid var(--line)",
                     borderBottom: "1px solid var(--line)",
                     borderTopRightRadius: i === 6 ? 12 : 0,
-                    background: esHoy ? "#F7E4EA" : "var(--paper2)"
+                    background: esHoy ? "color-mix(in srgb, var(--pine) 10%, var(--card))" : "var(--paper2)"
                   }
                 },
                 /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4, fontWeight: 700, color: colorHeader } }, DIAS_CORTOS[(d.getDay() + 6) % 7]),
@@ -677,7 +763,7 @@
                     position: "relative",
                     height: totalH,
                     borderLeft: "1px solid var(--line)",
-                    background: esHoy ? "#FDF6F8" : esDomingo && !feriado ? "repeating-linear-gradient(135deg, var(--paper) 0 8px, var(--paper2) 8px 16px)" : "transparent"
+                    background: esHoy ? "color-mix(in srgb, var(--pine) 4%, var(--card))" : esDomingo && !feriado ? "repeating-linear-gradient(135deg, var(--paper) 0 8px, var(--paper2) 8px 16px)" : "transparent"
                   }
                 },
                 ...horas.map((h) => /* @__PURE__ */ React.createElement("div", { key: h, style: { position: "absolute", left: 0, right: 0, top: (h - HOUR_START) * ROW_H, borderTop: "1px solid var(--line)" } })),
@@ -718,7 +804,7 @@
                         boxSizing: "border-box",
                         overflow: isSel ? "visible" : "hidden",
                         opacity: dragId === t.id ? 0.4 : t.estado === "cancelado" ? 0.6 : 1,
-                        boxShadow: isSel ? "0 6px 18px rgba(74,42,56,.25)" : "0 1px 2px rgba(74,42,56,.06)",
+                        boxShadow: isSel ? "0 6px 18px rgba(28,37,48,.25)" : "0 1px 2px rgba(28,37,48,.06)",
                         cursor: "grab"
                       }
                     },
@@ -748,7 +834,7 @@
                           padding: "1px 6px",
                           borderRadius: 20,
                           whiteSpace: "nowrap",
-                          background: pillToneDeEstado(t.estado) === "verde" ? "rgba(78,122,91,0.15)" : pillToneDeEstado(t.estado) === "rust" ? "rgba(156,53,71,0.13)" : "var(--paper2)",
+                          background: pillToneDeEstado(t.estado) === "verde" ? "color-mix(in srgb, var(--verde) 15%, transparent)" : pillToneDeEstado(t.estado) === "rust" ? "color-mix(in srgb, var(--rust) 13%, transparent)" : "var(--paper2)",
                           color: pillToneDeEstado(t.estado) === "verde" ? "var(--verde)" : pillToneDeEstado(t.estado) === "rust" ? "var(--rust)" : "var(--muted)"
                         }
                       },
@@ -887,7 +973,7 @@
         {
           title: "Volver este turno a 'Agendado'",
           onClick: () => onEstado(t.id, "agendado"),
-          style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 5, padding: "2px 7px", fontSize: 10, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+          style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 5, padding: "2px 7px", fontSize: 10, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
         },
         "\u21A9 Deshacer"
       )), t.estado === "agendado" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 5 } }, /* @__PURE__ */ React.createElement(
@@ -895,7 +981,7 @@
         {
           title: "La sesi\xF3n se hizo (genera el cobro pendiente)",
           onClick: () => onEstado(t.id, "realizado"),
-          style: { flex: 1, border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+          style: { flex: 1, border: "1px solid var(--verde)", background: "var(--card)", color: "var(--verde)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
         },
         "\u2713 Se hizo"
       ), /* @__PURE__ */ React.createElement(
@@ -903,7 +989,7 @@
         {
           title: "La sesi\xF3n se cancel\xF3",
           onClick: () => onEstado(t.id, "cancelado"),
-          style: { flex: 1, border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+          style: { flex: 1, border: "1px solid var(--rust)", background: "var(--card)", color: "var(--rust)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
         },
         "\u2715 Cancel\xF3"
       )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("button", { title: "Repetir este turno seg\xFAn la frecuencia del paciente", onClick: () => confirmarDuplicar(t), style: { ...repetirBtnStyle, flex: 1 } }, "\u21BB Repetir turno"), /* @__PURE__ */ React.createElement(
@@ -941,7 +1027,7 @@
             onEliminarTurno(deshacerId);
             setDeshacerId(null);
           },
-          style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+          style: { border: "1px solid var(--rust)", background: "var(--card)", color: "var(--rust)", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
         },
         "Deshacer"
       )
@@ -954,11 +1040,12 @@
       "Hoy"
     )), /* @__PURE__ */ React.createElement("input", { type: "date", value: form.fecha, onChange: (e) => setForm({ ...form, fecha: e.target.value }), style: selectStyle })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flex: isMobile ? "1 1 auto" : "1 1 110px" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Hora"), /* @__PURE__ */ React.createElement("input", { type: "time", value: form.hora, onChange: (e) => setForm({ ...form, hora: e.target.value }), style: selectStyle })), /* @__PURE__ */ React.createElement("button", { onClick: validarYGuardar, style: { background: "var(--ink)", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", flex: isMobile ? "1 1 auto" : "0 0 auto" } }, "Guardar")), cuerpo);
   }
-  const weekNavBtn = { display: "flex", alignItems: "center", gap: 4, border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 7, padding: "6px 11px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
+  const weekNavBtn = { display: "flex", alignItems: "center", gap: 4, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 7, padding: "6px 11px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
   const repetirBtnStyle = { width: "100%", border: "1px dashed var(--line)", background: "transparent", color: "var(--muted)", borderRadius: 6, padding: "5px 0", fontSize: 11, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
-  const selectStyle = { border: "1px solid var(--line)", borderRadius: 6, padding: "9px 9px", fontSize: 13, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff", width: "100%", boxSizing: "border-box" };
+  const selectStyle = { border: "1px solid var(--line)", borderRadius: 6, padding: "9px 9px", fontSize: 13, fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--card)", width: "100%", boxSizing: "border-box" };
   function parseHistoria(raw) {
     if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
     try {
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
@@ -1020,13 +1107,19 @@
     const [textoHistoria, setTextoHistoria] = useState("");
     const [puliendoIA, setPuliendoIA] = useState(false);
     const pulirConIA = async (texto, setTexto) => {
+      if (!config || !config.iaActivada) {
+        window.alert("La funci\xF3n \"Pulir con IA\" est\xE1 desactivada. Pod\xE9s activarla en Configuraci\xF3n \u2192 Inteligencia artificial.");
+        return;
+      }
       if (!texto.trim()) {
         window.alert("Escrib\xED algo antes de pulirlo.");
         return;
       }
       setPuliendoIA(true);
       try {
-        const res = await apiCall(null, "pulirNota", { data: { notaOriginal: texto } });
+        const { data: res, error } = await sb.functions.invoke("pulir-nota", { body: { notaOriginal: texto } });
+        if (error) throw new Error(error.message || String(error));
+        if (!res || !res.ok) throw new Error((res && res.error) || "Error desconocido.");
         setTexto(res.textoPulido);
       } catch (err) {
         window.alert("No se pudo pulir la nota:\n\n" + err.message);
@@ -1081,7 +1174,7 @@
     const cicloP = p ? cicloMensualDe(p) : null;
     const yaAutoSelecciono = useRef(false);
     useEffect(() => {
-      if (!yaAutoSelecciono.current && pacientes.length > 0 && Number.isFinite(pacientes[0].id)) {
+      if (!yaAutoSelecciono.current && pacientes.length > 0 && pacientes[0].id) {
         yaAutoSelecciono.current = true;
         setSelected(pacientes[0].id);
       }
@@ -1247,7 +1340,7 @@
             })
           ).then((nuevoId) => {
             if (nuevoId) {
-              setSelected(Number(nuevoId));
+              setSelected(nuevoId);
               setTimeout(() => {
                 var _a2, _b2;
                 return (_b2 = (_a2 = detalleRef.current) == null ? void 0 : _a2.scrollIntoView) == null ? void 0 : _b2.call(_a2, { behavior: "smooth", block: "start" });
@@ -1264,10 +1357,10 @@
       "button",
       {
         onClick: () => setMostrandoNuevo(false),
-        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Cancelar"
-    ))), pacientesSinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(156,53,71,0.1)", border: "1px solid var(--rust)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement(
+    ))), pacientesSinConsentimiento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "color-mix(in srgb, var(--rust) 10%, transparent)", border: "1px solid var(--rust)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setAbrirConsent((v) => !v),
@@ -1275,7 +1368,7 @@
       },
       /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--rust)" } }, pacientesSinConsentimiento.length, " paciente", pacientesSinConsentimiento.length > 1 ? "s" : "", " sin consentimiento firmado"),
       /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--rust)", fontWeight: 700 } }, abrirConsent ? "\u25B2 ocultar" : "\u25BC ver")
-    ), /* @__PURE__ */ React.createElement("div", { style: { display: abrirConsent ? "flex" : "none", flexDirection: "column", gap: 6 } }, pacientesSinConsentimiento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac), " ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--muted)", fontSize: 12 } }, "(desde ", pac.desde, ")")), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarConsentimiento(pac), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "3px 9px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "Marcar recibido"))))), pacientesEnAumento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(201,129,79,0.12)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: abrirConsent ? "flex" : "none", flexDirection: "column", gap: 6 } }, pacientesSinConsentimiento.map((pac) => /* @__PURE__ */ React.createElement("div", { key: pac.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink)", flexWrap: "wrap", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, nombreCompleto(pac), " ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--muted)", fontSize: 12 } }, "(desde ", pac.desde, ")")), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarConsentimiento(pac), style: { border: "1px solid var(--rust)", background: "var(--card)", color: "var(--rust)", borderRadius: 6, padding: "3px 9px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "Marcar recibido"))))), pacientesEnAumento.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "color-mix(in srgb, var(--ochre-dark) 12%, transparent)", border: "1px solid var(--ochre-dark)", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setAbrirAumentos((v) => !v),
@@ -1298,7 +1391,7 @@
         style: { ...miniActionBtnStyle, borderColor: "var(--pine)", color: "var(--pine)" }
       },
       "Avisar por WhatsApp"
-    ), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(pac), style: miniActionBtnStyle }, "Marcar aumentado")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", gap: 24, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { width: isMobile ? "100%" : 300, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { position: "relative", marginBottom: 10 } }, /* @__PURE__ */ React.createElement(Search, { size: 14, color: "var(--muted)", style: { position: "absolute", left: 10, top: 10 } }), /* @__PURE__ */ React.createElement("input", { type: "text", value: busqueda, onChange: (e) => setBusqueda(e.target.value), placeholder: "Buscar paciente...", style: { width: "100%", boxSizing: "border-box", border: "1px solid var(--line)", borderRadius: 8, padding: "8px 10px 8px 30px", fontSize: 13, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" } })), pacientesFiltrados.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: "var(--muted)", fontStyle: "italic" } }, "Ning\xFAn paciente coincide con la b\xFAsqueda."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesFiltrados.map((pac) => {
+    ), /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(pac), style: miniActionBtnStyle }, "Marcar aumentado")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", gap: 24, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { width: isMobile ? "100%" : 300, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { position: "relative", marginBottom: 10 } }, /* @__PURE__ */ React.createElement(Search, { size: 14, color: "var(--muted)", style: { position: "absolute", left: 10, top: 10 } }), /* @__PURE__ */ React.createElement("input", { type: "text", value: busqueda, onChange: (e) => setBusqueda(e.target.value), placeholder: "Buscar paciente...", style: { width: "100%", boxSizing: "border-box", border: "1px solid var(--line)", borderRadius: 8, padding: "8px 10px 8px 30px", fontSize: 13, fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--card)" } })), pacientesFiltrados.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: "var(--muted)", fontStyle: "italic" } }, "Ning\xFAn paciente coincide con la b\xFAsqueda."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, pacientesFiltrados.map((pac) => {
       const montoPend = montoPendienteDe(pac.id);
       const enAumento = mesesDesde(pac.ultimoAumento) >= mesesUmbral(pac);
       const ciclo = cicloMensualDe(pac);
@@ -1330,8 +1423,8 @@
             padding: "11px 12px",
             borderRadius: 8,
             border: selected === pac.id ? "2px solid var(--pine)" : "1px solid var(--line)",
-            background: selected === pac.id ? "rgba(179,74,110,0.14)" : "transparent",
-            boxShadow: selected === pac.id ? "0 2px 6px rgba(179,74,110,0.25)" : "none",
+            background: selected === pac.id ? "color-mix(in srgb, var(--pine) 14%, transparent)" : "transparent",
+            boxShadow: selected === pac.id ? "0 2px 6px color-mix(in srgb, var(--pine) 25%, transparent)" : "none",
             cursor: "pointer",
             textAlign: "left"
           }
@@ -1339,12 +1432,12 @@
         /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontFamily: "var(--mono)", marginTop: 2 } }, "$", pac.precio.toLocaleString("es-AR"), pac.tipoPago === "mensual" ? "/mes" : "/sesi\xF3n")),
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, enAumento && /* @__PURE__ */ React.createElement(Pill, { tone: "ochre" }, "Aumentar"), (ciclo == null ? void 0 : ciclo.realizadas) > 0 && /* @__PURE__ */ React.createElement(Pill, { tone: "ochre" }, ciclo.realizadas, " sesi\xF3n", ciclo.realizadas === 1 ? "" : "es", " sin facturar"), montoPend > 0 && /* @__PURE__ */ React.createElement(Pill, { tone: "rust" }, "$", montoPend.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement(ChevronRight, { size: 15, color: "var(--muted)" }))
       );
-    }))), p ? /* @__PURE__ */ React.createElement("div", { ref: detalleRef, style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "2px solid var(--pine)", borderRadius: 12, padding: isMobile ? 18 : 26, scrollMarginTop: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("button", { title: "Editar nombre", onClick: () => editarNombre(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp"), /* @__PURE__ */ React.createElement("button", { title: "Eliminar paciente", onClick: () => confirmarEliminarPaciente(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--rust)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--rust)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 14 }), " Eliminar"))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, p.tipoPago === "mensual" ? "Monto mensual" : "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
+    }))), p ? /* @__PURE__ */ React.createElement("div", { ref: detalleRef, style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "2px solid var(--pine)", borderRadius: 12, padding: isMobile ? 18 : 26, scrollMarginTop: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("button", { title: "Editar nombre", onClick: () => editarNombre(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "var(--card)", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp"), /* @__PURE__ */ React.createElement("button", { title: "Eliminar paciente", onClick: () => confirmarEliminarPaciente(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--rust)", background: "var(--card)", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--rust)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 14 }), " Eliminar"))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, p.tipoPago === "mensual" ? "Monto mensual" : "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
       const real = turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length;
       const canc = turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length;
       const total = real + canc;
       return total ? `${Math.round(real / total * 100)}%` : "\u2014";
-    })())), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Deuda pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16, color: montoPendienteDe(p.id) ? "var(--rust)" : "var(--verde)" } }, "$", montoPendienteDe(p.id).toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "\xDAltimo aumento"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 15, color: mesesDesde(p.ultimoAumento) >= mesesUmbral(p) ? "var(--ochre-dark)" : "var(--pine)" } }, "hace ", mesesDesde(p.ultimoAumento), "m"), mesesDesde(p.ultimoAumento) >= mesesUmbral(p) && /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(p), style: { ...miniActionBtnStyle, fontSize: 10.5, padding: "2px 7px" } }, "Aumentar")))), cicloP && /* @__PURE__ */ React.createElement("div", { style: { border: "1px dashed var(--line)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 } }, "Sesiones de este ciclo (desde ", formatFechaCorta(fmtKey(cicloP.referencia)), ")"), cicloP.sesiones.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: "var(--muted)", fontStyle: "italic", margin: 0 } }, "Todav\xEDa no hay sesiones cargadas en este ciclo.") : cicloP.sesiones.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, padding: "4px 0", color: t.estado === "realizado" ? "var(--ink)" : "var(--muted)", fontStyle: t.estado === "realizado" ? "normal" : "italic" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 16, height: 16, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, background: t.estado === "realizado" ? "rgba(78,122,91,0.18)" : "var(--paper2)", color: t.estado === "realizado" ? "var(--verde)" : "var(--muted)" } }, t.estado === "realizado" ? "✓" : "\xB7"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", width: 46, flex: "none" } }, formatFechaCorta(t.fecha)), /* @__PURE__ */ React.createElement("span", null, t.estado === "realizado" ? "Realizada" : "Agendada"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--muted)", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" } }, "Pr\xF3ximo cobro: ", /* @__PURE__ */ React.createElement("b", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, formatFechaCorta(fmtKey(cicloP.proximoCobro))), " \xB7 $", p.precio.toLocaleString("es-AR"), " (por el ciclo completo, no por sesi\xF3n)")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Tel: ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefono || "sin cargar")), /* @__PURE__ */ React.createElement(
+    })())), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Deuda pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16, color: montoPendienteDe(p.id) ? "var(--rust)" : "var(--verde)" } }, "$", montoPendienteDe(p.id).toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "\xDAltimo aumento"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 15, color: mesesDesde(p.ultimoAumento) >= mesesUmbral(p) ? "var(--ochre-dark)" : "var(--pine)" } }, "hace ", mesesDesde(p.ultimoAumento), "m"), mesesDesde(p.ultimoAumento) >= mesesUmbral(p) && /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(p), style: { ...miniActionBtnStyle, fontSize: 10.5, padding: "2px 7px" } }, "Aumentar")))), cicloP && /* @__PURE__ */ React.createElement("div", { style: { border: "1px dashed var(--line)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 } }, "Sesiones de este ciclo (desde ", formatFechaCorta(fmtKey(cicloP.referencia)), ")"), cicloP.sesiones.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: "var(--muted)", fontStyle: "italic", margin: 0 } }, "Todav\xEDa no hay sesiones cargadas en este ciclo.") : cicloP.sesiones.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, padding: "4px 0", color: t.estado === "realizado" ? "var(--ink)" : "var(--muted)", fontStyle: t.estado === "realizado" ? "normal" : "italic" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 16, height: 16, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, background: t.estado === "realizado" ? "color-mix(in srgb, var(--verde) 18%, transparent)" : "var(--paper2)", color: t.estado === "realizado" ? "var(--verde)" : "var(--muted)" } }, t.estado === "realizado" ? "✓" : "\xB7"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", width: 46, flex: "none" } }, formatFechaCorta(t.fecha)), /* @__PURE__ */ React.createElement("span", null, t.estado === "realizado" ? "Realizada" : "Agendada"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--muted)", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" } }, "Pr\xF3ximo cobro: ", /* @__PURE__ */ React.createElement("b", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, formatFechaCorta(fmtKey(cicloP.proximoCobro))), " \xB7 $", p.precio.toLocaleString("es-AR"), " (por el ciclo completo, no por sesi\xF3n)")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Tel: ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefono || "sin cargar")), /* @__PURE__ */ React.createElement(
       "button",
       {
         title: "Editar tel\xE9fono",
@@ -1360,7 +1453,7 @@
       {
         value: p.parentescoReferencia || "",
         onChange: (e) => onActualizarParentesco(p.id, e.target.value),
-        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--card)" }
       },
       /* @__PURE__ */ React.createElement("option", { value: "" }, "\u2014 Parentesco \u2014"),
       /* @__PURE__ */ React.createElement("option", { value: "Madre" }, "Madre"),
@@ -1387,7 +1480,7 @@
       {
         value: p.frecuenciaDias || 7,
         onChange: (e) => onActualizarFrecuencia(p.id, Number(e.target.value)),
-        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--card)" }
       },
       /* @__PURE__ */ React.createElement("option", { value: 7 }, "Semanal"),
       /* @__PURE__ */ React.createElement("option", { value: 14 }, "Quincenal"),
@@ -1407,7 +1500,7 @@
       {
         value: p.mesesAumento || 6,
         onChange: (e) => onActualizarMesesAumento(p.id, Number(e.target.value)),
-        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--card)" }
       },
       /* @__PURE__ */ React.createElement("option", { value: 3 }, "3 meses"),
       /* @__PURE__ */ React.createElement("option", { value: 4 }, "4 meses"),
@@ -1419,7 +1512,7 @@
       {
         value: p.tipoPago || "sesion",
         onChange: (e) => onActualizarTipoPago(p.id, e.target.value),
-        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+        style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--card)" }
       },
       /* @__PURE__ */ React.createElement("option", { value: "sesion" }, "Por sesi\xF3n"),
       /* @__PURE__ */ React.createElement("option", { value: "mensual" }, "Mensual")
@@ -1427,7 +1520,7 @@
       "button",
       {
         onClick: () => marcarConsentimiento(p),
-        style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "3px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        style: { border: "1px solid var(--rust)", background: "var(--card)", color: "var(--rust)", borderRadius: 6, padding: "3px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Marcar recibido"
     )), p.linkConsentimiento ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
@@ -1490,7 +1583,7 @@
       "button",
       {
         onClick: () => setEditandoLink(false),
-        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Cancelar"
     ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Notas"), !editandoNotas && /* @__PURE__ */ React.createElement(
@@ -1525,7 +1618,7 @@
       "button",
       {
         onClick: () => setEditandoNotas(false),
-        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 12px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 6, padding: "6px 12px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Cancelar"
     ))) : /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, margin: 0 } }, p.notas || "Sin notas."), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" } }, "Historia cl\xEDnica"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12, alignItems: "center" } }, parseHistoria(p.historia).length > 0 && /* @__PURE__ */ React.createElement(
@@ -1533,7 +1626,7 @@
       {
         onClick: () => exportarHistoriaClinica(p),
         title: "Generar copia para entregar al paciente (Ley 26.529, Art. 14)",
-        style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        style: { border: "1px solid var(--pine)", background: "var(--card)", color: "var(--pine)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "\u2193 Descargar"
     ), /* @__PURE__ */ React.createElement(
@@ -1575,7 +1668,7 @@
         onClick: () => pulirConIA(textoHistoria, setTextoHistoria),
         disabled: puliendoIA,
         title: "Pulir la redacci\xF3n con IA, sin agregar contenido nuevo",
-        style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: puliendoIA ? "default" : "pointer", opacity: puliendoIA ? 0.6 : 1 }
+        style: { border: "1px solid var(--pine)", background: "var(--card)", color: "var(--pine)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: puliendoIA ? "default" : "pointer", opacity: puliendoIA ? 0.6 : 1 }
       },
       puliendoIA ? "Puliendo…" : "✨ Pulir con IA"
     ))), parseHistoria(p.historia).length === 0 && !agregandoHistoria && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: "var(--muted)", fontStyle: "italic", margin: 0 } }, "Todav\xEDa no hay entradas cargadas."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, numerarHistoria(parseHistoria(p.historia)).slice().sort((a, b) => a.fecha < b.fecha ? 1 : -1).map((entrada) => /* @__PURE__ */ React.createElement("div", { key: entrada.numero, style: { background: "var(--paper2)", borderRadius: 8, padding: "10px 12px" } }, editandoEntrada === entrada.numero ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement("input", { type: "date", value: fechaEdit, onChange: (e) => setFechaEdit(e.target.value), style: { ...selectStyle, width: "auto" } })), /* @__PURE__ */ React.createElement(
@@ -1608,7 +1701,7 @@
       "button",
       {
         onClick: () => setEditandoEntrada(null),
-        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Cancelar"
     ), /* @__PURE__ */ React.createElement(
@@ -1623,7 +1716,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onActualizarHistoria(p.id, JSON.stringify(restantes));
           setEditandoEntrada(null);
         },
-        style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", marginLeft: "auto" }
+        style: { border: "1px solid var(--rust)", background: "var(--card)", color: "var(--rust)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", marginLeft: "auto" }
       },
       "Eliminar"
     ))) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "var(--muted)", fontFamily: "var(--mono)" } }, "Sesi\xF3n N\xB0", entrada.numero, " \u2014 ", formatFechaCorta(entrada.fecha)), /* @__PURE__ */ React.createElement(
@@ -1682,7 +1775,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
             setMensajeEditable(generarMensaje(p, mensajePreview.tipo, true));
           }
         },
-        style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
+        style: { border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Restaurar"
     ), /* @__PURE__ */ React.createElement("button", { onClick: copiarMensaje, style: { border: "1px solid var(--pine)", background: copiado ? "var(--pine)" : "#fff", color: copiado ? "#fff" : "var(--pine)", borderRadius: 6, padding: "4px 10px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, copiado ? "Copiado \u2713" : "Copiar"), p.telefono && /* @__PURE__ */ React.createElement(
@@ -1705,8 +1798,8 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const statBox = { background: "var(--paper2)", borderRadius: 8, padding: "12px 14px", minHeight: 72, display: "flex", flexDirection: "column", justifyContent: "center" };
   const statLabel = { fontSize: 11, color: "var(--muted)", marginBottom: 4 };
   const statValue = { fontSize: 19, fontFamily: "var(--mono)", color: "var(--ink)", fontWeight: 600 };
-  const miniActionBtnStyle = { border: "1px solid var(--ochre-dark)", background: "#fff", color: "var(--ochre-dark)", borderRadius: 6, padding: "3px 9px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
-  const pencilBtnStyle = { border: "1px solid var(--line)", background: "#fff", borderRadius: 5, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--muted)" };
+  const miniActionBtnStyle = { border: "1px solid var(--ochre-dark)", background: "var(--card)", color: "var(--ochre-dark)", borderRadius: 6, padding: "3px 9px", fontSize: 11.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
+  const pencilBtnStyle = { border: "1px solid var(--line)", background: "var(--card)", borderRadius: 5, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--muted)" };
   function useMesSelector(cobros) {
     const mesesDisponibles = useMemo(() => {
       const set = new Set(
@@ -1757,7 +1850,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const badgeAntiguedad = (c) => {
       if (c.estado !== "pendiente") return null;
       const dias = diasDesde(c.fecha);
-      const tono = dias >= UMBRAL_COBRO_VENCIDO ? { bg: "rgba(156,53,71,0.13)", color: "var(--rust)" } : dias >= 2 ? { bg: "rgba(201,129,79,0.18)", color: "var(--ochre-dark)" } : { bg: "var(--paper2)", color: "var(--muted)" };
+      const tono = dias >= UMBRAL_COBRO_VENCIDO ? { bg: "color-mix(in srgb, var(--rust) 13%, transparent)", color: "var(--rust)" } : dias >= 2 ? { bg: "color-mix(in srgb, var(--ochre-dark) 18%, transparent)", color: "var(--ochre-dark)" } : { bg: "var(--paper2)", color: "var(--muted)" };
       return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: tono.bg, color: tono.color, whiteSpace: "nowrap" } }, "hace ", dias, " d\xEDa", dias === 1 ? "" : "s");
     };
     const confirmarEditarMonto = (c) => {
@@ -1801,7 +1894,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       {
         value: filtroPaciente,
         onChange: (e) => setFiltroPaciente(e.target.value),
-        style: { border: "1px solid var(--line)", borderRadius: 7, padding: "6px 9px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
+        style: { border: "1px solid var(--line)", borderRadius: 7, padding: "6px 9px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--card)" }
       },
       /* @__PURE__ */ React.createElement("option", { value: "todos" }, "Todos los pacientes"),
       pacientesConCobros.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.id, value: p.id }, nombreCompleto(p)))
@@ -1815,7 +1908,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         style: { border: "none", background: "none", color: "var(--pine)", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0 }
       },
       "Limpiar filtros"
-    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--muted)", marginLeft: "auto" } }, cobrosFiltrados.length, " de ", cobrosMes.length)), cobrosFiltrados.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, fontStyle: "italic" } }, "No hay cobros que coincidan con los filtros."), isMobile ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, cobrosFiltrados.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5 } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontFamily: "var(--mono)", fontWeight: 600, color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 10 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: { ...markBtn, flex: 1 } }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: { ...undoBtn, flex: 1 } }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 13 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 13 })))))) : cobrosFiltrados.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, overflow: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { minWidth: 560 } }, /* @__PURE__ */ React.createElement("div", { style: { ...rowGrid, padding: "10px 18px", background: "var(--paper2)" } }, ["Paciente", "Sesi\xF3n", "Monto", "Estado", ""].map((h) => /* @__PURE__ */ React.createElement("div", { key: h, style: { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase" } }, h))), cobrosFiltrados.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { ...rowGrid, padding: "12px 18px", borderTop: "1px solid var(--line)", background: i % 2 === 0 ? "transparent" : "var(--paper2)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, fontFamily: "var(--mono)", color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: markBtn }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: undoBtn, title: "Volver este cobro a pendiente" }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 12 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 12 }))))))));
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--muted)", marginLeft: "auto" } }, cobrosFiltrados.length, " de ", cobrosMes.length)), cobrosFiltrados.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, fontStyle: "italic" } }, "No hay cobros que coincidan con los filtros."), isMobile ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, cobrosFiltrados.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5 } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontFamily: "var(--mono)", fontWeight: 600, color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 10 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: { ...markBtn, flex: 1 } }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: { ...undoBtn, flex: 1 } }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "var(--card)", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 13 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 13 })))))) : cobrosFiltrados.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, overflow: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { minWidth: 560 } }, /* @__PURE__ */ React.createElement("div", { style: { ...rowGrid, padding: "10px 18px", background: "var(--paper2)" } }, ["Paciente", "Sesi\xF3n", "Monto", "Estado", ""].map((h) => /* @__PURE__ */ React.createElement("div", { key: h, style: { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase" } }, h))), cobrosFiltrados.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { ...rowGrid, padding: "12px 18px", borderTop: "1px solid var(--line)", background: i % 2 === 0 ? "transparent" : "var(--paper2)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, fontFamily: "var(--mono)", color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: markBtn }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: undoBtn, title: "Volver este cobro a pendiente" }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "var(--card)", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 12 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 12 }))))))));
   }
   function MetricasView({ pacientes, turnos, cobros, historial, config, isMobile }) {
     const { mesesDisponibles, mes, setMes } = useMesSelector(cobros);
@@ -1882,33 +1975,295 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       ventana.document.write(doc);
       ventana.document.close();
     };
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "M\xE9tricas"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(MesSelector, { mesesDisponibles, mes, setMes }), /* @__PURE__ */ React.createElement("button", { onClick: exportarReporteMensual, style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "Exportar reporte"))), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, "Resumen financiero de ", labelMes(mes)), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Facturaci\xF3n total"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20 } }, "$", facturacionTotal.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Cobrado"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--verde)" } }, "$", totalCobrado.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--rust)" } }, "$", totalPendiente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de cancelaci\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: tasaCancelacion > 15 ? "var(--rust)" : "var(--ink)" } }, tasaCancelacion, "%"))), /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", null, "Cobrado vs. pendiente"), /* @__PURE__ */ React.createElement("span", null, pctCobrado, "% cobrado")), /* @__PURE__ */ React.createElement("div", { style: { height: 10, borderRadius: 6, background: "var(--paper2)", overflow: "hidden", display: "flex" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${pctCobrado}%`, background: "var(--verde)" } }), /* @__PURE__ */ React.createElement("div", { style: { width: `${100 - pctCobrado}%`, background: "var(--rust)" } }))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio promedio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", precioPromedio.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Ingreso promedio por paciente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", ingresoPromedioPaciente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones del mes"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, realizadas, " realiz. \xB7 ", agendadas, " agend. \xB7 ", canceladas, " cancel."))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 17, color: "var(--ink)", margin: "0 0 10px 0" } }, "Historial de cambios este mes"), historialMes.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, fontStyle: "italic" } }, "No hubo ediciones ni eliminaciones de turnos o cobros en ", labelMes(mes), ".") : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, historialMes.map((h) => /* @__PURE__ */ React.createElement("div", { key: h.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 8, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)" } }, nombrePacienteHistorial(h.pacienteId, pacientes), ": ", describirCambioHistorial(h)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", marginTop: 2 } }, formatFechaHora(h.fecha))), /* @__PURE__ */ React.createElement(Pill, { tone: h.accion === "delete" ? "rust" : "ochre" }, h.accion === "delete" ? "Eliminado" : "Editado"))))));
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "M\xE9tricas"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(MesSelector, { mesesDisponibles, mes, setMes }), /* @__PURE__ */ React.createElement("button", { onClick: exportarReporteMensual, style: { border: "1px solid var(--pine)", background: "var(--card)", color: "var(--pine)", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "Exportar reporte"))), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "0 0 20px 0" } }, "Resumen financiero de ", labelMes(mes)), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Facturaci\xF3n total"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20 } }, "$", facturacionTotal.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Cobrado"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--verde)" } }, "$", totalCobrado.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: "var(--rust)" } }, "$", totalPendiente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de cancelaci\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 20, color: tasaCancelacion > 15 ? "var(--rust)" : "var(--ink)" } }, tasaCancelacion, "%"))), /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: 16, marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", null, "Cobrado vs. pendiente"), /* @__PURE__ */ React.createElement("span", null, pctCobrado, "% cobrado")), /* @__PURE__ */ React.createElement("div", { style: { height: 10, borderRadius: 6, background: "var(--paper2)", overflow: "hidden", display: "flex" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${pctCobrado}%`, background: "var(--verde)" } }), /* @__PURE__ */ React.createElement("div", { style: { width: `${100 - pctCobrado}%`, background: "var(--rust)" } }))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio promedio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", precioPromedio.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Ingreso promedio por paciente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, "$", ingresoPromedioPaciente.toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: metricCard }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones del mes"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 18 } }, realizadas, " realiz. \xB7 ", agendadas, " agend. \xB7 ", canceladas, " cancel."))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 17, color: "var(--ink)", margin: "0 0 10px 0" } }, "Historial de cambios este mes"), historialMes.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, fontStyle: "italic" } }, "No hubo ediciones ni eliminaciones de turnos o cobros en ", labelMes(mes), ".") : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, historialMes.map((h) => /* @__PURE__ */ React.createElement("div", { key: h.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 8, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--ink)" } }, nombrePacienteHistorial(h.pacienteId, pacientes), ": ", describirCambioHistorial(h)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", marginTop: 2 } }, formatFechaHora(h.fecha))), /* @__PURE__ */ React.createElement(Pill, { tone: h.accion === "delete" ? "rust" : "ochre" }, h.accion === "delete" ? "Eliminado" : "Editado"))))));
   }
   const metricCard = { background: "var(--paper2)", borderRadius: 10, padding: "14px 16px" };
   const rowGrid = { display: "grid", gridTemplateColumns: "1.6fr 1.1fr 1fr 1fr 1.3fr", alignItems: "center", gap: 8 };
   const summaryCard = { flex: 1, minWidth: 200, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 };
-  const undoBtn = { border: "1px solid var(--muted)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
-  const markBtn = { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
-  const API_URL = "https://script.google.com/macros/s/AKfycby0AQpAfIDOSFCxM76I6J3PReHqHgdNulvhfNPLyGnMWTUrl77jijb-lbic2sah-8Ks7w/exec";
-  let CLAVE_SESION = "";
+  const undoBtn = { border: "1px solid var(--muted)", background: "var(--card)", color: "var(--muted)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
+  const markBtn = { border: "1px solid var(--verde)", background: "var(--card)", color: "var(--verde)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
+  const SUPABASE_URL = "https://rtkllwucobddekdkfoux.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_Q_Q4HvOJE4AT6BKdq-_1-A_MU2B2Fnu";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // La UI entera (heredada de la época de Google Sheets) usa camelCase y
+  // "SI"/"NO" para booleanos. Postgres usa snake_case y boolean de verdad.
+  // Estos mappers traducen en el borde para no tener que tocar el resto de
+  // la app — Agenda/Pacientes/Cobros/Métricas no saben que esto es Supabase.
+  const siNo = (v) => v === true || v === "SI" ? "SI" : "NO";
+  const boolDeSiNo = (v) => v === "SI" || v === true;
+
+  // --- Cripto de la historia clínica ---------------------------------------
+  // La nota clínica se encripta en el navegador con una clave que ni Jonatan
+  // ni Claude ni nadie con acceso a la base puede reconstruir sin la
+  // contraseña real de la profesional (o su código de recuperación). _dataKey
+  // vive solo en memoria de esta pestaña — nunca en localStorage/sessionStorage
+  // ni se manda al servidor.
+  let _dataKey = null;
+  function b64(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  }
+  function unb64(str) {
+    return Uint8Array.from(atob(str), (c) => c.charCodeAt(0)).buffer;
+  }
+  function saltAlAzar() {
+    return b64(crypto.getRandomValues(new Uint8Array(16)));
+  }
+  async function generarCodigoRecuperacion() {
+    const bytes = crypto.getRandomValues(new Uint8Array(15));
+    const b32 = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let s = "";
+    bytes.forEach((b) => {
+      s += b32[b % b32.length];
+    });
+    return s.match(/.{1,5}/g).join("-");
+  }
+  // Deriva una clave de envoltura (AES-GCM) a partir de un secreto (contraseña
+  // o código de recuperación) + una sal — PBKDF2, nativo del navegador.
+  async function claveDeEnvoltura(secreto, saltB64) {
+    const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(secreto), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt: unb64(saltB64), iterations: 150000, hash: "SHA-256" },
+      material,
+      { name: "AES-GCM", length: 256 },
+      true,
+      ["wrapKey", "unwrapKey"]
+    );
+  }
+  async function generarDataKey() {
+    return crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+  }
+  async function envolverClave(dataKeyObj, clavecitaEnvoltura) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const envuelta = await crypto.subtle.wrapKey("raw", dataKeyObj, clavecitaEnvoltura, { name: "AES-GCM", iv });
+    return b64(iv) + ":" + b64(envuelta);
+  }
+  async function desenvolverClave(valor, clavecitaEnvoltura) {
+    const [ivB64, dataB64] = String(valor || "").split(":");
+    if (!ivB64 || !dataB64) throw new Error("Clave de envoltura vacía o corrupta.");
+    return crypto.subtle.unwrapKey(
+      "raw",
+      unb64(dataB64),
+      clavecitaEnvoltura,
+      { name: "AES-GCM", iv: unb64(ivB64) },
+      { name: "AES-GCM", length: 256 },
+      true,
+      ["encrypt", "decrypt"]
+    );
+  }
+  async function encriptarHistoria(entradas) {
+    if (!_dataKey) return entradas;
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plano = new TextEncoder().encode(JSON.stringify(entradas || []));
+    const cifrado = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, _dataKey, plano);
+    return "enc1:" + b64(iv) + ":" + b64(cifrado);
+  }
+  async function desencriptarHistoria(valor) {
+    if (!valor) return [];
+    if (Array.isArray(valor)) return valor;
+    if (typeof valor === "string" && valor.startsWith("enc1:")) {
+      if (!_dataKey) return [];
+      const [, ivB64, dataB64] = valor.split(":");
+      try {
+        const plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(ivB64) }, _dataKey, unb64(dataB64));
+        return JSON.parse(new TextDecoder().decode(plano));
+      } catch (err) {
+        return [];
+      }
+    }
+    return parseHistoria(valor);
+  }
+  function soloDefinidos(obj) {
+    const out = {};
+    Object.keys(obj).forEach((k) => {
+      if (obj[k] !== void 0) out[k] = obj[k];
+    });
+    return out;
+  }
+  async function pacienteADB(d) {
+    let historiaEncriptada = void 0;
+    if (d.historia !== void 0) {
+      const entradas = typeof d.historia === "string" ? d.historia ? JSON.parse(d.historia) : [] : d.historia || [];
+      historiaEncriptada = await encriptarHistoria(entradas);
+    }
+    return soloDefinidos({
+      nombre: d.nombre,
+      apellido: d.apellido,
+      precio: d.precio !== void 0 ? Number(d.precio) || 0 : void 0,
+      telefono: d.telefono,
+      notas: d.notas,
+      desde: d.desde || (d.desde === "" ? null : void 0),
+      ultimo_aumento: d.ultimoAumento || (d.ultimoAumento === "" ? null : void 0),
+      frecuencia_dias: d.frecuenciaDias,
+      meses_aumento: d.mesesAumento,
+      historia: historiaEncriptada,
+      contacto_referencia: d.contactoReferencia,
+      parentesco_referencia: d.parentescoReferencia,
+      telefono_referencia: d.telefonoReferencia,
+      consentimiento_firmado: d.consentimientoFirmado !== void 0 ? boolDeSiNo(d.consentimientoFirmado) : void 0,
+      fecha_consentimiento: d.fechaConsentimiento || (d.fechaConsentimiento === "" ? null : void 0),
+      tipo_pago: d.tipoPago,
+      link_consentimiento: d.linkConsentimiento,
+      turno_recurrente: d.turnoRecurrente !== void 0 ? boolDeSiNo(d.turnoRecurrente) : void 0
+    });
+  }
+  async function pacienteDeDB(row) {
+    return {
+      id: row.id,
+      nombre: row.nombre,
+      apellido: row.apellido,
+      precio: Number(row.precio) || 0,
+      telefono: row.telefono,
+      notas: row.notas,
+      desde: row.desde,
+      ultimoAumento: row.ultimo_aumento,
+      frecuenciaDias: row.frecuencia_dias,
+      mesesAumento: row.meses_aumento,
+      historia: await desencriptarHistoria(row.historia),
+      contactoReferencia: row.contacto_referencia,
+      parentescoReferencia: row.parentesco_referencia,
+      telefonoReferencia: row.telefono_referencia,
+      consentimientoFirmado: siNo(row.consentimiento_firmado),
+      fechaConsentimiento: row.fecha_consentimiento,
+      tipoPago: row.tipo_pago,
+      linkConsentimiento: row.link_consentimiento,
+      turnoRecurrente: siNo(row.turno_recurrente)
+    };
+  }
+  function turnoADB(d) {
+    return soloDefinidos({ paciente_id: d.pacienteId, fecha: d.fecha, hora: d.hora, estado: d.estado });
+  }
+  function turnoDeDB(row) {
+    return { id: row.id, pacienteId: row.paciente_id, fecha: row.fecha, hora: String(row.hora || "").slice(0, 5), estado: row.estado };
+  }
+  function cobroADB(d) {
+    return soloDefinidos({ paciente_id: d.pacienteId, fecha: d.fecha, monto: d.monto !== void 0 ? Number(d.monto) || 0 : void 0, estado: d.estado });
+  }
+  function cobroDeDB(row) {
+    return { id: row.id, pacienteId: row.paciente_id, fecha: row.fecha, monto: Number(row.monto) || 0, estado: row.estado };
+  }
+  function configADB(d) {
+    return soloDefinidos({
+      nombre_profesional: d.nombreProfesional,
+      matricula: d.matricula,
+      especialidad: d.especialidad,
+      plantilla_deuda: d.plantillaDeuda,
+      plantilla_simple: d.plantillaSimple,
+      plantilla_aumento: d.plantillaAumento,
+      marco_teorico: d.marcoTeorico,
+      tema: d.tema,
+      ia_activada: d.iaActivada,
+      ia_consentimiento_at: d.iaConsentimientoAt,
+      salt_password: d.saltPassword,
+      salt_recovery: d.saltRecovery,
+      data_key_wrapped_password: d.dataKeyWrappedPassword,
+      data_key_wrapped_recovery: d.dataKeyWrappedRecovery
+    });
+  }
+  function configDeDB(row) {
+    if (!row) return {};
+    return {
+      id: row.id,
+      nombreProfesional: row.nombre_profesional,
+      matricula: row.matricula,
+      especialidad: row.especialidad,
+      plantillaDeuda: row.plantilla_deuda,
+      plantillaSimple: row.plantilla_simple,
+      plantillaAumento: row.plantilla_aumento,
+      marcoTeorico: row.marco_teorico,
+      tema: row.tema,
+      iaActivada: !!row.ia_activada,
+      iaConsentimientoAt: row.ia_consentimiento_at,
+      estadoSuscripcion: row.estado_suscripcion,
+      trialTermina: row.trial_termina,
+      saltPassword: row.salt_password,
+      saltRecovery: row.salt_recovery,
+      dataKeyWrappedPassword: row.data_key_wrapped_password,
+      dataKeyWrappedRecovery: row.data_key_wrapped_recovery
+    };
+  }
+  function historialDeDB(row) {
+    return { id: row.id, fecha: row.fecha, hoja: row.hoja, accion: row.accion, pacienteId: row.paciente_id, antes: row.antes || {}, cambios: row.cambios || {} };
+  }
+  const TABLA_DE_SHEET = { Pacientes: "pacientes", Turnos: "turnos", Cobros: "cobros", Config: "profesionales" };
+  const A_DB = { Pacientes: pacienteADB, Turnos: turnoADB, Cobros: cobroADB, Config: configADB };
+
+  // Trae el estado completo del consultorio logueado — reemplaza lo que antes
+  // devolvía cada respuesta de Apps Script (pacientes/turnos/cobros/config/
+  // historial), para que aplicarDataset() y el resto de App() no necesiten
+  // saber que la fuente cambió.
+  async function obtenerDatasetCompleto() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) throw new Error("No hay sesión activa.");
+    const [pacientesRes, turnosRes, cobrosRes, historialRes, profRes] = await Promise.all([
+      sb.from("pacientes").select("*"),
+      sb.from("turnos").select("*"),
+      sb.from("cobros").select("*"),
+      sb.from("historial").select("*"),
+      sb.from("profesionales").select("*").eq("id", user.id).single()
+    ]);
+    for (const r of [pacientesRes, turnosRes, cobrosRes, historialRes]) {
+      if (r.error) throw new Error(r.error.message);
+    }
+    if (profRes.error) throw new Error(profRes.error.message);
+    return {
+      ok: true,
+      pacientes: await Promise.all((pacientesRes.data || []).map(pacienteDeDB)),
+      turnos: (turnosRes.data || []).map(turnoDeDB),
+      cobros: (cobrosRes.data || []).map(cobroDeDB),
+      historial: (historialRes.data || []).map(historialDeDB),
+      config: configDeDB(profRes.data)
+    };
+  }
+
+  // Trae solo la fila de profesionales — usado durante una recuperación de
+  // contraseña, donde todavía no sabemos si vamos a poder desencriptar nada
+  // (no tiene sentido traer/intentar desencriptar pacientes todavía).
+  async function obtenerConfigDelUsuario() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) throw new Error("No hay sesión activa.");
+    const { data, error } = await sb.from("profesionales").select("*").eq("id", user.id).single();
+    if (error) throw new Error(error.message);
+    return configDeDB(data);
+  }
+
   // Conteo global de operaciones apiCall en curso, para mostrar un indicador
   // de "Guardando..." mientras se crea/actualiza/elimina algo. _onPendingChange
   // lo setea App() (vía useEffect) para enterarse de los cambios sin que
   // apiCall necesite saber nada de React.
   let _pendingCount = 0;
   let _onPendingChange = null;
+  // Misma firma que la versión de Apps Script (sheet/action/{id,data}) para
+  // no tener que tocar ninguno de los ~15 call-sites del resto de la app —
+  // solo cambia qué pasa DENTRO de esta función.
   async function apiCall(sheet, action, { id, data } = {}) {
     _pendingCount++;
     if (_onPendingChange) _onPendingChange(_pendingCount);
     try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ sheet, action, id, data, clave: CLAVE_SESION })
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "Error desconocido del backend");
-      return json;
+      const tabla = TABLA_DE_SHEET[sheet];
+      if (!tabla) throw new Error("Hoja desconocida: " + sheet);
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) throw new Error("No hay sesión activa.");
+      let nuevoId = null;
+      if (action === "create") {
+        const fila = { ...await A_DB[sheet](data), profesional_id: user.id };
+        const { data: creado, error } = await sb.from(tabla).insert(fila).select().single();
+        if (error) throw new Error(error.message);
+        nuevoId = creado.id;
+      } else if (action === "update") {
+        const fila = await A_DB[sheet](data);
+        const idReal = sheet === "Config" ? user.id : id;
+        const { error } = await sb.from(tabla).update(fila).eq("id", idReal);
+        if (error) throw new Error(error.message);
+      } else if (action === "delete") {
+        const { error } = await sb.from(tabla).delete().eq("id", id);
+        if (error) throw new Error(error.message);
+      } else {
+        throw new Error("Acción desconocida: " + action);
+      }
+      const result = await obtenerDatasetCompleto();
+      if (action === "create") result.id = nuevoId;
+      return result;
     } finally {
       _pendingCount--;
       if (_onPendingChange) _onPendingChange(_pendingCount);
@@ -1963,30 +2318,35 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         base.telefonoReferencia = texto.trim();
       }
     }
-    return { ...base, id: Number(base.id), precio: Number(base.precio) || 0 };
+    return { ...base, id: base.id, precio: Number(base.precio) || 0 };
   }
   function normalizarTurno(t) {
     const base = normalizarClaves(t, CAMPOS_TURNO);
-    return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId) };
+    return { ...base, id: base.id, pacienteId: base.pacienteId };
   }
   function normalizarCobro(c) {
     const base = normalizarClaves(c, CAMPOS_COBRO);
-    return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId), monto: Number(base.monto) || 0 };
+    return { ...base, id: base.id, pacienteId: base.pacienteId, monto: Number(base.monto) || 0 };
   }
   const CAMPOS_HISTORIAL = ["id", "fecha", "hoja", "accion", "pacienteId", "antes", "cambios"];
+  function parseJsonTolerante(v) {
+    if (!v) return {};
+    if (typeof v === "object") return v;
+    try {
+      return JSON.parse(v);
+    } catch (err) {
+      return {};
+    }
+  }
   function normalizarHistorial(h) {
     const base = normalizarClaves(h, CAMPOS_HISTORIAL);
-    let antes = {};
-    let cambios = {};
-    try {
-      antes = base.antes ? JSON.parse(base.antes) : {};
-    } catch (err) {
-    }
-    try {
-      cambios = base.cambios ? JSON.parse(base.cambios) : {};
-    } catch (err) {
-    }
-    return { ...base, id: Number(base.id), pacienteId: Number(base.pacienteId) || null, antes, cambios };
+    return {
+      ...base,
+      id: base.id,
+      pacienteId: base.pacienteId || null,
+      antes: parseJsonTolerante(base.antes),
+      cambios: parseJsonTolerante(base.cambios)
+    };
   }
   class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -1998,11 +2358,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     }
     render() {
       if (this.state.error) {
-        return /* @__PURE__ */ React.createElement("div", { style: { padding: 24, background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33", fontFamily: "-apple-system, sans-serif" } }, /* @__PURE__ */ React.createElement("strong", null, "Esta pantalla no pudo cargar por un dato inesperado."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, lineHeight: 1.5 } }, "Probablemente alg\xFAn paciente/turno/cobro tiene un campo vac\xEDo o mal cargado en el Google Sheet. Revis\xE1 que todas las filas tengan sus columnas completas."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#9C5257", fontFamily: "monospace" } }, String(this.state.error)), /* @__PURE__ */ React.createElement(
+        return /* @__PURE__ */ React.createElement("div", { style: { padding: 24, background: "color-mix(in srgb, var(--rust) 8%, var(--card))", border: "1px solid color-mix(in srgb, var(--rust) 35%, var(--card))", borderRadius: 10, color: "var(--rust-dark)", fontFamily: "-apple-system, sans-serif" } }, /* @__PURE__ */ React.createElement("strong", null, "Esta pantalla no pudo cargar por un dato inesperado."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, lineHeight: 1.5 } }, "Probablemente alg\xFAn paciente/turno/cobro tiene un campo vac\xEDo o mal cargado en el Google Sheet. Revis\xE1 que todas las filas tengan sus columnas completas."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#8A4A4A", fontFamily: "monospace" } }, String(this.state.error)), /* @__PURE__ */ React.createElement(
           "button",
           {
             onClick: () => this.setState({ error: null }),
-            style: { marginTop: 8, border: "1px solid #7A2E33", background: "#fff", color: "#7A2E33", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }
+            style: { marginTop: 8, border: "1px solid var(--rust-dark)", background: "var(--card)", color: "var(--rust-dark)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }
           },
           "Reintentar"
         ));
@@ -2012,6 +2372,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   }
   function App() {
     const [tab, setTab] = useState("hoy");
+    const [temaActivo, setTemaActivo] = useState(temaGuardado);
     const [pacienteAAbrir, setPacienteAAbrir] = useState(null);
     const [pacientes, setPacientes] = useState([]);
     const [turnos, setTurnos] = useState([]);
@@ -2020,11 +2381,46 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [config, setConfig] = useState({});
     const [cargando, setCargando] = useState(true);
     const [autenticado, setAutenticado] = useState(false);
-    const [claveInput, setClaveInput] = useState("");
+    const [modoRegistro, setModoRegistro] = useState(false);
+    const [aceptoTerminos, setAceptoTerminos] = useState(false);
+    const [emailInput, setEmailInput] = useState("");
+    const [passwordInput, setPasswordInput] = useState("");
+    // El listener de auth se registra una sola vez (deps []), así que su
+    // closure queda "congelado" en los valores del primer render — leer
+    // passwordInput ahí adentro siempre daría el string vacío inicial, no lo
+    // que la usuaria tipeó. Un ref sí se mantiene al día sin importar qué
+    // closure lo lea.
+    const passwordInputRef = useRef("");
     const [errorLogin, setErrorLogin] = useState("");
+    const [infoLogin, setInfoLogin] = useState("");
+    const [enviandoLogin, setEnviandoLogin] = useState(false);
+    const [pidiendoDesbloqueo, setPidiendoDesbloqueo] = useState(false);
+    const [passwordDesbloqueo, setPasswordDesbloqueo] = useState("");
+    const [errorDesbloqueo, setErrorDesbloqueo] = useState("");
+    const [codigoRecuperacion, setCodigoRecuperacion] = useState(null);
+    const [codigoConfirmado, setCodigoConfirmado] = useState(false);
+    // Fase 2: recuperar el acceso a la historia clínica cuando se olvidó la
+    // contraseña (vía el link de "olvidé mi contraseña" de Supabase) usando
+    // el código de recuperación mostrado una única vez al darse de alta.
+    const [modoRecuperacionClave, setModoRecuperacionClave] = useState(false);
+    const [codigoRecuperacionInput, setCodigoRecuperacionInput] = useState("");
+    const [passwordNuevaRecuperacion, setPasswordNuevaRecuperacion] = useState("");
+    const [passwordNuevaRecuperacionRepetir, setPasswordNuevaRecuperacionRepetir] = useState("");
+    const [errorRecuperacionClave, setErrorRecuperacionClave] = useState("");
+    const [enviandoRecuperacionClave, setEnviandoRecuperacionClave] = useState(false);
+    const [recuperacionSinCodigo, setRecuperacionSinCodigo] = useState(false);
+    const [modoOlvidoPassword, setModoOlvidoPassword] = useState(false);
+    // Cambio de contraseña voluntario (ya logueada, con la dataKey en memoria).
+    const [mostrandoCambioPassword, setMostrandoCambioPassword] = useState(false);
+    const [passwordNuevaCuenta, setPasswordNuevaCuenta] = useState("");
+    const [passwordNuevaCuentaRepetir, setPasswordNuevaCuentaRepetir] = useState("");
+    const [errorCambioPassword, setErrorCambioPassword] = useState("");
+    const [infoCambioPassword, setInfoCambioPassword] = useState("");
+    const [enviandoCambioPassword, setEnviandoCambioPassword] = useState(false);
     const [error, setError] = useState(null);
     const [guardando, setGuardando] = useState(false);
     const isMobile = useIsMobile();
+    const cargandoRef = useRef(false);
     useEffect(() => {
       _onPendingChange = (n) => setGuardando(n > 0);
       return () => {
@@ -2033,98 +2429,305 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     }, []);
     const aplicarDataset = (d) => {
       const pacientesNorm = (d.pacientes || []).map(normalizarPaciente);
-      const idsInvalidos = pacientesNorm.filter((p) => !Number.isFinite(p.id));
+      const idsInvalidos = pacientesNorm.filter((p) => !p.id);
       if (idsInvalidos.length > 0) {
         setError(
-          `Hay ${idsInvalidos.length} paciente(s) sin un "id" num\xE9rico v\xE1lido en el Google Sheet. Revis\xE1 que la primera columna de la hoja Pacientes se llame exactamente "id" y que todas las filas tengan un n\xFAmero.`
+          `Hay ${idsInvalidos.length} paciente(s) sin un "id" v\xE1lido. Prob\xE1 recargar la p\xE1gina; si persiste, avisale a Jonatan.`
         );
         return;
       }
       const turnosNorm = (d.turnos || []).map(normalizarTurno);
       const cobrosNorm = (d.cobros || []).map(normalizarCobro);
-      const turnosSinPaciente = turnosNorm.filter((t) => !Number.isFinite(t.pacienteId)).length;
-      const cobrosSinPaciente = cobrosNorm.filter((c) => !Number.isFinite(c.pacienteId)).length;
+      const turnosSinPaciente = turnosNorm.filter((t) => !t.pacienteId).length;
+      const cobrosSinPaciente = cobrosNorm.filter((c) => !c.pacienteId).length;
       if (turnosSinPaciente > 0 || cobrosSinPaciente > 0) {
         console.warn(
-          `Integridad de datos: ${turnosSinPaciente} turno(s) y ${cobrosSinPaciente} cobro(s) sin un pacienteId num\xE9rico v\xE1lido. No bloquea la carga de la app (a diferencia de Paciente.id).`
+          `Integridad de datos: ${turnosSinPaciente} turno(s) y ${cobrosSinPaciente} cobro(s) sin un pacienteId v\xE1lido. No bloquea la carga de la app (a diferencia de Paciente.id).`
         );
       }
       setPacientes(pacientesNorm);
       setTurnos(turnosNorm);
       setCobros(cobrosNorm);
       setConfig(d.config || {});
+      if (d.config && d.config.tema) {
+        aplicarTema(d.config.tema);
+        setTemaActivo(TEMAS[d.config.tema] ? d.config.tema : "azul");
+      }
       setHistorial((d.historial || []).map(normalizarHistorial));
     };
-    const migrarConfigDesdeLocalStorage = (cfg) => {
-      if (cfg.matricula || cfg.plantillaDeuda || cfg.plantillaSimple || cfg.plantillaAumento) return;
-      let profLocal = {};
-      try {
-        profLocal = JSON.parse(localStorage.getItem("datosProfesional") || "{}");
-      } catch (err) {
-      }
-      const cambios = {};
-      if (profLocal.nombre) cambios.nombreProfesional = profLocal.nombre;
-      if (profLocal.matricula) cambios.matricula = profLocal.matricula;
-      if (profLocal.especialidad) cambios.especialidad = profLocal.especialidad;
-      ["deuda", "simple", "aumento"].forEach((tipo) => {
-        let guardada = null;
-        try {
-          guardada = localStorage.getItem("plantilla_" + tipo);
-        } catch (err) {
+    // Primera vez que esta cuenta entra (nunca se generó su clave de
+    // encriptación): la crea ahora, envuelta con la contraseña recién
+    // tipeada y con un código de recuperación nuevo, y muestra ese código
+    // una única vez. De ahí en más, cfg.saltPassword ya existe.
+    const crearDataKeyInicial = async () => {
+      const dk = await generarDataKey();
+      const saltPass = saltAlAzar();
+      const saltRec = saltAlAzar();
+      const codigo = await generarCodigoRecuperacion();
+      const claveDesdePass = await claveDeEnvoltura(passwordInputRef.current, saltPass);
+      const claveDesdeCodigo = await claveDeEnvoltura(codigo, saltRec);
+      const wrappedPass = await envolverClave(dk, claveDesdePass);
+      const wrappedRec = await envolverClave(dk, claveDesdeCodigo);
+      await apiCall("Config", "update", {
+        data: {
+          saltPassword: saltPass,
+          saltRecovery: saltRec,
+          dataKeyWrappedPassword: wrappedPass,
+          dataKeyWrappedRecovery: wrappedRec
         }
-        if (guardada) cambios["plantilla" + tipo.charAt(0).toUpperCase() + tipo.slice(1)] = guardada;
       });
-      if (Object.keys(cambios).length > 0) actualizarConfig(cambios);
+      _dataKey = dk;
+      setCodigoRecuperacion(codigo);
     };
-    const cargarDatos = (clave) => {
-      setCargando(true);
-      setError(null);
-      if (API_URL.startsWith("PONER_AQUI")) {
-        setError("Falta conectar el backend: configur\xE1 API_URL con la URL de tu Web App de Apps Script.");
-        setCargando(false);
+    // Cuenta ya existente: intenta desenvolver la clave con la contraseña
+    // recién tipeada (login fresco); si no hay contraseña en memoria (sesión
+    // restaurada de una pestaña anterior) pide "desbloquear" a mano.
+    const asegurarDataKey = async (cfg) => {
+      if (_dataKey) return;
+      if (!cfg || !cfg.saltPassword) {
+        await crearDataKeyInicial();
         return;
       }
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2e4);
-      fetch(API_URL + "?clave=" + encodeURIComponent(clave), { signal: controller.signal }).then((r) => {
-        clearTimeout(timeoutId);
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-      }).then((d) => {
-        if (d.error === "NO_AUTORIZADO") {
-          setErrorLogin("Contrase\xF1a incorrecta.");
-          setAutenticado(false);
-          setCargando(false);
-          return;
-        }
-        CLAVE_SESION = clave;
+      if (passwordInputRef.current) {
         try {
-          sessionStorage.setItem("claveConsultorio", clave);
+          const clave = await claveDeEnvoltura(passwordInputRef.current, cfg.saltPassword);
+          _dataKey = await desenvolverClave(cfg.dataKeyWrappedPassword, clave);
+          return;
         } catch (err) {
         }
+      }
+      setPidiendoDesbloqueo(true);
+    };
+    const cargarDatosDesdeSupabase = () => {
+      // Guarda contra disparos duplicados (más de un evento de auth casi
+      // simultáneo) — sin esto, una cuenta nueva podía terminar generando
+      // dos dataKey en una carrera: la que quedaba en memoria no era
+      // necesariamente la misma que ganaba el update en la base.
+      if (cargandoRef.current) return;
+      cargandoRef.current = true;
+      setCargando(true);
+      setError(null);
+      obtenerDatasetCompleto().then(async (d) => {
         setAutenticado(true);
-        setErrorLogin("");
         aplicarDataset(d);
-        migrarConfigDesdeLocalStorage(d.config || {});
+        await asegurarDataKey(d.config);
+        if (_dataKey && !codigoRecuperacion) {
+          const d2 = await obtenerDatasetCompleto();
+          aplicarDataset(d2);
+        }
         setCargando(false);
       }).catch((e) => {
-        clearTimeout(timeoutId);
-        const msg = e.name === "AbortError" ? "El servidor tard\xF3 demasiado en responder. Prob\xE1 de nuevo en un momento." : "No se pudo conectar: " + e.message;
-        setError(msg);
+        setError("No se pudo conectar: " + e.message);
         setCargando(false);
+      }).finally(() => {
+        cargandoRef.current = false;
       });
     };
-    useEffect(() => {
-      let guardada = "";
+    const desbloquear = async () => {
+      setErrorDesbloqueo("");
+      setEnviandoLogin(true);
       try {
-        guardada = sessionStorage.getItem("claveConsultorio") || "";
-      } catch (err) {
-      }
-      if (guardada) {
-        cargarDatos(guardada);
-      } else {
+        const clave = await claveDeEnvoltura(passwordDesbloqueo, config.saltPassword);
+        _dataKey = await desenvolverClave(config.dataKeyWrappedPassword, clave);
+        setPidiendoDesbloqueo(false);
+        setPasswordDesbloqueo("");
+        setCargando(true);
+        const d2 = await obtenerDatasetCompleto();
+        aplicarDataset(d2);
         setCargando(false);
+      } catch (err) {
+        setErrorDesbloqueo("Contrase\xF1a incorrecta.");
+      } finally {
+        setEnviandoLogin(false);
       }
+    };
+    // Pieza compartida entre la recuperación con código y el cambio de
+    // contraseña voluntario: re-envuelve la dataKey YA DESENVUELTA en memoria
+    // bajo una contraseña nueva, actualiza la contraseña real de Supabase Auth
+    // y persiste. sb.auth.updateUser corre ANTES que el guardado en la base a
+    // propósito: si updateUser falla no se tocó nada; si lo que falla es el
+    // guardado posterior, se puede reintentar sin perder la dataKey ya
+    // recuperada (por eso los llamadores no la vuelven a null en ese error).
+    const reenvolverDataKeyConNuevaPassword = async (nuevaPassword, camposExtra = {}) => {
+      if (!_dataKey) throw new Error("No hay una clave de encriptación cargada en esta sesión.");
+      const saltPassNueva = saltAlAzar();
+      const claveNueva = await claveDeEnvoltura(nuevaPassword, saltPassNueva);
+      const wrappedNueva = await envolverClave(_dataKey, claveNueva);
+      const { error: errAuth } = await sb.auth.updateUser({ password: nuevaPassword });
+      if (errAuth) throw errAuth;
+      await apiCall("Config", "update", {
+        data: { saltPassword: saltPassNueva, dataKeyWrappedPassword: wrappedNueva, ...camposExtra }
+      });
+    };
+    // Recuperación con código: solo se llega acá tras el evento PASSWORD_RECOVERY
+    // de Supabase (link de "olvidé mi contraseña"). Si el código es correcto, de
+    // paso se genera un código de recuperación nuevo — el viejo se considera
+    // quemado (ya se mostró una vez, podría estar comprometido).
+    const recuperarConCodigo = async () => {
+      setErrorRecuperacionClave("");
+      if (passwordNuevaRecuperacion !== passwordNuevaRecuperacionRepetir) {
+        setErrorRecuperacionClave("Las contrase\xF1as nuevas no coinciden.");
+        return;
+      }
+      if (passwordNuevaRecuperacion.length < 6) {
+        setErrorRecuperacionClave("La contrase\xF1a debe tener al menos 6 caracteres.");
+        return;
+      }
+      setEnviandoRecuperacionClave(true);
+      let dk;
+      try {
+        if (!config || !config.saltRecovery || !config.dataKeyWrappedRecovery) {
+          throw new Error("sin-recovery-configurado");
+        }
+        const claveDesdeCodigo = await claveDeEnvoltura(codigoRecuperacionInput.trim(), config.saltRecovery);
+        dk = await desenvolverClave(config.dataKeyWrappedRecovery, claveDesdeCodigo);
+      } catch (err) {
+        setErrorRecuperacionClave("C\xF3digo de recuperaci\xF3n incorrecto.");
+        setEnviandoRecuperacionClave(false);
+        return;
+      }
+      _dataKey = dk;
+      try {
+        const codigoNuevo = await generarCodigoRecuperacion();
+        const saltRecNueva = saltAlAzar();
+        const claveDesdeCodigoNuevo = await claveDeEnvoltura(codigoNuevo, saltRecNueva);
+        const wrappedRecNueva = await envolverClave(dk, claveDesdeCodigoNuevo);
+        await reenvolverDataKeyConNuevaPassword(passwordNuevaRecuperacion, {
+          saltRecovery: saltRecNueva,
+          dataKeyWrappedRecovery: wrappedRecNueva
+        });
+        setModoRecuperacionClave(false);
+        setCodigoRecuperacionInput("");
+        setPasswordNuevaRecuperacion("");
+        setPasswordNuevaRecuperacionRepetir("");
+        setCodigoRecuperacion(codigoNuevo);
+        setCodigoConfirmado(false);
+        setCargando(true);
+        const d2 = await obtenerDatasetCompleto();
+        setAutenticado(true);
+        aplicarDataset(d2);
+        setCargando(false);
+      } catch (err) {
+        setErrorRecuperacionClave("Tu c\xF3digo era correcto pero hubo un error al guardar: " + err.message + ". Volv\xE9 a intentarlo.");
+      } finally {
+        setEnviandoRecuperacionClave(false);
+      }
+    };
+    // Cambio de contraseña voluntario, con sesión activa y la dataKey ya
+    // desenvuelta en memoria — no hace falta el código acá.
+    const cambiarPasswordLogueada = async () => {
+      setErrorCambioPassword("");
+      setInfoCambioPassword("");
+      if (passwordNuevaCuenta !== passwordNuevaCuentaRepetir) {
+        setErrorCambioPassword("Las contrase\xF1as no coinciden.");
+        return;
+      }
+      if (passwordNuevaCuenta.length < 6) {
+        setErrorCambioPassword("La contrase\xF1a debe tener al menos 6 caracteres.");
+        return;
+      }
+      setEnviandoCambioPassword(true);
+      try {
+        await reenvolverDataKeyConNuevaPassword(passwordNuevaCuenta);
+        setInfoCambioPassword("Contrase\xF1a actualizada.");
+        setPasswordNuevaCuenta("");
+        setPasswordNuevaCuentaRepetir("");
+      } catch (e) {
+        setErrorCambioPassword(e.message);
+      } finally {
+        setEnviandoCambioPassword(false);
+      }
+    };
+    const iniciarSesion = async () => {
+      setErrorLogin("");
+      setInfoLogin("");
+      setEnviandoLogin(true);
+      try {
+        const { error } = await sb.auth.signInWithPassword({ email: emailInput.trim(), password: passwordInput });
+        if (error) throw error;
+      } catch (e) {
+        setErrorLogin(e.message === "Invalid login credentials" ? "Mail o contrase\xF1a incorrectos." : e.message);
+      } finally {
+        setEnviandoLogin(false);
+      }
+    };
+    const registrarse = async () => {
+      setErrorLogin("");
+      setInfoLogin("");
+      if (!aceptoTerminos) {
+        setErrorLogin("Ten\xE9s que aceptar los T\xE9rminos y condiciones y la Pol\xEDtica de privacidad para crear la cuenta.");
+        return;
+      }
+      setEnviandoLogin(true);
+      try {
+        // Se deja registro de cu\xE1ndo y qu\xE9 versi\xF3n de los textos se acept\xF3
+        // (queda en los metadatos de la cuenta de autenticaci\xF3n).
+        const { data, error } = await sb.auth.signUp({
+          email: emailInput.trim(),
+          password: passwordInput,
+          options: { data: { terminos_aceptados_at: new Date().toISOString(), terminos_version: VERSION_TERMINOS } }
+        });
+        if (error) throw error;
+        if (!data.session) {
+          setInfoLogin("Cuenta creada. Revis\xE1 tu mail para confirmarla antes de entrar.");
+        }
+      } catch (e) {
+        setErrorLogin(e.message);
+      } finally {
+        setEnviandoLogin(false);
+      }
+    };
+    // Mensaje genérico pase lo que pase (exista o no ese mail) — mismo
+    // criterio que usa Supabase, para no revelar qué mails están registrados.
+    const solicitarResetPassword = async () => {
+      setErrorLogin("");
+      setInfoLogin("");
+      setEnviandoLogin(true);
+      try {
+        // Solo el origin (sin path): tiene que calzar EXACTO con lo que
+        // esté configurado como site_url/redirect URL permitida en Supabase
+        // — agregarle el pathname es más frágil (alcanza con que alguien
+        // entre por una URL con un path distinto para que deje de matchear).
+        const { error } = await sb.auth.resetPasswordForEmail(emailInput.trim(), {
+          redirectTo: window.location.origin
+        });
+        if (error) throw error;
+        setInfoLogin("Si ese mail est\xE1 registrado, te enviamos un link para restablecer tu contrase\xF1a.");
+      } catch (e) {
+        setErrorLogin(e.message);
+      } finally {
+        setEnviandoLogin(false);
+      }
+    };
+    useEffect(() => {
+      // Ojo: NO llamar acá también a sb.auth.getSession() — onAuthStateChange
+      // ya emite un evento "INITIAL_SESSION" apenas se suscribe, con la
+      // sesión persistida (si la hay). Llamar ambos dispara dos cargas en
+      // paralelo, y con eso dos generaciones de dataKey en una cuenta nueva
+      // (carrera real que se dio en pruebas — el update que gana en la base
+      // no era necesariamente el mismo cuya dataKey quedaba en memoria).
+      const { data: listener } = sb.auth.onAuthStateChange((_evento, session) => {
+        if (_evento === "PASSWORD_RECOVERY") {
+          // Volvió del link de "olvidé mi contraseña" — NO es un login
+          // normal, todavía no sabemos si va a poder recuperar el acceso a
+          // su historia clínica. Se muestra la pantalla de recuperación en
+          // vez de caer en el camino de siempre (que le pediría la
+          // contraseña VIEJA que justamente no tiene).
+          setCargando(false);
+          setModoRecuperacionClave(true);
+          obtenerConfigDelUsuario()
+            .then(setConfig)
+            .catch((e) => setErrorRecuperacionClave("No se pudo cargar tu cuenta: " + e.message));
+          return;
+        }
+        if (session) {
+          cargarDatosDesdeSupabase();
+        } else {
+          setAutenticado(false);
+          setCargando(false);
+        }
+      });
+      return () => listener.subscription.unsubscribe();
     }, []);
     const conManejoDeError = (fn) => async (...args) => {
       try {
@@ -2230,6 +2833,45 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const actualizarTurnoRecurrente = (id, turnoRecurrente) => actualizarPacienteOptimista(id, { turnoRecurrente: turnoRecurrente ? "SI" : "NO" });
     const actualizarLinkConsentimiento = (id, linkConsentimiento) => actualizarPacienteOptimista(id, { linkConsentimiento });
     const marcarConsentimiento = (id, fecha, historia) => actualizarPacienteOptimista(id, { consentimientoFirmado: "SI", fechaConsentimiento: fecha, historia });
+    // Cambio de paleta: se aplica al instante y se guarda en la cuenta
+    // (update liviano de la fila propia; no hace falta recargar el dataset).
+    const cambiarTema = async (id) => {
+      if (!TEMAS[id]) return;
+      aplicarTema(id);
+      setTemaActivo(id);
+      setConfig((c) => ({ ...c, tema: id }));
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) await sb.from("profesionales").update({ tema: id }).eq("id", user.id);
+      } catch (e) {
+        console.warn("No se pudo guardar la paleta en la cuenta:", e);
+      }
+    };
+    const cerrarSesionFn = () => {
+      sb.auth.signOut();
+      // _dataKey es una variable de módulo, no un estado de React — si
+      // no se limpia acá, en la MISMA pestaña una cuenta distinta que
+      // inicie sesión después (sin recargar la página) heredaría esta
+      // clave vieja en memoria, salteándose por completo la creación
+      // de su propia dataKey. Bug real encontrado probando Fase 2.
+      _dataKey = null;
+      setAutenticado(false);
+      setEmailInput("");
+      setPasswordInput("");
+      setCodigoRecuperacion(null);
+      setCodigoConfirmado(false);
+    };
+    // Activar/desactivar "Pulir con IA". Al activar se guarda cuándo se aceptó
+    // el aviso. Va directo a la fila propia (no recarga el dataset).
+    const cambiarIA = async (activar) => {
+      const ahora = new Date().toISOString();
+      const cambios = activar ? { ia_activada: true, ia_consentimiento_at: ahora } : { ia_activada: false };
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) throw new Error("No hay sesi\xF3n activa.");
+      const { error } = await sb.from("profesionales").update(cambios).eq("id", user.id);
+      if (error) throw new Error(error.message);
+      setConfig((c) => ({ ...c, iaActivada: activar, iaConsentimientoAt: activar ? ahora : c.iaConsentimientoAt }));
+    };
     const actualizarConfig = conManejoDeError(async (cambios) => {
       const res = await apiCall("Config", "update", { id: 1, data: cambios });
       aplicarDataset(res);
@@ -2256,17 +2898,86 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         linkConsentimiento: ""
       };
       const res = await apiCall("Pacientes", "create", { data: nuevo });
-      const nuevoId = Number(res.id);
-      setPacientes((prev) => {
-        const desdeServidor = (res.pacientes || []).map(normalizarPaciente).filter((p) => Number.isFinite(p.id));
-        const lista = desdeServidor.length >= prev.length ? desdeServidor : prev;
-        if (lista.some((p) => p.id === nuevoId)) return lista;
-        return [...lista, { ...nuevo, id: nuevoId, precio: Number(nuevo.precio) || 0 }];
-      });
+      const nuevoId = res.id;
+      if (res.pacientes) setPacientes(res.pacientes.map(normalizarPaciente));
       if (res.turnos) setTurnos(res.turnos.map(normalizarTurno));
       if (res.cobros) setCobros(res.cobros.map(normalizarCobro));
       return nuevoId;
     });
+    if (modoRecuperacionClave) {
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            maxWidth: 420,
+            margin: "60px auto",
+            padding: 32,
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 14,
+            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            boxShadow: "0 4px 20px rgba(28,37,48,0.1)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 21, color: "var(--ink)", marginBottom: 10 } }, "Recuper\xE1 el acceso a tu historia cl\xEDnica"),
+        !recuperacionSinCodigo && /* @__PURE__ */ React.createElement(React.Fragment, null,
+          /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, marginBottom: 16 } }, "Ingres\xE1 tu c\xF3digo de recuperaci\xF3n (el que guardaste cuando creaste tu cuenta) y eleg\xED tu nueva contrase\xF1a."),
+          /* @__PURE__ */ React.createElement(
+            "input",
+            {
+              type: "text",
+              value: codigoRecuperacionInput,
+              onChange: (e) => setCodigoRecuperacionInput(e.target.value),
+              placeholder: "C\xF3digo de recuperaci\xF3n",
+              autoFocus: true,
+              style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 10, fontFamily: "ui-monospace, monospace" }
+            }
+          ),
+          /* @__PURE__ */ React.createElement(
+            "input",
+            {
+              type: "password",
+              value: passwordNuevaRecuperacion,
+              onChange: (e) => setPasswordNuevaRecuperacion(e.target.value),
+              placeholder: "Contrase\xF1a nueva",
+              style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 10 }
+            }
+          ),
+          /* @__PURE__ */ React.createElement(
+            "input",
+            {
+              type: "password",
+              value: passwordNuevaRecuperacionRepetir,
+              onChange: (e) => setPasswordNuevaRecuperacionRepetir(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === "Enter" && codigoRecuperacionInput && passwordNuevaRecuperacion) recuperarConCodigo();
+              },
+              placeholder: "Repet\xED la contrase\xF1a nueva",
+              style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 12 }
+            }
+          ),
+          errorRecuperacionClave && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--rust)", marginBottom: 12 } }, errorRecuperacionClave),
+          /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              disabled: enviandoRecuperacionClave,
+              onClick: () => codigoRecuperacionInput && passwordNuevaRecuperacion && recuperarConCodigo(),
+              style: { width: "100%", border: "none", background: "var(--pine)", color: "#fff", borderRadius: 8, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: enviandoRecuperacionClave ? "default" : "pointer", opacity: enviandoRecuperacionClave ? 0.7 : 1 }
+            },
+            enviandoRecuperacionClave ? "Un momento..." : "Recuperar acceso"
+          ),
+          /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              onClick: () => setRecuperacionSinCodigo(true),
+              style: { width: "100%", border: "none", background: "none", color: "var(--muted)", fontSize: 12.5, marginTop: 10, cursor: "pointer" }
+            },
+            "No tengo mi c\xF3digo de recuperaci\xF3n"
+          )
+        ),
+        recuperacionSinCodigo && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--rust)", lineHeight: 1.6 } }, "Sin ese c\xF3digo no hay forma de recuperar las notas cl\xEDnicas que ya ten\xEDas guardadas — ni nosotros, ni nadie con acceso a la base, puede hacerlo: se guardan encriptadas y esa era justamente la idea. Escribinos y vemos c\xF3mo seguir.")
+      );
+    }
     if (!autenticado && !cargando) {
       return /* @__PURE__ */ React.createElement(
         "div",
@@ -2275,76 +2986,277 @@ Esta acci\xF3n no se puede deshacer.`)) return;
             maxWidth: 380,
             margin: "60px auto",
             padding: 32,
-            background: "#FFFBFC",
-            border: "1px solid #E6CFD6",
+            background: "var(--card)",
+            border: "1px solid var(--line)",
             borderRadius: 14,
             fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
-            boxShadow: "0 4px 20px rgba(74,42,56,0.1)"
+            boxShadow: "0 4px 20px rgba(28,37,48,0.1)"
           }
         },
-        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 24, color: "#4A2A38", marginBottom: 4 } }, "AgendaMente"),
-        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#8B6B76", marginBottom: 22 } }, "Ingres\xE1 tu contrase\xF1a para continuar"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 24, color: "var(--ink)", marginBottom: 4 } }, "AgendaMente"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)", marginBottom: 22 } }, modoOlvidoPassword ? "Ingres\xE1 tu mail para recuperar tu contrase\xF1a" : modoRegistro ? "Cre\xE1 tu cuenta" : "Ingres\xE1 con tu cuenta para continuar"),
         /* @__PURE__ */ React.createElement(
           "input",
           {
-            type: "password",
-            value: claveInput,
-            onChange: (e) => setClaveInput(e.target.value),
-            onKeyDown: (e) => {
-              if (e.key === "Enter" && claveInput) cargarDatos(claveInput);
-            },
-            placeholder: "Contrase\xF1a",
+            type: "email",
+            value: emailInput,
+            onChange: (e) => setEmailInput(e.target.value),
+            placeholder: "Mail",
             autoFocus: true,
             style: {
               width: "100%",
-              border: "1px solid #E6CFD6",
+              border: "1px solid var(--line)",
               borderRadius: 8,
               padding: "11px 12px",
               fontSize: 14,
-              color: "#4A2A38",
+              color: "var(--ink)",
+              boxSizing: "border-box",
+              marginBottom: 10
+            }
+          }
+        ),
+        !modoOlvidoPassword && /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "password",
+            value: passwordInput,
+            onChange: (e) => {
+              setPasswordInput(e.target.value);
+              passwordInputRef.current = e.target.value;
+            },
+            onKeyDown: (e) => {
+              if (e.key === "Enter" && emailInput && passwordInput) modoRegistro ? registrarse() : iniciarSesion();
+            },
+            placeholder: "Contrase\xF1a",
+            style: {
+              width: "100%",
+              border: "1px solid var(--line)",
+              borderRadius: 8,
+              padding: "11px 12px",
+              fontSize: 14,
+              color: "var(--ink)",
               boxSizing: "border-box",
               marginBottom: 12
             }
           }
         ),
-        errorLogin && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#9C3547", marginBottom: 12 } }, errorLogin),
-        error && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#9C3547", marginBottom: 12 } }, error),
+        modoRegistro && !modoOlvidoPassword && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: "var(--muted)", cursor: "pointer", margin: "0 0 14px 0" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: aceptoTerminos, onChange: (e) => setAceptoTerminos(e.target.checked), style: { marginTop: 2 } }), /* @__PURE__ */ React.createElement("span", null, "Le\xED y acepto los ", /* @__PURE__ */ React.createElement("a", { href: "https://agendamente.com.ar/terminos", target: "_blank", rel: "noopener noreferrer", style: { color: "var(--pine)" } }, "T\xE9rminos y condiciones"), " y la ", /* @__PURE__ */ React.createElement("a", { href: "https://agendamente.com.ar/privacidad", target: "_blank", rel: "noopener noreferrer", style: { color: "var(--pine)" } }, "Pol\xEDtica de privacidad"), ".")),
+        errorLogin && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--rust)", marginBottom: 12 } }, errorLogin),
+        infoLogin && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--verde)", marginBottom: 12 } }, infoLogin),
+        error && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--rust)", marginBottom: 12 } }, error),
         /* @__PURE__ */ React.createElement(
           "button",
           {
-            onClick: () => claveInput && cargarDatos(claveInput),
+            disabled: enviandoLogin || modoRegistro && !modoOlvidoPassword && !aceptoTerminos,
+            onClick: () => emailInput && (modoOlvidoPassword ? solicitarResetPassword() : passwordInput && (modoRegistro ? registrarse() : iniciarSesion())),
             style: {
               width: "100%",
               border: "none",
-              background: "#B34A6E",
+              background: "var(--pine)",
               color: "#fff",
               borderRadius: 8,
               padding: "11px 0",
               fontSize: 14,
               fontWeight: 600,
+              cursor: enviandoLogin || modoRegistro && !modoOlvidoPassword && !aceptoTerminos ? "default" : "pointer",
+              opacity: enviandoLogin || modoRegistro && !modoOlvidoPassword && !aceptoTerminos ? 0.5 : 1
+            }
+          },
+          enviandoLogin ? "Un momento..." : modoOlvidoPassword ? "Enviar link de recuperaci\xF3n" : modoRegistro ? "Crear cuenta" : "Entrar"
+        ),
+        !modoOlvidoPassword && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => {
+              setModoRegistro((v) => !v);
+              setErrorLogin("");
+              setInfoLogin("");
+            },
+            style: {
+              width: "100%",
+              border: "none",
+              background: "none",
+              color: "var(--muted)",
+              fontSize: 12.5,
+              marginTop: 10,
               cursor: "pointer"
             }
           },
-          "Entrar"
+          modoRegistro ? "\xBFYa ten\xE9s cuenta? Iniciar sesi\xF3n" : "\xBFNo ten\xE9s cuenta? Registrate"
+        ),
+        !modoRegistro && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => {
+              setModoOlvidoPassword((v) => !v);
+              setErrorLogin("");
+              setInfoLogin("");
+            },
+            style: {
+              width: "100%",
+              border: "none",
+              background: "none",
+              color: "var(--muted)",
+              fontSize: 12.5,
+              marginTop: 6,
+              cursor: "pointer"
+            }
+          },
+          modoOlvidoPassword ? "\xBFTe acordaste? Volver a iniciar sesi\xF3n" : "\xBFOlvidaste tu contrase\xF1a?"
+        )
+      );
+    }
+    if (codigoRecuperacion && !codigoConfirmado) {
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            maxWidth: 420,
+            margin: "60px auto",
+            padding: 32,
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 14,
+            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            boxShadow: "0 4px 20px rgba(28,37,48,0.1)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 21, color: "var(--ink)", marginBottom: 10 } }, "Guard\xE1 tu c\xF3digo de recuperaci\xF3n"),
+        /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, marginBottom: 14 } }, "Tu historia cl\xEDnica se guarda encriptada: ni nosotros ni nadie con acceso a la base puede leerla, solo vos. Por eso, si alg\xFAn d\xEDa olvid\xE1s tu contrase\xF1a, este c\xF3digo es la \xFAnica forma de recuperar el acceso a tus notas."),
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "ui-monospace, monospace", fontSize: 18, letterSpacing: 1, textAlign: "center", background: "var(--paper2)", color: "var(--ink)", borderRadius: 8, padding: "14px 10px", marginBottom: 10 } }, codigoRecuperacion),
+        /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: "var(--rust)", lineHeight: 1.5, marginBottom: 18 } }, "Guardalo en un lugar seguro (un gestor de contrase\xF1as, un papel guardado). Si lo perd\xE9s junto con tu contrase\xF1a, tus notas cl\xEDnicas se pierden para siempre — nadie, ni nosotros, puede recuperarlas."),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => setCodigoConfirmado(true),
+            style: { width: "100%", border: "none", background: "var(--pine)", color: "#fff", borderRadius: 8, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: "pointer" }
+          },
+          "Ya lo guard\xE9, continuar"
+        )
+      );
+    }
+    if (pidiendoDesbloqueo) {
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            maxWidth: 380,
+            margin: "60px auto",
+            padding: 32,
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 14,
+            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            boxShadow: "0 4px 20px rgba(28,37,48,0.1)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 21, color: "var(--ink)", marginBottom: 4 } }, "Desbloque\xE1 tu historia cl\xEDnica"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)", marginBottom: 18 } }, "Ingres\xE1 tu contrase\xF1a de nuevo para ver las notas cl\xEDnicas de esta sesi\xF3n."),
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "password",
+            value: passwordDesbloqueo,
+            onChange: (e) => setPasswordDesbloqueo(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === "Enter" && passwordDesbloqueo) desbloquear();
+            },
+            placeholder: "Contrase\xF1a",
+            autoFocus: true,
+            style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 12 }
+          }
+        ),
+        errorDesbloqueo && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--rust)", marginBottom: 12 } }, errorDesbloqueo),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            disabled: enviandoLogin,
+            onClick: () => passwordDesbloqueo && desbloquear(),
+            style: { width: "100%", border: "none", background: "var(--pine)", color: "#fff", borderRadius: 8, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: enviandoLogin ? "default" : "pointer", opacity: enviandoLogin ? 0.7 : 1 }
+          },
+          enviandoLogin ? "Un momento..." : "Desbloquear"
+        )
+      );
+    }
+    if (mostrandoCambioPassword) {
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            maxWidth: 380,
+            margin: "60px auto",
+            padding: 32,
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 14,
+            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            boxShadow: "0 4px 20px rgba(28,37,48,0.1)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 21, color: "var(--ink)", marginBottom: 18 } }, "Cambiar contrase\xF1a"),
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "password",
+            value: passwordNuevaCuenta,
+            onChange: (e) => setPasswordNuevaCuenta(e.target.value),
+            placeholder: "Contrase\xF1a nueva",
+            autoFocus: true,
+            style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 10 }
+          }
+        ),
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "password",
+            value: passwordNuevaCuentaRepetir,
+            onChange: (e) => setPasswordNuevaCuentaRepetir(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === "Enter" && passwordNuevaCuenta) cambiarPasswordLogueada();
+            },
+            placeholder: "Repet\xED la contrase\xF1a nueva",
+            style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 12 }
+          }
+        ),
+        errorCambioPassword && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--rust)", marginBottom: 12 } }, errorCambioPassword),
+        infoCambioPassword && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--verde)", marginBottom: 12 } }, infoCambioPassword),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            disabled: enviandoCambioPassword,
+            onClick: () => passwordNuevaCuenta && cambiarPasswordLogueada(),
+            style: { width: "100%", border: "none", background: "var(--pine)", color: "#fff", borderRadius: 8, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: enviandoCambioPassword ? "default" : "pointer", opacity: enviandoCambioPassword ? 0.7 : 1 }
+          },
+          enviandoCambioPassword ? "Un momento..." : "Guardar contrase\xF1a nueva"
+        ),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => {
+              setMostrandoCambioPassword(false);
+              setErrorCambioPassword("");
+              setInfoCambioPassword("");
+              setPasswordNuevaCuenta("");
+              setPasswordNuevaCuentaRepetir("");
+            },
+            style: { width: "100%", border: "none", background: "none", color: "var(--muted)", fontSize: 12.5, marginTop: 10, cursor: "pointer" }
+          },
+          "Volver"
         )
       );
     }
     if (cargando) {
-      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "#8B6B76", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15 } }, "Cargando..."));
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, fontFamily: "-apple-system, sans-serif", color: "var(--muted)", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15 } }, "Cargando..."));
     }
     if (error) {
-      return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "40px auto", padding: 24, fontFamily: "-apple-system, sans-serif", background: "#FBE9EA", border: "1px solid #E3A9AC", borderRadius: 10, color: "#7A2E33" } }, /* @__PURE__ */ React.createElement("strong", null, "No se pudo cargar la app."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5 } }, error), /* @__PURE__ */ React.createElement(
+      return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "40px auto", padding: 24, fontFamily: "-apple-system, sans-serif", background: "color-mix(in srgb, var(--rust) 8%, var(--card))", border: "1px solid color-mix(in srgb, var(--rust) 35%, var(--card))", borderRadius: 10, color: "var(--rust-dark)" } }, /* @__PURE__ */ React.createElement("strong", null, "No se pudo cargar la app."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5 } }, error), /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: () => {
             setError(null);
-            setAutenticado(false);
-            try {
-              sessionStorage.removeItem("claveConsultorio");
-            } catch (err) {
-            }
+            cargarDatosDesdeSupabase();
           },
-          style: { marginTop: 8, border: "1px solid #7A2E33", background: "#fff", color: "#7A2E33", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }
+          style: { marginTop: 8, border: "1px solid var(--rust-dark)", background: "var(--card)", color: "var(--rust-dark)", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }
         },
         "Volver a intentar"
       ));
@@ -2353,16 +3265,6 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       "div",
       {
         style: {
-          "--paper": "#F8EEF1",
-          "--paper2": "#F0DFE4",
-          "--card": "#FFFBFC",
-          "--ink": "#4A2A38",
-          "--muted": "#8B6B76",
-          "--line": "#E6CFD6",
-          "--pine": "#B34A6E",
-          "--ochre-dark": "#C07A47",
-          "--rust": "#9C3547",
-          "--verde": "#4E7A5B",
           "--serif": "Iowan Old Style, Palatino Linotype, Georgia, ui-serif, serif",
           "--sans": "-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica Neue, sans-serif",
           "--mono": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
@@ -2408,15 +3310,8 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           tab,
           setTab,
           isMobile,
-          onCerrarSesion: () => {
-            CLAVE_SESION = "";
-            try {
-              sessionStorage.removeItem("claveConsultorio");
-            } catch (err) {
-            }
-            setAutenticado(false);
-            setClaveInput("");
-          }
+          onCerrarSesion: cerrarSesionFn,
+          onCambiarPassword: () => setMostrandoCambioPassword(true)
         }
       ),
       /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box", minHeight: isMobile ? "auto" : 720 } }, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
@@ -2460,7 +3355,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onConsumirPacienteAAbrir: () => setPacienteAAbrir(null),
           isMobile
         }
-      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, historial, config, isMobile })))
+      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, historial, config, isMobile }), tab === "config" && /* @__PURE__ */ React.createElement(ConfigView, { temaActivo, onCambiarTema: cambiarTema, iaActivada: !!config.iaActivada, onCambiarIA: cambiarIA, onCambiarPassword: () => setMostrandoCambioPassword(true), onCerrarSesion: cerrarSesionFn, isMobile })))
     );
   }
   ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
