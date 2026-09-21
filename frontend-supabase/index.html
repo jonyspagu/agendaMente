@@ -190,6 +190,32 @@
     if (mismoSlot.length > 0) return { tipo: "otro", turno: mismoSlot[0] };
     return null;
   }
+  // ---- Acceso / suscripción (cobro manual: transferencia al alias) ----
+  // `trial_termina` es el "acceso hasta" (prueba o mes pago). Al vencer, la
+  // cuenta se bloquea salvo para descargar los propios datos.
+  // Se paga solo por transferencia al alias (sin link de pago).
+  const DATOS_DE_PAGO = { precio: "$10.000 por mes", alias: "jpagura", titular: "Jonatan Pagura", linkMercadoPago: "" };
+  const MAIL_CONTACTO = "contacto@agendamente.com.ar";
+  function calcularAcceso(config) {
+    if (!config || !config.estadoSuscripcion) return { bloqueada: false, diasRestantes: null, esPrueba: false, cancelada: false };
+    const hasta = config.trialTermina ? new Date(config.trialTermina) : null;
+    const ahora = new Date();
+    const cancelada = config.estadoSuscripcion === "cancelada";
+    const vencida = config.estadoSuscripcion === "vencida" || (hasta !== null && hasta < ahora);
+    const diasRestantes = hasta ? Math.ceil((hasta - ahora) / 864e5) : null;
+    return { bloqueada: cancelada || vencida, diasRestantes, esPrueba: config.estadoSuscripcion === "trial", cancelada };
+  }
+  function InfoDePago() {
+    const d = DATOS_DE_PAGO;
+    const hayDatos = d.alias || d.linkMercadoPago;
+    const fila = { fontSize: 13.5, lineHeight: 1.55, color: "var(--ink)" };
+    return /* @__PURE__ */ React.createElement("div", { style: { background: "var(--paper2)", borderRadius: 10, padding: "12px 14px", margin: "12px 0" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 6 } }, "C\xF3mo pagar (", d.precio, ")"), hayDatos ? /* @__PURE__ */ React.createElement(React.Fragment, null, d.linkMercadoPago && /* @__PURE__ */ React.createElement("div", { style: fila }, /* @__PURE__ */ React.createElement("b", null, "Mercado Pago: "), /* @__PURE__ */ React.createElement("a", { href: d.linkMercadoPago, target: "_blank", rel: "noopener noreferrer", style: { color: "var(--pine)" } }, "abrir link de pago")), d.alias && /* @__PURE__ */ React.createElement("div", { style: fila }, /* @__PURE__ */ React.createElement("b", null, "Transferencia al alias: "), "", /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)" } }, d.alias), d.titular ? " \xB7 titular " + d.titular : "")) : /* @__PURE__ */ React.createElement("div", { style: fila }, "Escribinos a ", /* @__PURE__ */ React.createElement("a", { href: "mailto:" + MAIL_CONTACTO, style: { color: "var(--pine)" } }, MAIL_CONTACTO), " y te pasamos los datos de pago (por transferencia)."), /* @__PURE__ */ React.createElement("div", { style: { ...fila, color: "var(--muted)", marginTop: 6 } }, "Despu\xE9s de pagar, mand\xE1 el comprobante a ", /* @__PURE__ */ React.createElement("a", { href: "mailto:" + MAIL_CONTACTO + "?subject=Pago%20AgendaMente", style: { color: "var(--pine)" } }, MAIL_CONTACTO), " con el mail de tu cuenta. Activamos tu acceso en cuanto lo veamos."));
+  }
+  function PantallaAccesoVencido({ acceso, onDescargar, onCerrarSesion }) {
+    const btn = { border: "1px solid var(--line)", background: "var(--card)", color: "var(--ink)", borderRadius: 8, padding: "10px 16px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
+    const titulo = acceso.cancelada ? "Tu cuenta est\xE1 cancelada" : acceso.esPrueba ? "Tu prueba gratuita termin\xF3" : "Tu acceso termin\xF3";
+    return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 520, margin: "40px auto", padding: 26, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 14, fontFamily: "var(--sans)", color: "var(--ink)" } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: 24, margin: "0 0 8px 0" } }, titulo), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.6, color: "var(--muted)", margin: 0 } }, "Tus datos est\xE1n a salvo y no se borran. Para seguir usando AgendaMente, activ\xE1 tu cuenta."), /* @__PURE__ */ React.createElement(InfoDePago, null), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, lineHeight: 1.55, color: "var(--muted)", margin: "0 0 16px 0" } }, "Mientras tanto pod\xE9s descargar una copia de todos tus datos."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: onDescargar, style: { ...btn, background: "var(--pine)", color: "#fff", border: "1px solid var(--pine)" } }, "Descargar mis datos"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: btn }, "Cerrar sesi\xF3n")));
+  }
   // ---- Paletas de color ----
   // Cada tema es solo un set de variables CSS; aplicarTema() las pone en
   // <html> y todo el resto de la app (que usa var(--...)) cambia sola.
@@ -2875,6 +2901,25 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       if (error) throw new Error(error.message);
       setConfig((c) => ({ ...c, iaActivada: activar, iaConsentimientoAt: activar ? ahora : c.iaConsentimientoAt }));
     };
+    // Copia de los propios datos (JSON) — disponible aun con el acceso vencido.
+    const descargarMisDatos = () => {
+      const datos = {
+        exportado: new Date().toISOString(),
+        profesional: { nombre: config.nombreProfesional, matricula: config.matricula, especialidad: config.especialidad },
+        pacientes,
+        turnos,
+        cobros
+      };
+      const blob = new Blob([JSON.stringify(datos, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "agendamente-mis-datos-" + fmtKey(HOY) + ".json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1e3);
+    };
     const actualizarConfig = conManejoDeError(async (cambios) => {
       const res = await apiCall("Config", "update", { id: 1, data: cambios });
       aplicarDataset(res);
@@ -3264,6 +3309,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         "Volver a intentar"
       ));
     }
+    const acceso = calcularAcceso(config);
+    if (acceso.bloqueada) {
+      return /* @__PURE__ */ React.createElement(PantallaAccesoVencido, { acceso, onDescargar: descargarMisDatos, onCerrarSesion: cerrarSesionFn });
+    }
+    const bannerAcceso = acceso.diasRestantes !== null && acceso.diasRestantes <= 3 ? /* @__PURE__ */ React.createElement("div", { style: { background: "color-mix(in srgb, var(--ochre-dark) 14%, var(--card))", border: "1px solid color-mix(in srgb, var(--ochre-dark) 40%, var(--card))", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "var(--ink)", lineHeight: 1.5 } }, /* @__PURE__ */ React.createElement("b", null, acceso.esPrueba ? "Tu prueba gratuita" : "Tu acceso"), acceso.diasRestantes <= 0 ? " termina hoy." : " termina en " + acceso.diasRestantes + (acceso.diasRestantes === 1 ? " d\xEDa." : " d\xEDas."), " Para seguir, ", /* @__PURE__ */ React.createElement("a", { href: "mailto:" + MAIL_CONTACTO + "?subject=Pago%20AgendaMente", style: { color: "var(--pine)", fontWeight: 600 } }, "escribinos a " + MAIL_CONTACTO), " (", DATOS_DE_PAGO.precio, ", por transferencia al alias " + DATOS_DE_PAGO.alias + ").") : null;
     return /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -3317,7 +3367,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onCambiarPassword: () => setMostrandoCambioPassword(true)
         }
       ),
-      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box", minHeight: isMobile ? "auto" : 720 } }, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box", minHeight: isMobile ? "auto" : 720 } }, bannerAcceso, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
         HoyView,
         {
           turnos,
