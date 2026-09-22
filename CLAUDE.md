@@ -31,8 +31,8 @@ Requisito explícito e innegociable: **ni Jonatan ni nadie con acceso a la base 
 
 - Al alta, se genera una `dataKey` envuelta dos veces: una con clave derivada de la contraseña (PBKDF2 + `salt_password`), otra con clave derivada de un código de recuperación que se muestra una única vez (`salt_recovery`). Ambas envolturas en `profesionales.data_key_wrapped_password` / `data_key_wrapped_recovery`.
 - `_dataKey` es una variable de módulo (no React state, no localStorage) — vive solo en memoria de la pestaña actual. **Se resetea a `null` al cerrar sesión** (bug real encontrado y corregido: si no se limpia, la cuenta siguiente que loguea en la misma pestaña hereda la clave vieja).
-- Recuperación de contraseña (Fase 2): si se resetea la contraseña vía el link de mail de Supabase, hay una pantalla dedicada que pide el código de recuperación para volver a envolver la `dataKey` con la contraseña nueva. Sin ese código, las notas viejas son irrecuperables — no hay atajo ni "empezar de cero" automático (decisión explícita, ver plan).
-- "Pulir con IA" (Gemini) solo ve el texto en claro transitoriamente, en memoria, durante la llamada — nunca se persiste ni loguea en ningún lado.
+- Recuperación de contraseña (Fase 2): si se resetea la contraseña vía el link de mail de Supabase, hay una pantalla dedicada que pide el código de recuperación para volver a envolver la `dataKey` con la contraseña nueva. Sin ese código, las notas viejas son irrecuperables — no hay atajo ni "empezar de cero" automático (decisión explícita, ver plan). **Verificado en vivo de punta a punta** (código incorrecto, código correcto + rotación de código nuevo, persistencia de una nota real tras el cambio de contraseña, login con la password vieja rechazado). Quirk conocido e inofensivo: a veces aparece de más la pantalla de "Desbloqueá tu historia clínica" pidiendo la contraseña una vez más justo después de recuperar el acceso — no rompe nada, solo hay que volver a tipearla.
+- "Pulir con IA" (Gemini) se **sacó del producto** (decisión explícita) — ya no hay ninguna función que mande texto de la historia clínica a un servicio externo. Si en el futuro se reincorpora algo de IA sobre las notas, tiene que seguir el mismo principio: texto en claro solo transitorio en memoria, nunca persistido ni logueado.
 
 ## Supabase — puntos a tener en cuenta
 
@@ -55,9 +55,9 @@ Requisito explícito e innegociable: **ni Jonatan ni nadie con acceso a la base 
 ## Estado (ver plan completo en `.claude/plans/` para el detalle de cada fase)
 
 - ✅ Migración Fase A (auth multi-tenant, CRUD, RLS, encriptación de historia).
-- ✅ Fase B (cobros mensuales y turnos recurrentes automáticos vía `pg_cron`, historial de auditoría vía trigger, "Pulir con IA" y alertas de error vía Edge Functions + Resend).
+- ✅ Fase B (cobros mensuales y turnos recurrentes automáticos vía `pg_cron`, historial de auditoría vía trigger, alertas de error vía Edge Functions + Resend). La pieza de "Pulir con IA" (Gemini) que incluía originalmente se sacó después (ver arriba).
 - ✅ Historial de auditoría y alertas de error ya deployados también al Apps Script de **producción** (beneficia a Guada hoy, aunque siga en el stack viejo).
 - ✅ Datos reales de Guada migrados a Supabase — Pacientes/Turnos/Cobros/Config, **sin** `historia` (queda vacía a propósito) y sin que nadie se haya logueado todavía con su cuenta.
-- 🟡 Fase 2 (recuperación de contraseña con código): "Cambiar contraseña" verificado en vivo. El camino "olvidé mi contraseña" por mail está implementado pero no se pudo verificar 100% en vivo (bloqueado por rate limit de mail + escáner de Gmail) — pendiente una prueba real antes de ofrecerlo a clientas.
+- ✅ Fase 2 (recuperación de contraseña con código) — verificada en vivo de punta a punta (ver detalle arriba). Lista para ofrecer a clientas reales.
 - ⬜ Cutover real de Guada a Supabase (migrar `historia`, que necesita su contraseña real en una sesión real) — no programado todavía.
-- ⬜ Negocio: marca, landing, Términos de Servicio, Mercado Pago — pospuesto a propósito hasta que el producto funcione.
+- 🟡 Negocio (en curso, ya no pospuesto): marca, landing y Términos/Privacidad escritos; dominio `agendamente.com.ar` comprado y en proceso de apuntar a Cloudflare (nameservers cambiados en DonWeb, propagación pendiente); `sitio/` y `frontend-supabase/` ya desplegados en Cloudflare Workers/Pages (`sitio-agendamente`, `app-agendamente`) con dominio propio pendiente de conectar. Falta: Resend SMTP (bloqueado hasta que el dominio active), Mercado Pago, revisión de abogado de los dos placeholders legales que quedan (Res. 424/2020 arrepentimiento; art. 12 transferencia internacional de datos).

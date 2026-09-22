@@ -3,5 +3,9 @@
   "compatibility_date": "2026-09-21",
   "assets": {
     "directory": "."
-  }
+  },
+  "routes": [
+    { "pattern": "agendamente.com.ar", "custom_domain": true },
+    { "pattern": "www.agendamente.com.ar", "custom_domain": true }
+  ]
 }

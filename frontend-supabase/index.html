@@ -2386,6 +2386,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [errorRecuperacionClave, setErrorRecuperacionClave] = useState("");
     const [enviandoRecuperacionClave, setEnviandoRecuperacionClave] = useState(false);
     const [recuperacionSinCodigo, setRecuperacionSinCodigo] = useState(false);
+    // Evita mostrar la pantalla equivocada (con o sin código) por una
+    // fracción de segundo mientras obtenerConfigDelUsuario() todavía no
+    // resolvió — sin esto se podría ver un parpadeo de la pantalla que no
+    // corresponde antes de saber si esta cuenta ya tiene dataKey o no.
+    const [configCargadaParaRecovery, setConfigCargadaParaRecovery] = useState(false);
     const [modoOlvidoPassword, setModoOlvidoPassword] = useState(false);
     // Cambio de contraseña voluntario (ya logueada, con la dataKey en memoria).
     const [mostrandoCambioPassword, setMostrandoCambioPassword] = useState(false);
@@ -2398,6 +2403,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [guardando, setGuardando] = useState(false);
     const isMobile = useIsMobile();
     const cargandoRef = useRef(false);
+    // Guarda de reentrancia específica de crearDataKeyInicial: un evento de
+    // auth "extra" (visto en pruebas de Fase 2) podría disparar un segundo
+    // llamado en paralelo durante un alta de dataKey nueva y generar dos
+    // claves distintas para la misma cuenta — mismo patrón que cargandoRef.
+    const creandoClaveRef = useRef(false);
     useEffect(() => {
       _onPendingChange = (n) => setGuardando(n > 0);
       return () => {
@@ -2437,24 +2447,30 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     // tipeada y con un código de recuperación nuevo, y muestra ese código
     // una única vez. De ahí en más, cfg.saltPassword ya existe.
     const crearDataKeyInicial = async () => {
-      const dk = await generarDataKey();
-      const saltPass = saltAlAzar();
-      const saltRec = saltAlAzar();
-      const codigo = await generarCodigoRecuperacion();
-      const claveDesdePass = await claveDeEnvoltura(passwordInputRef.current, saltPass);
-      const claveDesdeCodigo = await claveDeEnvoltura(codigo, saltRec);
-      const wrappedPass = await envolverClave(dk, claveDesdePass);
-      const wrappedRec = await envolverClave(dk, claveDesdeCodigo);
-      await apiCall("Config", "update", {
-        data: {
-          saltPassword: saltPass,
-          saltRecovery: saltRec,
-          dataKeyWrappedPassword: wrappedPass,
-          dataKeyWrappedRecovery: wrappedRec
-        }
-      });
-      _dataKey = dk;
-      setCodigoRecuperacion(codigo);
+      if (creandoClaveRef.current) return;
+      creandoClaveRef.current = true;
+      try {
+        const dk = await generarDataKey();
+        const saltPass = saltAlAzar();
+        const saltRec = saltAlAzar();
+        const codigo = await generarCodigoRecuperacion();
+        const claveDesdePass = await claveDeEnvoltura(passwordInputRef.current, saltPass);
+        const claveDesdeCodigo = await claveDeEnvoltura(codigo, saltRec);
+        const wrappedPass = await envolverClave(dk, claveDesdePass);
+        const wrappedRec = await envolverClave(dk, claveDesdeCodigo);
+        await apiCall("Config", "update", {
+          data: {
+            saltPassword: saltPass,
+            saltRecovery: saltRec,
+            dataKeyWrappedPassword: wrappedPass,
+            dataKeyWrappedRecovery: wrappedRec
+          }
+        });
+        _dataKey = dk;
+        setCodigoRecuperacion(codigo);
+      } finally {
+        creandoClaveRef.current = false;
+      }
     };
     // Cuenta ya existente: intenta desenvolver la clave con la contraseña
     // recién tipeada (login fresco); si no hay contraseña en memoria (sesión
@@ -2590,6 +2606,42 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         setEnviandoRecuperacionClave(false);
       }
     };
+    // Primera vez que esta cuenta entra, vía el mismo link de "olvidé mi
+    // contraseña" (cuenta migrada que nunca pasó por el alta normal — no
+    // tiene dataKey ni código de recuperación todavía, así que no hay nada
+    // que desenvolver). Reusa crearDataKeyInicial tal cual: solo cambia
+    // cómo se llega hasta acá.
+    const elegirPasswordInicial = async () => {
+      setErrorRecuperacionClave("");
+      if (passwordNuevaRecuperacion !== passwordNuevaRecuperacionRepetir) {
+        setErrorRecuperacionClave("Las contrase\xF1as nuevas no coinciden.");
+        return;
+      }
+      if (passwordNuevaRecuperacion.length < 6) {
+        setErrorRecuperacionClave("La contrase\xF1a debe tener al menos 6 caracteres.");
+        return;
+      }
+      setEnviandoRecuperacionClave(true);
+      try {
+        const { error } = await sb.auth.updateUser({ password: passwordNuevaRecuperacion });
+        if (error) throw error;
+        passwordInputRef.current = passwordNuevaRecuperacion;
+        await crearDataKeyInicial();
+        setModoRecuperacionClave(false);
+        setPasswordNuevaRecuperacion("");
+        setPasswordNuevaRecuperacionRepetir("");
+        setCodigoConfirmado(false);
+        setCargando(true);
+        const d2 = await obtenerDatasetCompleto();
+        setAutenticado(true);
+        aplicarDataset(d2);
+        setCargando(false);
+      } catch (err) {
+        setErrorRecuperacionClave("Hubo un error al crear tu cuenta: " + err.message + ". Volv\xE9 a intentarlo.");
+      } finally {
+        setEnviandoRecuperacionClave(false);
+      }
+    };
     // Cambio de contraseña voluntario, con sesión activa y la dataKey ya
     // desenvuelta en memoria — no hace falta el código acá.
     const cambiarPasswordLogueada = async () => {
@@ -2692,8 +2744,12 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           // contraseña VIEJA que justamente no tiene).
           setCargando(false);
           setModoRecuperacionClave(true);
+          setConfigCargadaParaRecovery(false);
           obtenerConfigDelUsuario()
-            .then(setConfig)
+            .then((cfg) => {
+              setConfig(cfg);
+              setConfigCargadaParaRecovery(true);
+            })
             .catch((e) => setErrorRecuperacionClave("No se pudo cargar tu cuenta: " + e.message));
           return;
         }
@@ -2890,6 +2946,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       return nuevoId;
     });
     if (modoRecuperacionClave) {
+      // Mientras no sepamos si esta cuenta ya tiene dataKey (config recién
+      // llegando) no se puede elegir todavía cuál de las dos pantallas
+      // mostrar — se muestra un estado neutro en vez de arriesgar mostrar
+      // la que no corresponde por una fracción de segundo.
+      const cuentaYaTieneClave = !!(config && config.saltPassword);
       return /* @__PURE__ */ React.createElement(
         "div",
         {
@@ -2904,27 +2965,19 @@ Esta acci\xF3n no se puede deshacer.`)) return;
             boxShadow: "0 4px 20px rgba(28,37,48,0.1)"
           }
         },
-        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 21, color: "var(--ink)", marginBottom: 10 } }, "Recuper\xE1 el acceso a tu historia cl\xEDnica"),
-        !recuperacionSinCodigo && /* @__PURE__ */ React.createElement(React.Fragment, null,
-          /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, marginBottom: 16 } }, "Ingres\xE1 tu c\xF3digo de recuperaci\xF3n (el que guardaste cuando creaste tu cuenta) y eleg\xED tu nueva contrase\xF1a."),
-          /* @__PURE__ */ React.createElement(
-            "input",
-            {
-              type: "text",
-              value: codigoRecuperacionInput,
-              onChange: (e) => setCodigoRecuperacionInput(e.target.value),
-              placeholder: "C\xF3digo de recuperaci\xF3n",
-              autoFocus: true,
-              style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 10, fontFamily: "ui-monospace, monospace" }
-            }
-          ),
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 21, color: "var(--ink)", marginBottom: 10 } }, !configCargadaParaRecovery ? "Un momento..." : cuentaYaTieneClave ? "Recuper\xE1 el acceso a tu historia cl\xEDnica" : "Eleg\xED tu contrase\xF1a"),
+        !configCargadaParaRecovery && !errorRecuperacionClave && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--muted)" } }, "Carg\xE1ndose..."),
+        errorRecuperacionClave && !configCargadaParaRecovery && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--rust)" } }, errorRecuperacionClave),
+        configCargadaParaRecovery && !cuentaYaTieneClave && /* @__PURE__ */ React.createElement(React.Fragment, null,
+          /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, marginBottom: 16 } }, "Es la primera vez que entr\xE1s ac\xE1 — eleg\xED tu contrase\xF1a para empezar."),
           /* @__PURE__ */ React.createElement(
             "input",
             {
               type: "password",
               value: passwordNuevaRecuperacion,
               onChange: (e) => setPasswordNuevaRecuperacion(e.target.value),
-              placeholder: "Contrase\xF1a nueva",
+              placeholder: "Contrase\xF1a",
+              autoFocus: true,
               style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 10 }
             }
           ),
@@ -2935,9 +2988,9 @@ Esta acci\xF3n no se puede deshacer.`)) return;
               value: passwordNuevaRecuperacionRepetir,
               onChange: (e) => setPasswordNuevaRecuperacionRepetir(e.target.value),
               onKeyDown: (e) => {
-                if (e.key === "Enter" && codigoRecuperacionInput && passwordNuevaRecuperacion) recuperarConCodigo();
+                if (e.key === "Enter" && passwordNuevaRecuperacion) elegirPasswordInicial();
               },
-              placeholder: "Repet\xED la contrase\xF1a nueva",
+              placeholder: "Repet\xED la contrase\xF1a",
               style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 12 }
             }
           ),
@@ -2946,21 +2999,70 @@ Esta acci\xF3n no se puede deshacer.`)) return;
             "button",
             {
               disabled: enviandoRecuperacionClave,
-              onClick: () => codigoRecuperacionInput && passwordNuevaRecuperacion && recuperarConCodigo(),
+              onClick: () => passwordNuevaRecuperacion && elegirPasswordInicial(),
               style: { width: "100%", border: "none", background: "var(--pine)", color: "#fff", borderRadius: 8, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: enviandoRecuperacionClave ? "default" : "pointer", opacity: enviandoRecuperacionClave ? 0.7 : 1 }
             },
-            enviandoRecuperacionClave ? "Un momento..." : "Recuperar acceso"
-          ),
-          /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              onClick: () => setRecuperacionSinCodigo(true),
-              style: { width: "100%", border: "none", background: "none", color: "var(--muted)", fontSize: 12.5, marginTop: 10, cursor: "pointer" }
-            },
-            "No tengo mi c\xF3digo de recuperaci\xF3n"
+            enviandoRecuperacionClave ? "Un momento..." : "Confirmar"
           )
         ),
-        recuperacionSinCodigo && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--rust)", lineHeight: 1.6 } }, "Sin ese c\xF3digo no hay forma de recuperar las notas cl\xEDnicas que ya ten\xEDas guardadas — ni nosotros, ni nadie con acceso a la base, puede hacerlo: se guardan encriptadas y esa era justamente la idea. Escribinos y vemos c\xF3mo seguir.")
+        configCargadaParaRecovery && cuentaYaTieneClave && /* @__PURE__ */ React.createElement(React.Fragment, null,
+          !recuperacionSinCodigo && /* @__PURE__ */ React.createElement(React.Fragment, null,
+            /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5, marginBottom: 16 } }, "Ingres\xE1 tu c\xF3digo de recuperaci\xF3n (el que guardaste cuando creaste tu cuenta) y eleg\xED tu nueva contrase\xF1a."),
+            /* @__PURE__ */ React.createElement(
+              "input",
+              {
+                type: "text",
+                value: codigoRecuperacionInput,
+                onChange: (e) => setCodigoRecuperacionInput(e.target.value),
+                placeholder: "C\xF3digo de recuperaci\xF3n",
+                autoFocus: true,
+                style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 10, fontFamily: "ui-monospace, monospace" }
+              }
+            ),
+            /* @__PURE__ */ React.createElement(
+              "input",
+              {
+                type: "password",
+                value: passwordNuevaRecuperacion,
+                onChange: (e) => setPasswordNuevaRecuperacion(e.target.value),
+                placeholder: "Contrase\xF1a nueva",
+                style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 10 }
+              }
+            ),
+            /* @__PURE__ */ React.createElement(
+              "input",
+              {
+                type: "password",
+                value: passwordNuevaRecuperacionRepetir,
+                onChange: (e) => setPasswordNuevaRecuperacionRepetir(e.target.value),
+                onKeyDown: (e) => {
+                  if (e.key === "Enter" && codigoRecuperacionInput && passwordNuevaRecuperacion) recuperarConCodigo();
+                },
+                placeholder: "Repet\xED la contrase\xF1a nueva",
+                style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 12 }
+              }
+            ),
+            errorRecuperacionClave && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--rust)", marginBottom: 12 } }, errorRecuperacionClave),
+            /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                disabled: enviandoRecuperacionClave,
+                onClick: () => codigoRecuperacionInput && passwordNuevaRecuperacion && recuperarConCodigo(),
+                style: { width: "100%", border: "none", background: "var(--pine)", color: "#fff", borderRadius: 8, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: enviandoRecuperacionClave ? "default" : "pointer", opacity: enviandoRecuperacionClave ? 0.7 : 1 }
+              },
+              enviandoRecuperacionClave ? "Un momento..." : "Recuperar acceso"
+            ),
+            /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                onClick: () => setRecuperacionSinCodigo(true),
+                style: { width: "100%", border: "none", background: "none", color: "var(--muted)", fontSize: 12.5, marginTop: 10, cursor: "pointer" }
+              },
+              "No tengo mi c\xF3digo de recuperaci\xF3n"
+            )
+          ),
+          recuperacionSinCodigo && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13.5, color: "var(--rust)", lineHeight: 1.6 } }, "Sin ese c\xF3digo no hay forma de recuperar las notas cl\xEDnicas que ya ten\xEDas guardadas — ni nosotros, ni nadie con acceso a la base, puede hacerlo: se guardan encriptadas y esa era justamente la idea. Escribinos y vemos c\xF3mo seguir.")
+        )
       );
     }
     if (!autenticado && !cargando) {
