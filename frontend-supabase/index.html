@@ -254,24 +254,7 @@
     }
   }
   aplicarTema(temaGuardado());
-  function ConfigView({ temaActivo, onCambiarTema, iaActivada, onCambiarIA, onCambiarPassword, onCerrarSesion, isMobile }) {
-    const [avisoIA, setAvisoIA] = useState(false);
-    const [entendiIA, setEntendiIA] = useState(false);
-    const [errorIA, setErrorIA] = useState(null);
-    const [guardandoIA, setGuardandoIA] = useState(false);
-    const cambiarIAConAviso = async (activar) => {
-      setErrorIA(null);
-      setGuardandoIA(true);
-      try {
-        await onCambiarIA(activar);
-        setAvisoIA(false);
-        setEntendiIA(false);
-      } catch (e) {
-        setErrorIA("No se pudo guardar el cambio: " + (e.message || e));
-      } finally {
-        setGuardandoIA(false);
-      }
-    };
+  function ConfigView({ temaActivo, onCambiarTema, onCambiarPassword, onCerrarSesion, isMobile }) {
     const card = { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: isMobile ? 16 : 22, marginBottom: 18 };
     const secTitle = { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", margin: "0 0 4px 0" };
     const secSub = { fontSize: 13, color: "var(--muted)", margin: "0 0 16px 0" };
@@ -281,7 +264,7 @@
       const v = t.vars;
       const activo = temaActivo === id;
       return /* @__PURE__ */ React.createElement("button", { key: id, onClick: () => onCambiarTema(id), "aria-pressed": activo, style: { textAlign: "left", cursor: "pointer", fontFamily: "var(--sans)", background: "var(--card)", border: activo ? "2px solid var(--pine)" : "1px solid var(--line)", borderRadius: 12, padding: activo ? 11 : 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { background: v["--paper"], border: "1px solid " + v["--line"], borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 22, height: 8, borderRadius: 4, background: v["--pine"] } }), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, height: 6, borderRadius: 3, background: v["--paper2"] } })), /* @__PURE__ */ React.createElement("div", { style: { background: v["--card"], border: "1px solid " + v["--line"], borderRadius: 6, padding: "7px 8px", display: "flex", flexDirection: "column", gap: 5 } }, /* @__PURE__ */ React.createElement("span", { style: { width: "70%", height: 6, borderRadius: 3, background: v["--ink"] } }), /* @__PURE__ */ React.createElement("span", { style: { width: "45%", height: 5, borderRadius: 3, background: v["--muted"], opacity: 0.6 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 5 } }, [v["--pine"], v["--verde"], v["--ochre-dark"], v["--rust"]].map((c, i) => /* @__PURE__ */ React.createElement("span", { key: i, style: { width: 14, height: 14, borderRadius: "50%", background: c } })))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "var(--ink)" } }, t.nombre, activo && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--pine)" } }, "✓ En uso")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 3, lineHeight: 1.4 } }, t.detalle)));
-    }))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Inteligencia artificial"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Funci\xF3n opcional, desactivada por defecto."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "var(--ink)" } }, "✨ Pulir con IA"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)", marginTop: 3, lineHeight: 1.5 } }, "Mejora la redacci\xF3n de una nota de la historia cl\xEDnica que ya escribiste, sin agregar contenido nuevo. Al usarla, el texto de esa nota se env\xEDa a un proveedor externo (Google).")), /* @__PURE__ */ React.createElement("button", { role: "switch", "aria-checked": iaActivada, "aria-label": "Activar Pulir con IA", disabled: guardandoIA, onClick: () => iaActivada ? cambiarIAConAviso(false) : setAvisoIA(true), style: { flex: "none", width: 46, height: 26, borderRadius: 13, border: "none", cursor: "pointer", padding: 3, background: iaActivada ? "var(--pine)" : "var(--line)", display: "flex", justifyContent: iaActivada ? "flex-end" : "flex-start", transition: "background 0.15s" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 20, height: 20, borderRadius: "50%", background: "#fff", display: "block", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" } }))), iaActivada && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--verde)", marginTop: 10 } }, "Activada. Pod\xE9s desactivarla cuando quieras."), errorIA && !avisoIA && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--rust)", marginTop: 10 } }, errorIA)), avisoIA && /* @__PURE__ */ React.createElement("div", { role: "dialog", "aria-modal": "true", style: { position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", borderRadius: 14, maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto", padding: isMobile ? 20 : 26, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", color: "var(--ink)", fontFamily: "var(--sans)" } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 21, margin: "0 0 10px 0" } }, "Activar “Pulir con IA”"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14, lineHeight: 1.55, margin: "0 0 14px 0" } }, "Esta funci\xF3n mejora la redacci\xF3n de una nota que ya escribiste: la deja m\xE1s clara y prolija, con vocabulario profesional. No agrega contenido cl\xEDnico nuevo ni hace diagn\xF3sticos."), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 6 } }, "C\xF3mo funciona"), /* @__PURE__ */ React.createElement("ul", { style: { fontSize: 13.5, lineHeight: 1.55, margin: "0 0 14px 0", paddingLeft: 20 } }, /* @__PURE__ */ React.createElement("li", null, "Solo se ejecuta cuando toc\xE1s “Pulir con IA”. Nunca corre sola ni en segundo plano."), /* @__PURE__ */ React.createElement("li", null, "Se env\xEDa \xFAnicamente el texto de esa nota (y tu marco te\xF3rico, para adaptar la redacci\xF3n) a Google (Gemini), un proveedor externo de IA, que lo procesa en sus servidores."), /* @__PURE__ */ React.createElement("li", null, /* @__PURE__ */ React.createElement("b", null, "En ese momento el texto sale de tu dispositivo sin la encriptaci\xF3n"), " de la historia cl\xEDnica."), /* @__PURE__ */ React.createElement("li", null, "AgendaMente no guarda ese texto. El resultado aparece en el cuadro de la nota y reci\xE9n se guarda, encriptado, cuando apret\xE1s “Guardar entrada”.")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 6 } }, "Tu responsabilidad"), /* @__PURE__ */ React.createElement("ul", { style: { fontSize: 13.5, lineHeight: 1.55, margin: "0 0 14px 0", paddingLeft: 20 } }, /* @__PURE__ */ React.createElement("li", null, "Contar con el consentimiento de tu paciente para este tratamiento y no incluir su nombre completo, DNI ni otros datos que lo identifiquen."), /* @__PURE__ */ React.createElement("li", null, "Revisar siempre el resultado antes de guardarlo: puede tener errores. La responsabilidad cl\xEDnica es tuya."), /* @__PURE__ */ React.createElement("li", null, "Pod\xE9s desactivarla cuando quieras desde esta pantalla.")), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13.5, cursor: "pointer", margin: "0 0 16px 0" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: entendiIA, onChange: (e) => setEntendiIA(e.target.checked), style: { marginTop: 3 } }), /* @__PURE__ */ React.createElement("span", null, "Le\xED y entiendo lo anterior.")), errorIA && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--rust)", marginBottom: 12 } }, errorIA), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => { setAvisoIA(false); setEntendiIA(false); setErrorIA(null); }, style: btn }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { disabled: !entendiIA || guardandoIA, onClick: () => cambiarIAConAviso(true), style: { ...btn, background: "var(--pine)", color: "#fff", border: "1px solid var(--pine)", opacity: !entendiIA || guardandoIA ? 0.5 : 1, cursor: !entendiIA || guardandoIA ? "default" : "pointer" } }, guardandoIA ? "Guardando…" : "Activar")))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Cuenta"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Seguridad y sesi\xF3n."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: onCambiarPassword, style: btn }, "Cambiar contrase\xF1a"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: btn }, "Cerrar sesi\xF3n"))));
+    }))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Cuenta"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Seguridad y sesi\xF3n."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: onCambiarPassword, style: btn }, "Cambiar contrase\xF1a"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: btn }, "Cerrar sesi\xF3n"))));
   }
   function Sidebar({ tab, setTab, isMobile, onCerrarSesion, onCambiarPassword }) {
     const items = [
@@ -1134,28 +1117,6 @@
     const [agregandoHistoria, setAgregandoHistoria] = useState(false);
     const [fechaHistoria, setFechaHistoria] = useState(fmtKey(HOY));
     const [textoHistoria, setTextoHistoria] = useState("");
-    const [puliendoIA, setPuliendoIA] = useState(false);
-    const pulirConIA = async (texto, setTexto) => {
-      if (!config || !config.iaActivada) {
-        window.alert("La funci\xF3n \"Pulir con IA\" est\xE1 desactivada. Pod\xE9s activarla en Configuraci\xF3n \u2192 Inteligencia artificial.");
-        return;
-      }
-      if (!texto.trim()) {
-        window.alert("Escrib\xED algo antes de pulirlo.");
-        return;
-      }
-      setPuliendoIA(true);
-      try {
-        const { data: res, error } = await sb.functions.invoke("pulir-nota", { body: { notaOriginal: texto } });
-        if (error) throw new Error(error.message || String(error));
-        if (!res || !res.ok) throw new Error((res && res.error) || "Error desconocido.");
-        setTexto(res.textoPulido);
-      } catch (err) {
-        window.alert("No se pudo pulir la nota:\n\n" + err.message);
-      } finally {
-        setPuliendoIA(false);
-      }
-    };
     const detalleRef = useRef(null);
     const pendientesDe = (id) => cobros.filter((c) => c.pacienteId === id && c.estado === "pendiente");
     const montoPendienteDe = (id) => pendientesDe(id).reduce((s, c) => s + c.monto, 0);
@@ -1691,15 +1652,6 @@
         style: { border: "none", background: "var(--pine)", color: "#fff", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
       },
       "Guardar entrada"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => pulirConIA(textoHistoria, setTextoHistoria),
-        disabled: puliendoIA,
-        title: "Pulir la redacci\xF3n con IA, sin agregar contenido nuevo",
-        style: { border: "1px solid var(--pine)", background: "var(--card)", color: "var(--pine)", borderRadius: 6, padding: "6px 14px", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: puliendoIA ? "default" : "pointer", opacity: puliendoIA ? 0.6 : 1 }
-      },
-      puliendoIA ? "Puliendo…" : "✨ Pulir con IA"
     ))), parseHistoria(p.historia).length === 0 && !agregandoHistoria && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: "var(--muted)", fontStyle: "italic", margin: 0 } }, "Todav\xEDa no hay entradas cargadas."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, numerarHistoria(parseHistoria(p.historia)).slice().sort((a, b) => a.fecha < b.fecha ? 1 : -1).map((entrada) => /* @__PURE__ */ React.createElement("div", { key: entrada.numero, style: { background: "var(--paper2)", borderRadius: 8, padding: "10px 12px" } }, editandoEntrada === entrada.numero ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11.5, color: "var(--muted)" } }, "Fecha"), /* @__PURE__ */ React.createElement("input", { type: "date", value: fechaEdit, onChange: (e) => setFechaEdit(e.target.value), style: { ...selectStyle, width: "auto" } })), /* @__PURE__ */ React.createElement(
       "textarea",
       {
@@ -2181,8 +2133,6 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       plantilla_aumento: d.plantillaAumento,
       marco_teorico: d.marcoTeorico,
       tema: d.tema,
-      ia_activada: d.iaActivada,
-      ia_consentimiento_at: d.iaConsentimientoAt,
       salt_password: d.saltPassword,
       salt_recovery: d.saltRecovery,
       data_key_wrapped_password: d.dataKeyWrappedPassword,
@@ -2201,8 +2151,6 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       plantillaAumento: row.plantilla_aumento,
       marcoTeorico: row.marco_teorico,
       tema: row.tema,
-      iaActivada: !!row.ia_activada,
-      iaConsentimientoAt: row.ia_consentimiento_at,
       estadoSuscripcion: row.estado_suscripcion,
       trialTermina: row.trial_termina,
       saltPassword: row.salt_password,
@@ -2890,17 +2838,6 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       setCodigoRecuperacion(null);
       setCodigoConfirmado(false);
     };
-    // Activar/desactivar "Pulir con IA". Al activar se guarda cuándo se aceptó
-    // el aviso. Va directo a la fila propia (no recarga el dataset).
-    const cambiarIA = async (activar) => {
-      const ahora = new Date().toISOString();
-      const cambios = activar ? { ia_activada: true, ia_consentimiento_at: ahora } : { ia_activada: false };
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) throw new Error("No hay sesi\xF3n activa.");
-      const { error } = await sb.from("profesionales").update(cambios).eq("id", user.id);
-      if (error) throw new Error(error.message);
-      setConfig((c) => ({ ...c, iaActivada: activar, iaConsentimientoAt: activar ? ahora : c.iaConsentimientoAt }));
-    };
     // Copia de los propios datos (JSON) — disponible aun con el acceso vencido.
     const descargarMisDatos = () => {
       const datos = {
@@ -3408,7 +3345,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onConsumirPacienteAAbrir: () => setPacienteAAbrir(null),
           isMobile
         }
-      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, historial, config, isMobile }), tab === "config" && /* @__PURE__ */ React.createElement(ConfigView, { temaActivo, onCambiarTema: cambiarTema, iaActivada: !!config.iaActivada, onCambiarIA: cambiarIA, onCambiarPassword: () => setMostrandoCambioPassword(true), onCerrarSesion: cerrarSesionFn, isMobile })))
+      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, historial, config, isMobile }), tab === "config" && /* @__PURE__ */ React.createElement(ConfigView, { temaActivo, onCambiarTema: cambiarTema, onCambiarPassword: () => setMostrandoCambioPassword(true), onCerrarSesion: cerrarSesionFn, isMobile })))
     );
   }
   ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
