@@ -2408,6 +2408,16 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     // llamado en paralelo durante un alta de dataKey nueva y generar dos
     // claves distintas para la misma cuenta — mismo patrón que cargandoRef.
     const creandoClaveRef = useRef(false);
+    // El closure de onAuthStateChange (más abajo) se crea una sola vez — no
+    // ve actualizaciones de modoRecuperacionClave vía estado de React, hace
+    // falta un ref para que pueda saber, en el momento en que llega CADA
+    // evento, si ya estamos en medio de un flujo de recuperación.
+    // Se inicializa leyendo el hash de la URL de forma SÍNCRONA (no
+    // esperando al evento PASSWORD_RECOVERY) porque en pruebas se vio que a
+    // veces un evento de auth genérico (el mismo "extra" ya documentado)
+    // llega ANTES que PASSWORD_RECOVERY — si el ref se ponía en true recién
+    // dentro del handler de ese evento, llegaba tarde para bloquearlo.
+    const modoRecuperacionClaveRef = useRef(window.location.hash.includes("type=recovery"));
     useEffect(() => {
       _onPendingChange = (n) => setGuardando(n > 0);
       return () => {
@@ -2589,6 +2599,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           saltRecovery: saltRecNueva,
           dataKeyWrappedRecovery: wrappedRecNueva
         });
+        modoRecuperacionClaveRef.current = false;
         setModoRecuperacionClave(false);
         setCodigoRecuperacionInput("");
         setPasswordNuevaRecuperacion("");
@@ -2627,6 +2638,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         if (error) throw error;
         passwordInputRef.current = passwordNuevaRecuperacion;
         await crearDataKeyInicial();
+        modoRecuperacionClaveRef.current = false;
         setModoRecuperacionClave(false);
         setPasswordNuevaRecuperacion("");
         setPasswordNuevaRecuperacionRepetir("");
@@ -2742,6 +2754,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           // su historia clínica. Se muestra la pantalla de recuperación en
           // vez de caer en el camino de siempre (que le pediría la
           // contraseña VIEJA que justamente no tiene).
+          modoRecuperacionClaveRef.current = true;
           setCargando(false);
           setModoRecuperacionClave(true);
           setConfigCargadaParaRecovery(false);
@@ -2753,6 +2766,15 @@ Esta acci\xF3n no se puede deshacer.`)) return;
             .catch((e) => setErrorRecuperacionClave("No se pudo cargar tu cuenta: " + e.message));
           return;
         }
+        // Guarda contra el evento "extra" ya documentado (ver comentario de
+        // más arriba): mientras estemos en medio de un flujo de
+        // recuperación, cualquier otro evento de auth que llegue en
+        // paralelo se ignora acá — sin esto, en una cuenta SIN dataKey
+        // todavía (el caso de un cutover real) este camino terminaba
+        // llamando a crearDataKeyInicial() con la contraseña vacía,
+        // generando una clave real mal envuelta antes de que la persona
+        // llegue a elegir su contraseña (bug encontrado en pruebas).
+        if (modoRecuperacionClaveRef.current) return;
         if (session) {
           cargarDatosDesdeSupabase();
         } else {
