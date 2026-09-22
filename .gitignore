@@ -6,3 +6,8 @@ CSV/
 !.dev.vars.example
 .env*
 !.env.example
+
+# estado local del CLI de Supabase (se generó por error corriendo comandos
+# desde la raíz del repo en vez de backend-supabase/ — el real ya tiene su
+# propio .gitignore en backend-supabase/supabase/.gitignore)
+/supabase/.temp/
