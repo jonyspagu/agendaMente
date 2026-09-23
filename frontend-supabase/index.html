@@ -197,7 +197,7 @@
   // `trial_termina` es el "acceso hasta" (prueba o mes pago). Al vencer, la
   // cuenta se bloquea salvo para descargar los propios datos.
   // Se paga solo por transferencia al alias (sin link de pago).
-  const DATOS_DE_PAGO = { precio: "$10.000 por mes", alias: "jpagura", titular: "Jonatan Pagura", linkMercadoPago: "" };
+  const DATOS_DE_PAGO = { precio: "$18.000 por mes", alias: "jpagura", titular: "Jonatan Pagura", linkMercadoPago: "" };
   const MAIL_CONTACTO = "contacto@agendamente.com.ar";
   function calcularAcceso(config) {
     if (!config || !config.estadoSuscripcion) return { bloqueada: false, diasRestantes: null, esPrueba: false, cancelada: false };
@@ -2377,6 +2377,16 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [pidiendoDesbloqueo, setPidiendoDesbloqueo] = useState(false);
     const [passwordDesbloqueo, setPasswordDesbloqueo] = useState("");
     const [errorDesbloqueo, setErrorDesbloqueo] = useState("");
+    // Cuenta sin dataKey todavía, pero la sesión llegó sin que se haya
+    // tipeado la contraseña en ESTA pestaña (caso real: alguien se registra
+    // en la compu y confirma el mail desde el celular). Bug encontrado en
+    // pruebas: sin esto, crearDataKeyInicial() se llamaba igual usando
+    // passwordInputRef.current vacío, envolviendo la clave con "" — la
+    // persona quedaba para siempre sin poder entrar con su contraseña real.
+    const [pidiendoPasswordAlta, setPidiendoPasswordAlta] = useState(false);
+    const [passwordAltaInput, setPasswordAltaInput] = useState("");
+    const [errorPasswordAlta, setErrorPasswordAlta] = useState("");
+    const [enviandoPasswordAlta, setEnviandoPasswordAlta] = useState(false);
     const [codigoRecuperacion, setCodigoRecuperacion] = useState(null);
     const [codigoConfirmado, setCodigoConfirmado] = useState(false);
     // Fase 2: recuperar el acceso a la historia clínica cuando se olvidó la
@@ -2491,7 +2501,15 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const asegurarDataKey = async (cfg) => {
       if (_dataKey) return;
       if (!cfg || !cfg.saltPassword) {
-        await crearDataKeyInicial();
+        // No hay dataKey todavía. Solo es seguro crearla automáticamente si
+        // la contraseña se tipeó de verdad en ESTA pestaña (alta o login
+        // recién hechos acá) — si no, pedirla de nuevo antes de generar
+        // nada (ver comentario en pidiendoPasswordAlta más arriba).
+        if (passwordInputRef.current) {
+          await crearDataKeyInicial();
+        } else {
+          setPidiendoPasswordAlta(true);
+        }
         return;
       }
       if (passwordInputRef.current) {
@@ -2503,6 +2521,38 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         }
       }
       setPidiendoDesbloqueo(true);
+    };
+    // Pantalla de pidiendoPasswordAlta: confirma/establece la contraseña acá
+    // mismo (sb.auth.updateUser, mismo patrón que elegirPasswordInicial) y
+    // recién ahí crea la dataKey — así queda garantizado que la clave se
+    // envuelve con la MISMA contraseña que la persona va a usar para entrar.
+    const confirmarPasswordAlta = async () => {
+      setErrorPasswordAlta("");
+      if (passwordAltaInput.length < 6) {
+        setErrorPasswordAlta("La contrase\xF1a debe tener al menos 6 caracteres.");
+        return;
+      }
+      setEnviandoPasswordAlta(true);
+      try {
+        const { error } = await sb.auth.updateUser({ password: passwordAltaInput });
+        // "same_password": Supabase rechaza el update porque la contraseña
+        // tipeada YA es la real de la cuenta — el caso más común (la
+        // persona simplemente confirma la que eligió al registrarse). No es
+        // un error: de hecho confirma que es la correcta, así que seguimos.
+        if (error && error.code !== "same_password") throw error;
+        passwordInputRef.current = passwordAltaInput;
+        await crearDataKeyInicial();
+        setPidiendoPasswordAlta(false);
+        setPasswordAltaInput("");
+        setCargando(true);
+        const d2 = await obtenerDatasetCompleto();
+        aplicarDataset(d2);
+        setCargando(false);
+      } catch (err) {
+        setErrorPasswordAlta(err.message);
+      } finally {
+        setEnviandoPasswordAlta(false);
+      }
     };
     const cargarDatosDesdeSupabase = () => {
       // Guarda contra disparos duplicados (más de un evento de auth casi
@@ -3287,6 +3337,49 @@ Esta acci\xF3n no se puede deshacer.`)) return;
             style: { width: "100%", border: "none", background: "var(--pine)", color: "#fff", borderRadius: 8, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: enviandoLogin ? "default" : "pointer", opacity: enviandoLogin ? 0.7 : 1 }
           },
           enviandoLogin ? "Un momento..." : "Desbloquear"
+        )
+      );
+    }
+    if (pidiendoPasswordAlta) {
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            maxWidth: 380,
+            margin: "60px auto",
+            padding: 32,
+            background: "var(--card)",
+            border: "1px solid var(--line)",
+            borderRadius: 14,
+            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            boxShadow: "0 4px 20px rgba(28,37,48,0.1)"
+          }
+        },
+        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "Iowan Old Style, Palatino Linotype, Georgia, serif", fontSize: 21, color: "var(--ink)", marginBottom: 4 } }, "Confirm\xE1 tu contrase\xF1a"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)", marginBottom: 18, lineHeight: 1.5 } }, "Es la primera vez que entr\xE1s desde ac\xE1. Para proteger tu historia cl\xEDnica necesitamos que confirmes tu contrase\xF1a en esta pantalla."),
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "password",
+            value: passwordAltaInput,
+            onChange: (e) => setPasswordAltaInput(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === "Enter" && passwordAltaInput) confirmarPasswordAlta();
+            },
+            placeholder: "Contrase\xF1a",
+            autoFocus: true,
+            style: { width: "100%", border: "1px solid var(--line)", borderRadius: 8, padding: "11px 12px", fontSize: 14, color: "var(--ink)", boxSizing: "border-box", marginBottom: 12 }
+          }
+        ),
+        errorPasswordAlta && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--rust)", marginBottom: 12 } }, errorPasswordAlta),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            disabled: enviandoPasswordAlta,
+            onClick: () => passwordAltaInput && confirmarPasswordAlta(),
+            style: { width: "100%", border: "none", background: "var(--pine)", color: "#fff", borderRadius: 8, padding: "11px 0", fontSize: 14, fontWeight: 600, cursor: enviandoPasswordAlta ? "default" : "pointer", opacity: enviandoPasswordAlta ? 0.7 : 1 }
+          },
+          enviandoPasswordAlta ? "Un momento..." : "Confirmar"
         )
       );
     }
