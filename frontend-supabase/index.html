@@ -197,7 +197,7 @@
   // `trial_termina` es el "acceso hasta" (prueba o mes pago). Al vencer, la
   // cuenta se bloquea salvo para descargar los propios datos.
   // Se paga solo por transferencia al alias (sin link de pago).
-  const DATOS_DE_PAGO = { precio: "$18.000 por mes", alias: "jpagura", titular: "Jonatan Pagura", linkMercadoPago: "" };
+  const DATOS_DE_PAGO = { precio: "$14.999 por mes", alias: "jpagura", titular: "Jonatan Pagura", linkMercadoPago: "" };
   const MAIL_CONTACTO = "contacto@agendamente.com.ar";
   function calcularAcceso(config) {
     if (!config || !config.estadoSuscripcion) return { bloqueada: false, diasRestantes: null, esPrueba: false, cancelada: false };
