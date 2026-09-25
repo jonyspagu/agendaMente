@@ -257,7 +257,7 @@
     }
   }
   aplicarTema(temaGuardado());
-  function ConfigView({ temaActivo, onCambiarTema, onCambiarPassword, onCerrarSesion, isMobile }) {
+  function ConfigView({ temaActivo, onCambiarTema, onCambiarPassword, onCerrarSesion, googleCalendarConectado, onConectarGoogle, onDesconectarGoogle, isMobile }) {
     const card = { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: isMobile ? 16 : 22, marginBottom: 18 };
     const secTitle = { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", margin: "0 0 4px 0" };
     const secSub = { fontSize: 13, color: "var(--muted)", margin: "0 0 16px 0" };
@@ -267,7 +267,7 @@
       const v = t.vars;
       const activo = temaActivo === id;
       return /* @__PURE__ */ React.createElement("button", { key: id, onClick: () => onCambiarTema(id), "aria-pressed": activo, style: { textAlign: "left", cursor: "pointer", fontFamily: "var(--sans)", background: "var(--card)", border: activo ? "2px solid var(--pine)" : "1px solid var(--line)", borderRadius: 12, padding: activo ? 11 : 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { background: v["--paper"], border: "1px solid " + v["--line"], borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 22, height: 8, borderRadius: 4, background: v["--pine"] } }), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, height: 6, borderRadius: 3, background: v["--paper2"] } })), /* @__PURE__ */ React.createElement("div", { style: { background: v["--card"], border: "1px solid " + v["--line"], borderRadius: 6, padding: "7px 8px", display: "flex", flexDirection: "column", gap: 5 } }, /* @__PURE__ */ React.createElement("span", { style: { width: "70%", height: 6, borderRadius: 3, background: v["--ink"] } }), /* @__PURE__ */ React.createElement("span", { style: { width: "45%", height: 5, borderRadius: 3, background: v["--muted"], opacity: 0.6 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 5 } }, [v["--pine"], v["--verde"], v["--ochre-dark"], v["--rust"]].map((c, i) => /* @__PURE__ */ React.createElement("span", { key: i, style: { width: 14, height: 14, borderRadius: "50%", background: c } })))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "var(--ink)" } }, t.nombre, activo && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--pine)" } }, "✓ En uso")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 3, lineHeight: 1.4 } }, t.detalle)));
-    }))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Cuenta"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Seguridad y sesi\xF3n."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: onCambiarPassword, style: btn }, "Cambiar contrase\xF1a"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: btn }, "Cerrar sesi\xF3n"))));
+    }))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Integraciones"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Reflejá tus turnos en tu Google Calendar personal (solo de ida: lo que cambies en Google no vuelve a la app)."), googleCalendarConectado ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: "var(--verde)", fontWeight: 700 } }, "✓ Conectado"), /* @__PURE__ */ React.createElement("button", { onClick: onDesconectarGoogle, style: btn }, "Desconectar")) : /* @__PURE__ */ React.createElement("button", { onClick: onConectarGoogle, style: btn }, "Conectar con Google Calendar")), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Cuenta"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Seguridad y sesi\xF3n."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: onCambiarPassword, style: btn }, "Cambiar contrase\xF1a"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: btn }, "Cerrar sesi\xF3n"))));
   }
   function Sidebar({ tab, setTab, isMobile, onCerrarSesion, onCambiarPassword }) {
     const items = [
@@ -1969,6 +1969,12 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const SUPABASE_URL = "https://rtkllwucobddekdkfoux.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Q_Q4HvOJE4AT6BKdq-_1-A_MU2B2Fnu";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Client ID de OAuth de Google — NO es secreto (viaja en la URL del
+  // navegador de cualquier forma), pero todavía no existe: se completa acá
+  // recién cuando el proyecto de Google Cloud esté dado de alta. Vacío =
+  // el botón de "Conectar con Google Calendar" se muestra deshabilitado.
+  const GOOGLE_CLIENT_ID = "";
+  const GOOGLE_OAUTH_REDIRECT_URI = SUPABASE_URL + "/functions/v1/google-oauth-callback";
 
   // La UI entera (heredada de la época de Google Sheets) usa camelCase y
   // "SI"/"NO" para booleanos. Postgres usa snake_case y boolean de verdad.
@@ -2159,7 +2165,8 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       saltPassword: row.salt_password,
       saltRecovery: row.salt_recovery,
       dataKeyWrappedPassword: row.data_key_wrapped_password,
-      dataKeyWrappedRecovery: row.data_key_wrapped_recovery
+      dataKeyWrappedRecovery: row.data_key_wrapped_recovery,
+      googleCalendarConectado: !!row.google_calendar_conectado_at
     };
   }
   function historialDeDB(row) {
@@ -2213,6 +2220,17 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   // apiCall necesite saber nada de React.
   let _pendingCount = 0;
   let _onPendingChange = null;
+  // Fire-and-forget: nunca debe bloquear ni romper el flujo de apiCall (que ya
+  // tiene su propio manejo de error/rollback optimista). Si la profesional no
+  // conectó Google Calendar, la función del lado del servidor es un no-op.
+  function dispararSyncGoogle(payload) {
+    try {
+      sb.functions.invoke("sync-turno-google", { body: payload }).catch(() => {});
+    } catch (_e) {
+      // nunca romper por esto
+    }
+  }
+
   // Misma firma que la versión de Apps Script (sheet/action/{id,data}) para
   // no tener que tocar ninguno de los ~15 call-sites del resto de la app —
   // solo cambia qué pasa DENTRO de esta función.
@@ -2225,6 +2243,14 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       const { data: { user } } = await sb.auth.getUser();
       if (!user) throw new Error("No hay sesión activa.");
       let nuevoId = null;
+      // Turnos + delete: la fila se borra más abajo, así que si hace falta
+      // avisarle a Google Calendar hay que guardar estos datos ANTES —
+      // después ya no va a existir la fila para consultarla.
+      let turnoPrevio = null;
+      if (sheet === "Turnos" && action === "delete") {
+        const { data: prev } = await sb.from("turnos").select("profesional_id, google_event_id").eq("id", id).single();
+        turnoPrevio = prev || null;
+      }
       if (action === "create") {
         const fila = { ...await A_DB[sheet](data), profesional_id: user.id };
         const { data: creado, error } = await sb.from(tabla).insert(fila).select().single();
@@ -2240,6 +2266,20 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         if (error) throw new Error(error.message);
       } else {
         throw new Error("Acción desconocida: " + action);
+      }
+      if (sheet === "Turnos") {
+        if (action === "create") {
+          dispararSyncGoogle({ accion: "create", turnoId: nuevoId });
+        } else if (action === "update") {
+          dispararSyncGoogle({ accion: "update", turnoId: id });
+        } else if (action === "delete" && turnoPrevio?.google_event_id) {
+          dispararSyncGoogle({
+            accion: "delete",
+            turnoId: id,
+            profesionalId: turnoPrevio.profesional_id,
+            googleEventId: turnoPrevio.google_event_id
+          });
+        }
       }
       const result = await obtenerDatasetCompleto();
       if (action === "create") result.id = nuevoId;
@@ -2414,6 +2454,9 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const [enviandoCambioPassword, setEnviandoCambioPassword] = useState(false);
     const [error, setError] = useState(null);
     const [guardando, setGuardando] = useState(false);
+    // Vuelta del redirect de Google Calendar (?gcal=ok|error en la URL, lo
+    // agrega google-oauth-callback antes de mandar de vuelta al navegador).
+    const [mensajeGoogleCalendar, setMensajeGoogleCalendar] = useState(null);
     const isMobile = useIsMobile();
     const cargandoRef = useRef(false);
     // Guarda de reentrancia específica de crearDataKeyInicial: un evento de
@@ -2436,6 +2479,21 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       return () => {
         _onPendingChange = null;
       };
+    }, []);
+    useEffect(() => {
+      const gcal = new URLSearchParams(window.location.search).get("gcal");
+      if (!gcal) return;
+      // Limpiar el query param apenas se lee, para que un refresh de la
+      // página no vuelva a mostrar el mensaje ni a re-disparar el refresco.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("gcal");
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+      if (gcal === "ok") {
+        setMensajeGoogleCalendar("Google Calendar conectado. A partir de ahora tus turnos se van a reflejar ahí.");
+        obtenerDatasetCompleto().then(aplicarDataset).catch(() => {});
+      } else {
+        setMensajeGoogleCalendar("No se pudo conectar con Google Calendar. Probá de nuevo desde Configuración.");
+      }
     }, []);
     const aplicarDataset = (d) => {
       const pacientesNorm = (d.pacientes || []).map(normalizarPaciente);
@@ -2955,6 +3013,39 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         console.warn("No se pudo guardar la paleta en la cuenta:", e);
       }
     };
+    // Redirect completo a la pantalla de consentimiento de Google (mismo
+    // criterio que resetPasswordForEmail: no hay forma de embeber esto en un
+    // popup de forma confiable). `state` = el access token de ESTA sesión —
+    // es lo único que le permite a google-oauth-callback saber a qué
+    // profesional pertenece la conexión cuando Google la redirige de vuelta.
+    const conectarGoogleCalendar = async () => {
+      if (!GOOGLE_CLIENT_ID) {
+        window.alert("Google Calendar todavía no está configurado del lado del servidor.");
+        return;
+      }
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+      const params = new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        redirect_uri: GOOGLE_OAUTH_REDIRECT_URI,
+        response_type: "code",
+        scope: "https://www.googleapis.com/auth/calendar.events",
+        access_type: "offline",
+        prompt: "consent",
+        state: session.access_token
+      });
+      window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
+    };
+    const desconectarGoogleCalendar = async () => {
+      if (!window.confirm("¿Desconectar Google Calendar? Los turnos que ya se enviaron van a quedar en tu calendario, pero dejan de actualizarse.")) return;
+      try {
+        const { error } = await sb.rpc("eliminar_tokens_google");
+        if (error) throw new Error(error.message);
+        setConfig((c) => ({ ...c, googleCalendarConectado: false }));
+      } catch (e) {
+        window.alert("No se pudo desconectar: " + e.message);
+      }
+    };
     const cerrarSesionFn = () => {
       sb.auth.signOut();
       // _dataKey es una variable de módulo, no un estado de React — si
@@ -3470,6 +3561,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     if (acceso.bloqueada) {
       return /* @__PURE__ */ React.createElement(PantallaAccesoVencido, { acceso, onDescargar: descargarMisDatos, onCerrarSesion: cerrarSesionFn });
     }
+    const bannerGoogleCalendar = mensajeGoogleCalendar ? /* @__PURE__ */ React.createElement("div", { style: { background: "color-mix(in srgb, var(--pine) 14%, var(--card))", border: "1px solid color-mix(in srgb, var(--pine) 40%, var(--card))", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 } }, /* @__PURE__ */ React.createElement("span", null, mensajeGoogleCalendar), /* @__PURE__ */ React.createElement("button", { onClick: () => setMensajeGoogleCalendar(null), style: { border: "none", background: "none", cursor: "pointer", fontSize: 16, color: "var(--muted)", lineHeight: 1, padding: 0 } }, "\xD7")) : null;
     const bannerAcceso = acceso.diasRestantes !== null && acceso.diasRestantes <= 3 ? /* @__PURE__ */ React.createElement("div", { style: { background: "color-mix(in srgb, var(--ochre-dark) 14%, var(--card))", border: "1px solid color-mix(in srgb, var(--ochre-dark) 40%, var(--card))", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "var(--ink)", lineHeight: 1.5 } }, /* @__PURE__ */ React.createElement("b", null, acceso.esPrueba ? "Tu prueba gratuita" : "Tu acceso"), acceso.diasRestantes <= 0 ? " termina hoy." : " termina en " + acceso.diasRestantes + (acceso.diasRestantes === 1 ? " d\xEDa." : " d\xEDas."), " Para seguir, ", /* @__PURE__ */ React.createElement("a", { href: "mailto:" + MAIL_CONTACTO + "?subject=Pago%20AgendaMente", style: { color: "var(--pine)", fontWeight: 600 } }, "escribinos a " + MAIL_CONTACTO), " (", DATOS_DE_PAGO.precio, ", por transferencia al alias " + DATOS_DE_PAGO.alias + ").") : null;
     return /* @__PURE__ */ React.createElement(
       "div",
@@ -3524,7 +3616,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onCambiarPassword: () => setMostrandoCambioPassword(true)
         }
       ),
-      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box", minHeight: isMobile ? "auto" : 720 } }, bannerAcceso, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box", minHeight: isMobile ? "auto" : 720 } }, bannerGoogleCalendar, bannerAcceso, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
         HoyView,
         {
           turnos,
@@ -3565,7 +3657,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onConsumirPacienteAAbrir: () => setPacienteAAbrir(null),
           isMobile
         }
-      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, historial, config, isMobile }), tab === "config" && /* @__PURE__ */ React.createElement(ConfigView, { temaActivo, onCambiarTema: cambiarTema, onCambiarPassword: () => setMostrandoCambioPassword(true), onCerrarSesion: cerrarSesionFn, isMobile })))
+      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, historial, config, isMobile }), tab === "config" && /* @__PURE__ */ React.createElement(ConfigView, { temaActivo, onCambiarTema: cambiarTema, onCambiarPassword: () => setMostrandoCambioPassword(true), onCerrarSesion: cerrarSesionFn, googleCalendarConectado: !!config.googleCalendarConectado, onConectarGoogle: conectarGoogleCalendar, onDesconectarGoogle: desconectarGoogleCalendar, isMobile })))
     );
   }
   ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
