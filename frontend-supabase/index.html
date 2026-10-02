@@ -257,17 +257,35 @@
     }
   }
   aplicarTema(temaGuardado());
-  function ConfigView({ temaActivo, onCambiarTema, onCambiarPassword, onCerrarSesion, googleCalendarConectado, onConectarGoogle, onDesconectarGoogle, isMobile }) {
+  function ConfigView({ temaActivo, onCambiarTema, onCambiarPassword, onCerrarSesion, perfil, onGuardarPerfil, googleCalendarConectado, googleCalendarDisponible, onConectarGoogle, onDesconectarGoogle, isMobile }) {
     const card = { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: isMobile ? 16 : 22, marginBottom: 18 };
     const secTitle = { fontFamily: "var(--serif)", fontSize: 18, color: "var(--ink)", margin: "0 0 4px 0" };
     const secSub = { fontSize: 13, color: "var(--muted)", margin: "0 0 16px 0" };
     const btn = { border: "1px solid var(--line)", background: "var(--card)", color: "var(--ink)", borderRadius: 8, padding: "9px 14px", fontSize: 13, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" };
-    return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 760 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 25, color: "var(--ink)", margin: 0 } }, "Configuraci\xF3n"), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "4px 0 20px 0" } }, "Ajust\xE1 c\xF3mo se ve tu consultorio."), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Apariencia"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Eleg\xED la paleta de colores. Se guarda en tu cuenta."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12 } }, Object.keys(TEMAS).map((id) => {
+    const lbl = { display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--muted)", marginBottom: 5 };
+    const inp = { width: "100%", boxSizing: "border-box", border: "1px solid var(--line)", borderRadius: 8, padding: "9px 11px", fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--card)" };
+    // Nombre y matrícula: dato legal (Ley 26.529) que va en cada historia
+    // clínica y reporte exportado. Antes solo se pedía una vez por prompt al
+    // primer export y no había dónde corregirlo.
+    const [nombrePerfil, setNombrePerfil] = useState((perfil && perfil.nombreProfesional) || "");
+    const [matriculaPerfil, setMatriculaPerfil] = useState((perfil && perfil.matricula) || "");
+    const [especialidadPerfil, setEspecialidadPerfil] = useState((perfil && perfil.especialidad) || "");
+    const [estadoPerfil, setEstadoPerfil] = useState("");
+    const guardarPerfil = async () => {
+      setEstadoPerfil("guardando");
+      const ok = await onGuardarPerfil({ nombreProfesional: nombrePerfil.trim(), matricula: matriculaPerfil.trim(), especialidad: especialidadPerfil.trim() });
+      setEstadoPerfil(ok ? "guardado" : "");
+    };
+    const alEditarPerfil = (setter) => (e) => {
+      setter(e.target.value);
+      setEstadoPerfil("");
+    };
+    return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 760 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 25, color: "var(--ink)", margin: 0 } }, "Configuraci\xF3n"), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "4px 0 20px 0" } }, "Tu perfil profesional, c\xF3mo se ve tu consultorio y tu cuenta."), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Perfil profesional"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Aparece en las historias cl\xEDnicas y en el reporte para el contador que export\xE1s."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr 1fr", gap: 12, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { htmlFor: "perfil-nombre", style: lbl }, "Nombre y apellido"), /* @__PURE__ */ React.createElement("input", { id: "perfil-nombre", type: "text", value: nombrePerfil, onChange: alEditarPerfil(setNombrePerfil), placeholder: "Lic. Nombre Apellido", style: inp })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { htmlFor: "perfil-matricula", style: lbl }, "Matr\xEDcula"), /* @__PURE__ */ React.createElement("input", { id: "perfil-matricula", type: "text", value: matriculaPerfil, onChange: alEditarPerfil(setMatriculaPerfil), placeholder: "MN 12345", style: inp })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { htmlFor: "perfil-especialidad", style: lbl }, "Especialidad"), /* @__PURE__ */ React.createElement("input", { id: "perfil-especialidad", type: "text", value: especialidadPerfil, onChange: alEditarPerfil(setEspecialidadPerfil), placeholder: "Psicolog\xEDa", style: inp }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } }, /* @__PURE__ */ React.createElement("button", { onClick: guardarPerfil, disabled: estadoPerfil === "guardando", style: { ...btn, background: "var(--pine)", color: "var(--sobre-acento, #fff)", borderColor: "var(--pine)" } }, estadoPerfil === "guardando" ? "Guardando…" : "Guardar"), estadoPerfil === "guardado" && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: "var(--verde)", fontWeight: 600 } }, "✓ Guardado"))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Apariencia"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Eleg\xED la paleta de colores. Se guarda en tu cuenta."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 12 } }, Object.keys(TEMAS).map((id) => {
       const t = TEMAS[id];
       const v = t.vars;
       const activo = temaActivo === id;
       return /* @__PURE__ */ React.createElement("button", { key: id, onClick: () => onCambiarTema(id), "aria-pressed": activo, style: { textAlign: "left", cursor: "pointer", fontFamily: "var(--sans)", background: "var(--card)", border: activo ? "2px solid var(--pine)" : "1px solid var(--line)", borderRadius: 12, padding: activo ? 11 : 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { background: v["--paper"], border: "1px solid " + v["--line"], borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 22, height: 8, borderRadius: 4, background: v["--pine"] } }), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, height: 6, borderRadius: 3, background: v["--paper2"] } })), /* @__PURE__ */ React.createElement("div", { style: { background: v["--card"], border: "1px solid " + v["--line"], borderRadius: 6, padding: "7px 8px", display: "flex", flexDirection: "column", gap: 5 } }, /* @__PURE__ */ React.createElement("span", { style: { width: "70%", height: 6, borderRadius: 3, background: v["--ink"] } }), /* @__PURE__ */ React.createElement("span", { style: { width: "45%", height: 5, borderRadius: 3, background: v["--muted"], opacity: 0.6 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 5 } }, [v["--pine"], v["--verde"], v["--ochre-dark"], v["--rust"]].map((c, i) => /* @__PURE__ */ React.createElement("span", { key: i, style: { width: 14, height: 14, borderRadius: "50%", background: c } })))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "var(--ink)" } }, t.nombre, activo && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--pine)" } }, "✓ En uso")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 3, lineHeight: 1.4 } }, t.detalle)));
-    }))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Integraciones"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Reflejá tus turnos en tu Google Calendar personal (solo de ida: lo que cambies en Google no vuelve a la app)."), googleCalendarConectado ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: "var(--verde)", fontWeight: 700 } }, "✓ Conectado"), /* @__PURE__ */ React.createElement("button", { onClick: onDesconectarGoogle, style: btn }, "Desconectar")) : /* @__PURE__ */ React.createElement("button", { onClick: onConectarGoogle, style: btn }, "Conectar con Google Calendar")), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Cuenta"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Seguridad y sesi\xF3n."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: onCambiarPassword, style: btn }, "Cambiar contrase\xF1a"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: btn }, "Cerrar sesi\xF3n"))));
+    }))), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Integraciones"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Reflejá tus turnos en tu Google Calendar personal (solo de ida: lo que cambies en Google no vuelve a la app)."), googleCalendarConectado ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: "var(--verde)", fontWeight: 700 } }, "✓ Conectado"), /* @__PURE__ */ React.createElement("button", { onClick: onDesconectarGoogle, style: btn }, "Desconectar")) : googleCalendarDisponible ? /* @__PURE__ */ React.createElement("button", { onClick: onConectarGoogle, style: btn }, "Conectar con Google Calendar") : /* @__PURE__ */ React.createElement("span", { style: { display: "inline-block", fontSize: 13, color: "var(--muted)", border: "1px dashed var(--line)", borderRadius: 8, padding: "8px 13px" } }, "Pr\xF3ximamente")), /* @__PURE__ */ React.createElement("div", { style: card }, /* @__PURE__ */ React.createElement("h2", { style: secTitle }, "Cuenta"), /* @__PURE__ */ React.createElement("p", { style: secSub }, "Seguridad y sesi\xF3n."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: onCambiarPassword, style: btn }, "Cambiar contrase\xF1a"), /* @__PURE__ */ React.createElement("button", { onClick: onCerrarSesion, style: btn }, "Cerrar sesi\xF3n"))));
   }
   function Sidebar({ tab, setTab, isMobile, onCerrarSesion, onCambiarPassword }) {
     const items = [
@@ -472,7 +490,7 @@
   }
   const linkBtn = { border: "none", background: "none", color: "var(--pine)", fontSize: 12.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline" };
   const DIAS_LARGOS = ["lunes", "martes", "mi\xE9rcoles", "jueves", "viernes", "s\xE1bado", "domingo"];
-  function AgendaView({ turnos, pacientes, onAdd, onEstado, onDuplicarSemana, onEliminarTurno, onReprogramar, isMobile }) {
+  function AgendaView({ turnos, pacientes, onAdd, onEstado, onDuplicarSemana, onEliminarTurno, onBorrarTurno, onReprogramar, isMobile }) {
     const [showForm, setShowForm] = useState(false);
     const [semanaOffset, setSemanaOffset] = useState(0);
     const [form, setForm] = useState({ pacienteId: null, fecha: fmtKey(HOY), hora: "10:00" });
@@ -493,6 +511,12 @@
     };
     const turnosAgendadosSemana = weekDates.reduce((acc, d) => acc + (byFecha[fmtKey(d)] || []).filter((t) => t.estado === "agendado").length, 0);
     const [deshacerId, setDeshacerId] = useState(null);
+    // Reprogramar desde la lista mobile (en escritorio ya existe drag&drop
+    // en la grilla, onDropDia más abajo) — id del turno con el formulario de
+    // fecha/hora abierto, o null si ninguno.
+    const [reprogramando, setReprogramando] = useState(null);
+    const [fechaReprog, setFechaReprog] = useState("");
+    const [horaReprog, setHoraReprog] = useState("");
     useEffect(() => {
       if (deshacerId === null) return;
       const timer = setTimeout(() => setDeshacerId(null), 7e3);
@@ -538,9 +562,14 @@
         avisos.push("Est\xE1s agendando un turno para el domingo, d\xEDa que normalmente no trabaj\xE1s.");
       }
       if (avisos.length > 0) window.alert(avisos.join("\n\n"));
-      const nuevoId = onAdd(form);
-      setDeshacerId(nuevoId);
       setShowForm(false);
+      // onAdd es async (devuelve una promesa del id): hay que esperarla. Bug
+      // real hasta 2026-10-01: se guardaba la promesa misma como id y el
+      // "Deshacer" de "Turno agregado" mandaba a borrar "[object Promise]".
+      // Si el alta falló, conManejoDeError devuelve null y no hay nada que deshacer.
+      Promise.resolve(onAdd(form)).then((nuevoId) => {
+        if (nuevoId) setDeshacerId(nuevoId);
+      });
     };
     const confirmarDuplicar = (t) => {
       const pac = pacientes.find((x) => x.id === t.pacienteId);
@@ -555,13 +584,16 @@
 
 \u26A0 Ya hay otro paciente (${pacienteNombre(conflicto.turno.pacienteId)}) agendado a esa hora.`;
       if (window.confirm(msg)) {
-        const nuevoId = onDuplicarSemana(t, dias);
-        setDeshacerId(nuevoId);
+        // Misma espera que en validarYGuardar (onDuplicarSemana también es async).
+        Promise.resolve(onDuplicarSemana(t, dias)).then((nuevoId) => {
+          if (nuevoId) setDeshacerId(nuevoId);
+        });
       }
     };
+    // Sin confirm: el borrado muestra un cartel con "Deshacer" (ver
+    // borrarConDeshacer en App).
     const confirmarEliminarTurno = (t) => {
-      const ok = window.confirm("\xBFSeguro que quer\xE9s eliminar este turno? No se puede deshacer.");
-      if (ok) onEliminarTurno(t.id);
+      onBorrarTurno(t.id);
     };
     // ------------------------------------------------------------------
     // Grid horario (desktop): ubica cada turno en su posici\xF3n real del
@@ -1010,12 +1042,20 @@
       )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("button", { title: "Repetir este turno seg\xFAn la frecuencia del paciente", onClick: () => confirmarDuplicar(t), style: { ...repetirBtnStyle, flex: 1 } }, "\u21BB Repetir turno"), /* @__PURE__ */ React.createElement(
         "button",
         {
+          title: "Reprogramar este turno",
+          onClick: () => { setReprogramando(t.id); setFechaReprog(t.fecha); setHoraReprog(t.hora); },
+          style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--pine)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }
+        },
+        /* @__PURE__ */ React.createElement(Calendar, { size: 12 })
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
           title: "Eliminar este turno",
           onClick: () => confirmarEliminarTurno(t),
           style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }
         },
         /* @__PURE__ */ React.createElement(Trash2, { size: 12 })
-      ))))));
+      )), reprogramando === t.id && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginTop: 5, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("input", { type: "date", value: fechaReprog, onChange: (e) => setFechaReprog(e.target.value), style: { flex: "1 1 108px", minWidth: 0, border: "1px solid var(--line)", borderRadius: 5, padding: "4px 5px", fontSize: 11, fontFamily: "var(--sans)" } }), /* @__PURE__ */ React.createElement("input", { type: "time", value: horaReprog, onChange: (e) => setHoraReprog(e.target.value), style: { flex: "1 1 76px", minWidth: 0, border: "1px solid var(--line)", borderRadius: 5, padding: "4px 5px", fontSize: 11, fontFamily: "var(--sans)" } }), /* @__PURE__ */ React.createElement("button", { onClick: () => { if (fechaReprog && horaReprog) onReprogramar(t.id, fechaReprog, horaReprog); setReprogramando(null); }, style: { border: "1px solid var(--pine)", background: "var(--pine)", color: "#fff", borderRadius: 5, padding: "4px 8px", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "Guardar"), /* @__PURE__ */ React.createElement("button", { onClick: () => setReprogramando(null), style: { border: "1px solid var(--line)", background: "transparent", color: "var(--muted)", borderRadius: 5, padding: "4px 8px", fontSize: 10.5, fontFamily: "var(--sans)", cursor: "pointer" } }, "Cancelar"))))));
     }));
     const cuerpo = vista === "mes" ? renderVistaMensual() : isMobile ? renderListaMobile() : renderGridHorario();
     return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-end", gap: isMobile ? 12 : 0, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 25, color: "var(--ink)", margin: 0 } }, vista === "mes" ? labelMes(fmtKey(mesBase).slice(0, 7)) : formatRangoSemana(weekDates)), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, margin: "4px 0 0 0" } }, vista === "mes" ? turnosAgendadosMes : turnosAgendadosSemana, " sesiones agendadas ", vista === "mes" ? "este mes" : "esta semana")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setVista((v) => v === "mes" ? "semana" : "mes"), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--pine)", background: vista === "mes" ? "var(--pine)" : "#fff", color: vista === "mes" ? "#fff" : "var(--pine)", borderRadius: 8, padding: "10px 14px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Calendar, { size: 15 }), " ", vista === "mes" ? "Vista semanal" : "Vista mensual"), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowForm((s) => !s), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--pine)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13.5, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Plus, { size: 15 }), " Cargar turno"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } }, vista === "mes" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: () => setMesOffset((s) => s - 1), style: weekNavBtn }, /* @__PURE__ */ React.createElement(ChevronLeft, { size: 14 }), " ", isMobile ? "Ant." : "Mes anterior"), mesOffset !== 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => setMesOffset(0), style: { ...weekNavBtn, color: "var(--pine)", borderColor: "var(--pine)" } }, "Hoy"), /* @__PURE__ */ React.createElement("button", { onClick: () => setMesOffset((s) => s + 1), style: weekNavBtn }, isMobile ? "Sig." : "Mes siguiente", " ", /* @__PURE__ */ React.createElement(ChevronRight, { size: 14 }))) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset((s) => s - 1), style: weekNavBtn }, /* @__PURE__ */ React.createElement(ChevronLeft, { size: 14 }), " ", isMobile ? "Ant." : "Semana anterior"), semanaOffset !== 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset(0), style: { ...weekNavBtn, color: "var(--pine)", borderColor: "var(--pine)" } }, "Hoy"), /* @__PURE__ */ React.createElement("button", { onClick: () => setSemanaOffset((s) => s + 1), style: weekNavBtn }, isMobile ? "Sig." : "Semana siguiente", " ", /* @__PURE__ */ React.createElement(ChevronRight, { size: 14 })))), deshacerId !== null && /* @__PURE__ */ React.createElement(
@@ -1137,14 +1177,17 @@
       return { referencia, sesiones, realizadas, proximoCobro: sumarUnMes(referencia) };
     };
     const confirmarEliminarPaciente = (p) => {
+      // Se mantiene el confirm (a diferencia de turnos/cobros): borrar un
+      // paciente arrastra sus turnos, cobros e historia clínica. Después,
+      // igual queda el cartel con "Deshacer" unos segundos.
       const turnosVinculados = turnos.filter((t) => t.pacienteId === p.id).length;
       const cobrosVinculados = cobros.filter((c) => c.pacienteId === p.id).length;
-      let mensaje;
-      if (turnosVinculados > 0 || cobrosVinculados > 0) {
-        mensaje = `Este paciente tiene ${turnosVinculados} turno(s) y ${cobrosVinculados} cobro(s) asociados — \xBFconfirm\xE1s que quer\xE9s borrarlo de todos modos? No se puede deshacer.`;
-      } else {
-        mensaje = `\xBFSeguro que quer\xE9s eliminar a ${nombreCompleto(p)}? No se puede deshacer.`;
-      }
+      const entradasHistoria = parseHistoria(p.historia).length;
+      const partes = [];
+      if (turnosVinculados > 0) partes.push(`${turnosVinculados} turno(s)`);
+      if (cobrosVinculados > 0) partes.push(`${cobrosVinculados} cobro(s)`);
+      if (entradasHistoria > 0) partes.push(`${entradasHistoria} entrada(s) de historia cl\xEDnica`);
+      const mensaje = partes.length ? `${nombreCompleto(p)} tiene ${partes.join(", ").replace(/, ([^,]*)$/, " y $1")}, que se borran junto con el paciente. \xBFLo elimin\xE1s?` : `\xBFEliminar a ${nombreCompleto(p)}?`;
       if (window.confirm(mensaje)) onEliminarPaciente(p.id);
     };
     const pacientesOrdenados = useMemo(
@@ -1215,9 +1258,9 @@
       if (!prof.nombre || !prof.matricula) {
         const nombre = window.prompt("Para generar el documento hace falta el nombre del profesional (la ley exige que figure en la historia cl\xEDnica):", prof.nombre);
         if (!nombre) return;
-        const matricula = window.prompt("N\xFAmero de matr\xEDcula profesional:", prof.matricula);
+        const matricula = window.prompt("N\xFAmero de matr\xEDcula profesional (despu\xE9s lo pod\xE9s corregir en Configuraci\xF3n):", prof.matricula);
         if (!matricula) return;
-        prof = { nombre: nombre.trim(), matricula: matricula.trim(), especialidad: "Psicolog\xEDa" };
+        prof = { nombre: nombre.trim(), matricula: matricula.trim(), especialidad: prof.especialidad || "Psicolog\xEDa" };
         onActualizarConfig({ nombreProfesional: prof.nombre, matricula: prof.matricula, especialidad: prof.especialidad });
       }
       const entradas = numerarHistoria(parseHistoria(pac.historia));
@@ -1847,9 +1890,10 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       }
       onEditarMonto(c.id, nuevo);
     };
+    // Sin confirm: el borrado muestra un cartel con "Deshacer" (ver
+    // borrarConDeshacer en App).
     const confirmarEliminarCobro = (c) => {
-      const ok = window.confirm(`\xBFEliminar este cobro de ${pacienteNombre(c.pacienteId)} por $${c.monto.toLocaleString("es-AR")}? No se puede deshacer.`);
-      if (ok) onEliminar(c.id);
+      onEliminar(c.id);
     };
     return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 18 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "var(--serif)", fontSize: isMobile ? 21 : 26, color: "var(--ink)", margin: 0 } }, "Cobros"), /* @__PURE__ */ React.createElement(MesSelector, { mesesDisponibles, mes, setMes })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, marginBottom: 22, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { ...summaryCard, borderLeft: "3px solid var(--verde)" } }, /* @__PURE__ */ React.createElement(TrendingUp, { size: 16, color: "var(--verde)" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Cobrado en ", labelMes(mes)), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 21, color: "var(--verde)" } }, "$", totalCobrado.toLocaleString("es-AR")))), /* @__PURE__ */ React.createElement("div", { style: { ...summaryCard, borderLeft: "3px solid var(--rust)" } }, /* @__PURE__ */ React.createElement(Clock, { size: 16, color: "var(--rust)" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Pendiente de cobro"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 21, color: "var(--rust)" } }, "$", totalPendiente.toLocaleString("es-AR"))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, [
       { id: "todos", label: "Todos" },
@@ -1990,6 +2034,12 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   // vive solo en memoria de esta pestaña — nunca en localStorage/sessionStorage
   // ni se manda al servidor.
   let _dataKey = null;
+  // A qué cuenta (user id) pertenece la _dataKey en memoria. Supabase comparte
+  // UNA sesión por navegador y avisa a todas las pestañas: una pestaña puede
+  // recibir de golpe la sesión de OTRA cuenta (iniciada en otra pestaña).
+  // Sin este control, esa pestaña seguía usando la clave de la cuenta
+  // anterior para la nueva. Bug real encontrado en pruebas (2026-10-01).
+  let _dataKeyDe = null;
   function b64(buf) {
     return btoa(String.fromCharCode(...new Uint8Array(buf)));
   }
@@ -2175,32 +2225,41 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const TABLA_DE_SHEET = { Pacientes: "pacientes", Turnos: "turnos", Cobros: "cobros", Config: "profesionales" };
   const A_DB = { Pacientes: pacienteADB, Turnos: turnoADB, Cobros: cobroADB, Config: configADB };
 
-  // Trae el estado completo del consultorio logueado — reemplaza lo que antes
-  // devolvía cada respuesta de Apps Script (pacientes/turnos/cobros/config/
-  // historial), para que aplicarDataset() y el resto de App() no necesiten
-  // saber que la fuente cambió.
-  async function obtenerDatasetCompleto() {
+  // Trae el estado del consultorio logueado — reemplaza lo que antes devolvía
+  // cada respuesta de Apps Script (pacientes/turnos/cobros/config/historial),
+  // para que aplicarDataset() y el resto de App() no necesiten saber que la
+  // fuente cambió.
+  // `tablas` (opcional): cuáles de las 5 traer. Sin este parámetro trae las 5,
+  // igual que siempre — todo call-site que no lo pase queda exactamente
+  // igual que antes. Con un subconjunto (lo usa apiCall, ver TABLAS_AFECTADAS
+  // más abajo), las claves no pedidas simplemente no vienen en el resultado
+  // (undefined, no array vacío) — aplicarDataset() sabe distinguir "no vino"
+  // de "vino vacío" y deja esa parte del estado como estaba.
+  async function obtenerDatasetCompleto(tablas) {
+    const TODAS = ["pacientes", "turnos", "cobros", "historial", "config"];
+    const pedir = tablas && tablas.length ? tablas : TODAS;
     const { data: { user } } = await sb.auth.getUser();
     if (!user) throw new Error("No hay sesión activa.");
-    const [pacientesRes, turnosRes, cobrosRes, historialRes, profRes] = await Promise.all([
-      sb.from("pacientes").select("*"),
-      sb.from("turnos").select("*"),
-      sb.from("cobros").select("*"),
-      sb.from("historial").select("*"),
-      sb.from("profesionales").select("*").eq("id", user.id).single()
-    ]);
-    for (const r of [pacientesRes, turnosRes, cobrosRes, historialRes]) {
+    const promesas = {};
+    if (pedir.includes("pacientes")) promesas.pacientes = sb.from("pacientes").select("*");
+    if (pedir.includes("turnos")) promesas.turnos = sb.from("turnos").select("*");
+    if (pedir.includes("cobros")) promesas.cobros = sb.from("cobros").select("*");
+    if (pedir.includes("historial")) promesas.historial = sb.from("historial").select("*");
+    if (pedir.includes("config")) promesas.config = sb.from("profesionales").select("*").eq("id", user.id).single();
+    const claves = Object.keys(promesas);
+    const resultados = await Promise.all(claves.map((k) => promesas[k]));
+    const resultado = { ok: true };
+    for (let i = 0; i < claves.length; i++) {
+      const k = claves[i];
+      const r = resultados[i];
       if (r.error) throw new Error(r.error.message);
+      if (k === "pacientes") resultado.pacientes = await Promise.all((r.data || []).map(pacienteDeDB));
+      else if (k === "turnos") resultado.turnos = (r.data || []).map(turnoDeDB);
+      else if (k === "cobros") resultado.cobros = (r.data || []).map(cobroDeDB);
+      else if (k === "historial") resultado.historial = (r.data || []).map(historialDeDB);
+      else if (k === "config") resultado.config = configDeDB(r.data);
     }
-    if (profRes.error) throw new Error(profRes.error.message);
-    return {
-      ok: true,
-      pacientes: await Promise.all((pacientesRes.data || []).map(pacienteDeDB)),
-      turnos: (turnosRes.data || []).map(turnoDeDB),
-      cobros: (cobrosRes.data || []).map(cobroDeDB),
-      historial: (historialRes.data || []).map(historialDeDB),
-      config: configDeDB(profRes.data)
-    };
+    return resultado;
   }
 
   // Trae solo la fila de profesionales — usado durante una recuperación de
@@ -2231,6 +2290,24 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     }
   }
 
+  // Qué tablas hace falta refrescar después de cada tipo de escritura —
+  // derivado directo de los triggers/FKs reales del backend (no es un
+  // supuesto): el trigger de historial es AFTER UPDATE OR DELETE únicamente
+  // (nunca en INSERT), así que un alta de Turno/Cobro nunca toca historial;
+  // cobros.paciente_id referencia a pacientes, no a turnos, así que borrar un
+  // Turno nunca toca cobros. Borrar un Paciente sí cascadea (on delete
+  // cascade en turnos/cobros) y ESE cascade sí dispara los triggers de
+  // historial fila por fila — por eso es el único caso que trae las 4.
+  // Un sheet/acción sin entrada acá cae a `undefined`, que en
+  // obtenerDatasetCompleto() significa "traé las 5" (el comportamiento de
+  // siempre) — así nunca hay un call-site que se quede sin datos por un caso
+  // no contemplado.
+  const TABLAS_AFECTADAS = {
+    Pacientes: { create: ["pacientes"], update: ["pacientes"], delete: ["pacientes", "turnos", "cobros", "historial"] },
+    Turnos: { create: ["turnos"], update: ["turnos", "historial"], delete: ["turnos", "historial"] },
+    Cobros: { create: ["cobros"], update: ["cobros", "historial"], delete: ["cobros", "historial"] },
+    Config: { create: ["config"], update: ["config"], delete: ["config"] }
+  };
   // Misma firma que la versión de Apps Script (sheet/action/{id,data}) para
   // no tener que tocar ninguno de los ~15 call-sites del resto de la app —
   // solo cambia qué pasa DENTRO de esta función.
@@ -2281,7 +2358,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           });
         }
       }
-      const result = await obtenerDatasetCompleto();
+      const result = await obtenerDatasetCompleto(TABLAS_AFECTADAS[sheet]?.[action]);
       if (action === "create") result.id = nuevoId;
       return result;
     } finally {
@@ -2457,6 +2534,14 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     // Vuelta del redirect de Google Calendar (?gcal=ok|error en la URL, lo
     // agrega google-oauth-callback antes de mandar de vuelta al navegador).
     const [mensajeGoogleCalendar, setMensajeGoogleCalendar] = useState(null);
+    // Borrados con deshacer en curso (ver borrarConDeshacer más abajo):
+    // [{ tipo, id, etiqueta, confirmando }]. Lo que está acá se OCULTA al
+    // mostrar (pacientesVisibles/turnosVisibles/cobrosVisibles) en vez de
+    // sacarse del estado — así un refresco de la base hecho por otro guardado
+    // en esos segundos no lo hace reaparecer, y deshacer es solo dejar de
+    // ocultarlo (nunca hay que reinsertar nada).
+    const [ocultos, setOcultos] = useState([]);
+    const timersEliminacionRef = useRef({});
     const isMobile = useIsMobile();
     const cargandoRef = useRef(false);
     // Guarda de reentrancia específica de crearDataKeyInicial: un evento de
@@ -2495,33 +2580,47 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         setMensajeGoogleCalendar("No se pudo conectar con Google Calendar. Probá de nuevo desde Configuración.");
       }
     }, []);
+    // Dataset parcial-friendly: una clave ausente en `d` (no pedida a
+    // obtenerDatasetCompleto, ver TABLAS_AFECTADAS en apiCall) significa "no
+    // cambió", no "se vació" — se deja ese pedazo del estado como estaba.
     const aplicarDataset = (d) => {
-      const pacientesNorm = (d.pacientes || []).map(normalizarPaciente);
-      const idsInvalidos = pacientesNorm.filter((p) => !p.id);
-      if (idsInvalidos.length > 0) {
-        setError(
-          `Hay ${idsInvalidos.length} paciente(s) sin un "id" v\xE1lido. Prob\xE1 recargar la p\xE1gina; si persiste, avisale a Jonatan.`
-        );
-        return;
+      if (d.pacientes !== void 0) {
+        const pacientesNorm = d.pacientes.map(normalizarPaciente);
+        const idsInvalidos = pacientesNorm.filter((p) => !p.id);
+        if (idsInvalidos.length > 0) {
+          setError(
+            `Hay ${idsInvalidos.length} paciente(s) sin un "id" v\xE1lido. Prob\xE1 recargar la p\xE1gina; si persiste, avisale a Jonatan.`
+          );
+          return;
+        }
+        setPacientes(pacientesNorm);
       }
-      const turnosNorm = (d.turnos || []).map(normalizarTurno);
-      const cobrosNorm = (d.cobros || []).map(normalizarCobro);
-      const turnosSinPaciente = turnosNorm.filter((t) => !t.pacienteId).length;
-      const cobrosSinPaciente = cobrosNorm.filter((c) => !c.pacienteId).length;
-      if (turnosSinPaciente > 0 || cobrosSinPaciente > 0) {
-        console.warn(
-          `Integridad de datos: ${turnosSinPaciente} turno(s) y ${cobrosSinPaciente} cobro(s) sin un pacienteId v\xE1lido. No bloquea la carga de la app (a diferencia de Paciente.id).`
-        );
+      if (d.turnos !== void 0) {
+        const turnosNorm = d.turnos.map(normalizarTurno);
+        const turnosSinPaciente = turnosNorm.filter((t) => !t.pacienteId).length;
+        if (turnosSinPaciente > 0) {
+          console.warn(`Integridad de datos: ${turnosSinPaciente} turno(s) sin un pacienteId v\xE1lido. No bloquea la carga de la app.`);
+        }
+        setTurnos(turnosNorm);
       }
-      setPacientes(pacientesNorm);
-      setTurnos(turnosNorm);
-      setCobros(cobrosNorm);
-      setConfig(d.config || {});
-      if (d.config && d.config.tema) {
-        aplicarTema(d.config.tema);
-        setTemaActivo(TEMAS[d.config.tema] ? d.config.tema : "azul");
+      if (d.cobros !== void 0) {
+        const cobrosNorm = d.cobros.map(normalizarCobro);
+        const cobrosSinPaciente = cobrosNorm.filter((c) => !c.pacienteId).length;
+        if (cobrosSinPaciente > 0) {
+          console.warn(`Integridad de datos: ${cobrosSinPaciente} cobro(s) sin un pacienteId v\xE1lido. No bloquea la carga de la app.`);
+        }
+        setCobros(cobrosNorm);
       }
-      setHistorial((d.historial || []).map(normalizarHistorial));
+      if (d.config !== void 0) {
+        setConfig(d.config || {});
+        if (d.config && d.config.tema) {
+          aplicarTema(d.config.tema);
+          setTemaActivo(TEMAS[d.config.tema] ? d.config.tema : "azul");
+        }
+      }
+      if (d.historial !== void 0) {
+        setHistorial(d.historial.map(normalizarHistorial));
+      }
     };
     // Primera vez que esta cuenta entra (nunca se generó su clave de
     // encriptación): la crea ahora, envuelta con la contraseña recién
@@ -2962,20 +3061,64 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       aplicarDataset(res);
       return res.id;
     });
+    // Borrado inmediato, sin deshacer: lo usa solo "Turno agregado · Deshacer"
+    // (que ya es en sí un deshacer — no tiene sentido ofrecer deshacerlo).
     const eliminarTurno = conManejoDeError(async (id) => {
       const res = await apiCall("Turnos", "delete", { id });
       aplicarDataset(res);
     });
-    const eliminarPaciente = conManejoDeError(async (id) => {
-      const res = await apiCall("Pacientes", "delete", { id });
-      aplicarDataset(res);
-    });
+    // Borrado con deshacer (pacientes, turnos y cobros): lo borrado se oculta
+    // al instante y se muestra un cartel con "Deshacer"; recién al vencer
+    // SEGUNDOS_DESHACER se borra de verdad en la base. Si se cierra la pestaña
+    // antes, el borrado no llega a hacerse y el ítem vuelve a aparecer la
+    // próxima vez — falla del lado seguro, a propósito.
+    const SEGUNDOS_DESHACER = 8;
+    const claveOculto = (o) => o.tipo + ":" + o.id;
+    const confirmarEliminacion = async (entrada) => {
+      const k = claveOculto(entrada);
+      clearTimeout(timersEliminacionRef.current[k]);
+      delete timersEliminacionRef.current[k];
+      setOcultos((prev) => prev.map((o) => claveOculto(o) === k ? { ...o, confirmando: true } : o));
+      const sheet = { paciente: "Pacientes", turno: "Turnos", cobro: "Cobros" }[entrada.tipo];
+      try {
+        const res = await apiCall(sheet, "delete", { id: entrada.id });
+        aplicarDataset(res);
+      } catch (e) {
+        window.alert("No se pudo eliminar:\n\n" + e.message + "\n\nVolvi\xF3 a quedar como estaba.");
+      } finally {
+        // Mismo tick que aplicarDataset (React lo agrupa): el ítem pasa de
+        // "oculto" a "ya no existe" sin parpadear. Si falló, vuelve a verse.
+        setOcultos((prev) => prev.filter((o) => claveOculto(o) !== k));
+      }
+    };
+    const borrarConDeshacer = (tipo, id, etiqueta) => {
+      // Un solo cartel a la vez: si había otro borrado esperando, se confirma ya.
+      ocultos.filter((o) => !o.confirmando).forEach(confirmarEliminacion);
+      const entrada = { tipo, id, etiqueta, confirmando: false };
+      setOcultos((prev) => [...prev, entrada]);
+      timersEliminacionRef.current[claveOculto(entrada)] = setTimeout(() => confirmarEliminacion(entrada), SEGUNDOS_DESHACER * 1e3);
+    };
+    const deshacerEliminacion = (entrada) => {
+      const k = claveOculto(entrada);
+      clearTimeout(timersEliminacionRef.current[k]);
+      delete timersEliminacionRef.current[k];
+      setOcultos((prev) => prev.filter((o) => claveOculto(o) !== k));
+    };
+    const nombreDePaciente = (pacienteId) => {
+      const p = pacientes.find((x) => x.id === pacienteId);
+      return p ? nombreCompleto(p) : "";
+    };
+    const borrarPaciente = (id) => borrarConDeshacer("paciente", id, "Paciente eliminado: " + nombreDePaciente(id));
+    const borrarTurno = (id) => {
+      const t = turnos.find((x) => x.id === id);
+      borrarConDeshacer("turno", id, "Turno eliminado: " + (t ? nombreDePaciente(t.pacienteId) + ", " + formatFechaCorta(t.fecha) + " " + t.hora : ""));
+    };
+    const borrarCobro = (id) => {
+      const c = cobros.find((x) => x.id === id);
+      borrarConDeshacer("cobro", id, "Cobro eliminado: " + (c ? nombreDePaciente(c.pacienteId) + ", $" + Number(c.monto).toLocaleString("es-AR") : ""));
+    };
     const marcarCobro = (id, estado = "pagado") => actualizarCobroOptimista(id, { estado });
     const editarMontoCobro = (id, monto) => actualizarCobroOptimista(id, { monto });
-    const eliminarCobro = conManejoDeError(async (id) => {
-      const res = await apiCall("Cobros", "delete", { id });
-      aplicarDataset(res);
-    });
     const marcarAumento = (id) => actualizarPacienteOptimista(id, { ultimoAumento: fmtKey(HOY) });
     const actualizarPrecio = (id, nuevoPrecio) => actualizarPacienteOptimista(id, { precio: nuevoPrecio });
     const actualizarNombre = (id, nombre, apellido) => actualizarPacienteOptimista(id, { nombre, apellido });
@@ -3046,7 +3189,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         window.alert("No se pudo desconectar: " + e.message);
       }
     };
-    const cerrarSesionFn = () => {
+    const cerrarSesionFn = async () => {
+      // Un borrado con deshacer todavía esperando se confirma ANTES de salir
+      // (después del signOut ya no hay sesión para hacerlo).
+      await Promise.all(ocultos.filter((o) => !o.confirmando).map(confirmarEliminacion));
+      setOcultos([]);
       sb.auth.signOut();
       // _dataKey es una variable de módulo, no un estado de React — si
       // no se limpia acá, en la MISMA pestaña una cuenta distinta que
@@ -3082,6 +3229,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const actualizarConfig = conManejoDeError(async (cambios) => {
       const res = await apiCall("Config", "update", { id: 1, data: cambios });
       aplicarDataset(res);
+      return true;
     });
     const agregarPaciente = conManejoDeError(async (datos) => {
       const desde = fmtKey(HOY);
@@ -3561,6 +3709,17 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     if (acceso.bloqueada) {
       return /* @__PURE__ */ React.createElement(PantallaAccesoVencido, { acceso, onDescargar: descargarMisDatos, onCerrarSesion: cerrarSesionFn });
     }
+    // Lo que está en `ocultos` (borrado con deshacer en curso) no se muestra
+    // en ninguna vista; ocultar un paciente oculta también sus turnos/cobros.
+    const pacientesOcultos = new Set(ocultos.filter((o) => o.tipo === "paciente").map((o) => o.id));
+    const turnosOcultos = new Set(ocultos.filter((o) => o.tipo === "turno").map((o) => o.id));
+    const cobrosOcultos = new Set(ocultos.filter((o) => o.tipo === "cobro").map((o) => o.id));
+    const pacientesVisibles = ocultos.length ? pacientes.filter((p) => !pacientesOcultos.has(p.id)) : pacientes;
+    const turnosVisibles = ocultos.length ? turnos.filter((t) => !turnosOcultos.has(t.id) && !pacientesOcultos.has(t.pacienteId)) : turnos;
+    const cobrosVisibles = ocultos.length ? cobros.filter((c) => !cobrosOcultos.has(c.id) && !pacientesOcultos.has(c.pacienteId)) : cobros;
+    // El cartel muestra el último borrado que todavía se puede deshacer.
+    const ultimoDeshacible = ocultos.filter((o) => !o.confirmando).slice(-1)[0];
+    const cartelDeshacer = ultimoDeshacible ? /* @__PURE__ */ React.createElement("div", { role: "status", style: { position: "fixed", bottom: isMobile ? 12 : 22, left: isMobile ? 12 : "50%", right: isMobile ? 12 : "auto", transform: isMobile ? "none" : "translateX(-50%)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, background: "var(--ink)", color: "#fff", padding: "10px 12px 10px 16px", borderRadius: 12, fontSize: 13.5, fontFamily: "var(--sans)", boxShadow: "0 4px 18px rgba(0,0,0,0.28)", maxWidth: isMobile ? "none" : 520 } }, /* @__PURE__ */ React.createElement("span", { style: { lineHeight: 1.35 } }, ultimoDeshacible.etiqueta), /* @__PURE__ */ React.createElement("button", { onClick: () => deshacerEliminacion(ultimoDeshacible), style: { flexShrink: 0, border: "1px solid rgba(255,255,255,0.5)", background: "transparent", color: "#fff", borderRadius: 8, padding: "8px 14px", minHeight: 36, fontSize: 13, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "Deshacer")) : null;
     const bannerGoogleCalendar = mensajeGoogleCalendar ? /* @__PURE__ */ React.createElement("div", { style: { background: "color-mix(in srgb, var(--pine) 14%, var(--card))", border: "1px solid color-mix(in srgb, var(--pine) 40%, var(--card))", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 } }, /* @__PURE__ */ React.createElement("span", null, mensajeGoogleCalendar), /* @__PURE__ */ React.createElement("button", { onClick: () => setMensajeGoogleCalendar(null), style: { border: "none", background: "none", cursor: "pointer", fontSize: 16, color: "var(--muted)", lineHeight: 1, padding: 0 } }, "\xD7")) : null;
     const bannerAcceso = acceso.diasRestantes !== null && acceso.diasRestantes <= 3 ? /* @__PURE__ */ React.createElement("div", { style: { background: "color-mix(in srgb, var(--ochre-dark) 14%, var(--card))", border: "1px solid color-mix(in srgb, var(--ochre-dark) 40%, var(--card))", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "var(--ink)", lineHeight: 1.5 } }, /* @__PURE__ */ React.createElement("b", null, acceso.esPrueba ? "Tu prueba gratuita" : "Tu acceso"), acceso.diasRestantes <= 0 ? " termina hoy." : " termina en " + acceso.diasRestantes + (acceso.diasRestantes === 1 ? " d\xEDa." : " d\xEDas."), " Para seguir, ", /* @__PURE__ */ React.createElement("a", { href: "mailto:" + MAIL_CONTACTO + "?subject=Pago%20AgendaMente", style: { color: "var(--pine)", fontWeight: 600 } }, "escribinos a " + MAIL_CONTACTO), " (", DATOS_DE_PAGO.precio, ", por transferencia al alias " + DATOS_DE_PAGO.alias + ").") : null;
     return /* @__PURE__ */ React.createElement(
@@ -3616,23 +3775,23 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onCambiarPassword: () => setMostrandoCambioPassword(true)
         }
       ),
-      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box", minHeight: isMobile ? "auto" : 720 } }, bannerGoogleCalendar, bannerAcceso, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0, padding: isMobile ? "18px 16px" : "26px 30px", boxSizing: "border-box", minHeight: isMobile ? "auto" : 720 } }, cartelDeshacer, bannerGoogleCalendar, bannerAcceso, /* @__PURE__ */ React.createElement(ErrorBoundary, { key: tab }, tab === "hoy" && /* @__PURE__ */ React.createElement(
         HoyView,
         {
-          turnos,
-          pacientes,
-          cobros,
+          turnos: turnosVisibles,
+          pacientes: pacientesVisibles,
+          cobros: cobrosVisibles,
           onEstado: setEstadoTurno,
           onGuardarNota: guardarNotaRapida,
           setTab,
           isMobile
         }
-      ), tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos, pacientes, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, onReprogramar: reprogramarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
+      ), tab === "agenda" && /* @__PURE__ */ React.createElement(AgendaView, { turnos: turnosVisibles, pacientes: pacientesVisibles, onAdd: addTurno, onEstado: setEstadoTurno, onDuplicarSemana: duplicarTurnoSemana, onEliminarTurno: eliminarTurno, onBorrarTurno: borrarTurno, onReprogramar: reprogramarTurno, isMobile }), tab === "pacientes" && /* @__PURE__ */ React.createElement(
         PacientesView,
         {
-          pacientes,
-          turnos,
-          cobros,
+          pacientes: pacientesVisibles,
+          turnos: turnosVisibles,
+          cobros: cobrosVisibles,
           onMarcarAumento: marcarAumento,
           onActualizarPrecio: actualizarPrecio,
           onActualizarNombre: actualizarNombre,
@@ -3650,14 +3809,14 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           onActualizarTurnoRecurrente: actualizarTurnoRecurrente,
           onMarcarConsentimiento: marcarConsentimiento,
           onActualizarLinkConsentimiento: actualizarLinkConsentimiento,
-          onEliminarPaciente: eliminarPaciente,
+          onEliminarPaciente: borrarPaciente,
           config,
           onActualizarConfig: actualizarConfig,
           pacienteAAbrir,
           onConsumirPacienteAAbrir: () => setPacienteAAbrir(null),
           isMobile
         }
-      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros, pacientes, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: eliminarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes, turnos, cobros, historial, config, isMobile }), tab === "config" && /* @__PURE__ */ React.createElement(ConfigView, { temaActivo, onCambiarTema: cambiarTema, onCambiarPassword: () => setMostrandoCambioPassword(true), onCerrarSesion: cerrarSesionFn, googleCalendarConectado: !!config.googleCalendarConectado, onConectarGoogle: conectarGoogleCalendar, onDesconectarGoogle: desconectarGoogleCalendar, isMobile })))
+      ), tab === "cobros" && /* @__PURE__ */ React.createElement(CobrosView, { cobros: cobrosVisibles, pacientes: pacientesVisibles, onMarcar: marcarCobro, onEditarMonto: editarMontoCobro, onEliminar: borrarCobro, onRecordarPago: (pacienteId) => { setPacienteAAbrir(pacienteId); setTab("pacientes"); }, isMobile }), tab === "metricas" && /* @__PURE__ */ React.createElement(MetricasView, { pacientes: pacientesVisibles, turnos: turnosVisibles, cobros: cobrosVisibles, historial, config, isMobile }), tab === "config" && /* @__PURE__ */ React.createElement(ConfigView, { temaActivo, onCambiarTema: cambiarTema, onCambiarPassword: () => setMostrandoCambioPassword(true), onCerrarSesion: cerrarSesionFn, perfil: config, onGuardarPerfil: actualizarConfig, googleCalendarConectado: !!config.googleCalendarConectado, googleCalendarDisponible: !!GOOGLE_CLIENT_ID, onConectarGoogle: conectarGoogleCalendar, onDesconectarGoogle: desconectarGoogleCalendar, isMobile })))
     );
   }
   ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
