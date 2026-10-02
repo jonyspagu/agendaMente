@@ -511,6 +511,15 @@
     };
     const turnosAgendadosSemana = weekDates.reduce((acc, d) => acc + (byFecha[fmtKey(d)] || []).filter((t) => t.estado === "agendado").length, 0);
     const [deshacerId, setDeshacerId] = useState(null);
+    // Si se crean dos turnos seguidos, el alta más lenta puede resolver
+    // última: solo el pedido más reciente tiene derecho a ofrecer "Deshacer".
+    const ultimoAltaRef = useRef(0);
+    const ofrecerDeshacer = (promesa) => {
+      const pedido = ++ultimoAltaRef.current;
+      Promise.resolve(promesa).then((nuevoId) => {
+        if (nuevoId && pedido === ultimoAltaRef.current) setDeshacerId(nuevoId);
+      });
+    };
     // Reprogramar desde la lista mobile (en escritorio ya existe drag&drop
     // en la grilla, onDropDia más abajo) — id del turno con el formulario de
     // fecha/hora abierto, o null si ninguno.
@@ -567,9 +576,7 @@
       // real hasta 2026-10-01: se guardaba la promesa misma como id y el
       // "Deshacer" de "Turno agregado" mandaba a borrar "[object Promise]".
       // Si el alta falló, conManejoDeError devuelve null y no hay nada que deshacer.
-      Promise.resolve(onAdd(form)).then((nuevoId) => {
-        if (nuevoId) setDeshacerId(nuevoId);
-      });
+      ofrecerDeshacer(onAdd(form));
     };
     const confirmarDuplicar = (t) => {
       const pac = pacientes.find((x) => x.id === t.pacienteId);
@@ -585,9 +592,7 @@
 \u26A0 Ya hay otro paciente (${pacienteNombre(conflicto.turno.pacienteId)}) agendado a esa hora.`;
       if (window.confirm(msg)) {
         // Misma espera que en validarYGuardar (onDuplicarSemana también es async).
-        Promise.resolve(onDuplicarSemana(t, dias)).then((nuevoId) => {
-          if (nuevoId) setDeshacerId(nuevoId);
-        });
+        ofrecerDeshacer(onDuplicarSemana(t, dias));
       }
     };
     // Sin confirm: el borrado muestra un cartel con "Deshacer" (ver
@@ -2040,6 +2045,28 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   // Sin este control, esa pestaña seguía usando la clave de la cuenta
   // anterior para la nueva. Bug real encontrado en pruebas (2026-10-01).
   let _dataKeyDe = null;
+  // Cuenta con sesión activa en ESTA pestaña, actualizada en cada evento de
+  // auth (incluidos los que llegan desde otras pestañas). Encriptar y
+  // desencriptar usan la clave SOLO si su dueña es esta cuenta — así el
+  // control no depende de que cada camino que carga datos se acuerde de
+  // chequearlo (ver dataKeyVigente).
+  let _usuarioSesion = null;
+  // Únicos puntos de escritura de _dataKey/_dataKeyDe: la clave siempre se
+  // guarda junto con su dueña.
+  function fijarDataKey(dk, uid) {
+    _dataKey = dk;
+    _dataKeyDe = uid;
+  }
+  function limpiarDataKey() {
+    _dataKey = null;
+    _dataKeyDe = null;
+  }
+  function dataKeyVigente() {
+    return _dataKey && _dataKeyDe && _dataKeyDe === _usuarioSesion ? _dataKey : null;
+  }
+  function normalizarEmail(email) {
+    return String(email || "").trim().toLowerCase();
+  }
   function b64(buf) {
     return btoa(String.fromCharCode(...new Uint8Array(buf)));
   }
@@ -2092,20 +2119,29 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     );
   }
   async function encriptarHistoria(entradas) {
-    if (!_dataKey) return entradas;
+    const dk = dataKeyVigente();
+    if (!dk) {
+      // Sin clave vigente para esta cuenta: una historia vacía no tiene nada
+      // que proteger (alta de paciente). Cualquier otra cosa NO se guarda —
+      // antes se devolvía tal cual y terminaba guardada en texto plano, o
+      // (con la clave de otra cuenta en memoria) cifrada con una clave ajena.
+      if (!entradas || entradas.length === 0) return entradas || [];
+      throw new Error("La historia cl\xEDnica est\xE1 bloqueada en esta pesta\xF1a. Volv\xE9 a ingresar tu contrase\xF1a.");
+    }
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const plano = new TextEncoder().encode(JSON.stringify(entradas || []));
-    const cifrado = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, _dataKey, plano);
+    const cifrado = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, dk, plano);
     return "enc1:" + b64(iv) + ":" + b64(cifrado);
   }
   async function desencriptarHistoria(valor) {
     if (!valor) return [];
     if (Array.isArray(valor)) return valor;
     if (typeof valor === "string" && valor.startsWith("enc1:")) {
-      if (!_dataKey) return [];
+      const dk = dataKeyVigente();
+      if (!dk) return [];
       const [, ivB64, dataB64] = valor.split(":");
       try {
-        const plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(ivB64) }, _dataKey, unb64(dataB64));
+        const plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(ivB64) }, dk, unb64(dataB64));
         return JSON.parse(new TextDecoder().decode(plano));
       } catch (err) {
         return [];
@@ -2488,6 +2524,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     // que la usuaria tipeó. Un ref sí se mantiene al día sin importar qué
     // closure lo lea.
     const passwordInputRef = useRef("");
+    // Para qué cuenta (mail) es la contraseña de passwordInputRef. Se fija al
+    // enviar el login/alta (o al confirmar/elegir contraseña ya con sesión), y
+    // la contraseña solo se usa para crear/abrir la clave de ESA cuenta — ver
+    // passwordDeLaCuentaActual().
+    const passwordDeEmailRef = useRef("");
     const [errorLogin, setErrorLogin] = useState("");
     const [infoLogin, setInfoLogin] = useState("");
     const [enviandoLogin, setEnviandoLogin] = useState(false);
@@ -2544,6 +2585,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     const timersEliminacionRef = useRef({});
     const isMobile = useIsMobile();
     const cargandoRef = useRef(false);
+    // Para qué cuenta se lanzó la carga en curso, y si llegó un cambio de
+    // sesión (otra cuenta, o sin sesión) mientras tanto — ver
+    // cargarDatosDesdeSupabase.
+    const cargandoParaRef = useRef(null);
+    const recargaPendienteRef = useRef(false);
     // Guarda de reentrancia específica de crearDataKeyInicial: un evento de
     // auth "extra" (visto en pruebas de Fase 2) podría disparar un segundo
     // llamado en paralelo durante un alta de dataKey nueva y generar dos
@@ -2622,6 +2668,36 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         setHistorial(d.historial.map(normalizarHistorial));
       }
     };
+    // La sesión activa en una sola lectura: id, mail y —solo si se tipeó para
+    // ESTA cuenta— la contraseña. Bug real (2026-10-01): una pestaña que había
+    // quedado con la contraseña de otra cuenta en memoria recibió la sesión
+    // de una cuenta nueva (iniciada en otra pestaña) y le creó la clave
+    // envuelta con esa contraseña ajena — la dueña quedaba bloqueada de su
+    // historia clínica para siempre (ni su contraseña ni su código la abrían).
+    const sesionActual = async () => {
+      const { data } = await sb.auth.getSession();
+      const u = data && data.session && data.session.user;
+      const email = u ? normalizarEmail(u.email) : "";
+      const pw = email && email === passwordDeEmailRef.current ? passwordInputRef.current : "";
+      return { id: u ? u.id : null, email, pw };
+    };
+    const olvidarPasswordTipeada = () => {
+      passwordInputRef.current = "";
+      passwordDeEmailRef.current = "";
+    };
+    // La clave ya existe en la base pero no abre con la contraseña disponible
+    // (p. ej. la creó otra pestaña y la contraseña cambió en el medio): quien
+    // llama tiene que pedir desbloquear, no seguir como si nada.
+    const CLAVE_EXISTENTE_NO_ABRE = "clave-existente-no-abre";
+    const mensajeDeErrorDeClave = (err) => err.message === CLAVE_EXISTENTE_NO_ABRE ? "Esta cuenta ya tiene su historia cl\xEDnica protegida con otra contrase\xF1a. Recarg\xE1 la p\xE1gina e ingres\xE1 con tu contrase\xF1a actual." : err.message;
+    const abrirClaveExistente = async (cfg, pw, uid) => {
+      try {
+        const clave = await claveDeEnvoltura(pw, cfg.saltPassword);
+        fijarDataKey(await desenvolverClave(cfg.dataKeyWrappedPassword, clave), uid);
+      } catch (err) {
+        throw new Error(CLAVE_EXISTENTE_NO_ABRE);
+      }
+    };
     // Primera vez que esta cuenta entra (nunca se generó su clave de
     // encriptación): la crea ahora, envuelta con la contraseña recién
     // tipeada y con un código de recuperación nuevo, y muestra ese código
@@ -2630,23 +2706,43 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       if (creandoClaveRef.current) return;
       creandoClaveRef.current = true;
       try {
+        // Nunca envolver con una contraseña que no esté confirmada para ESTA
+        // cuenta — mejor no crear nada (se le pide la contraseña) que crear una
+        // clave que la dueña no va a poder abrir.
+        const { id: uid, pw } = await sesionActual();
+        if (!pw) throw new Error("No hay una contrase\xF1a confirmada para esta cuenta en esta pesta\xF1a.");
+        // Nunca pisar una clave que ya existe: otra pestaña de la misma cuenta
+        // pudo haberla creado. Pisarla dejaría ilegible todo lo que esa otra
+        // pestaña ya encriptó con la suya. Se abre la existente.
+        const cfgActual = await obtenerConfigDelUsuario();
+        if (cfgActual.saltPassword) {
+          await abrirClaveExistente(cfgActual, pw, uid);
+          return;
+        }
         const dk = await generarDataKey();
         const saltPass = saltAlAzar();
         const saltRec = saltAlAzar();
         const codigo = await generarCodigoRecuperacion();
-        const claveDesdePass = await claveDeEnvoltura(passwordInputRef.current, saltPass);
+        const claveDesdePass = await claveDeEnvoltura(pw, saltPass);
         const claveDesdeCodigo = await claveDeEnvoltura(codigo, saltRec);
         const wrappedPass = await envolverClave(dk, claveDesdePass);
         const wrappedRec = await envolverClave(dk, claveDesdeCodigo);
-        await apiCall("Config", "update", {
-          data: {
-            saltPassword: saltPass,
-            saltRecovery: saltRec,
-            dataKeyWrappedPassword: wrappedPass,
-            dataKeyWrappedRecovery: wrappedRec
-          }
-        });
-        _dataKey = dk;
+        // Escritura condicional (solo si la cuenta sigue sin clave): el chequeo
+        // de arriba solo no alcanza — entre leer y escribir pasan dos
+        // derivaciones PBKDF2 y otra pestaña podría escribir en el medio. Si
+        // perdimos esa carrera, se abre la clave que ganó en vez de pisarla.
+        const { data: escritas, error: errorEscritura } = await sb.from("profesionales").update({
+          salt_password: saltPass,
+          salt_recovery: saltRec,
+          data_key_wrapped_password: wrappedPass,
+          data_key_wrapped_recovery: wrappedRec
+        }).eq("id", uid).is("salt_password", null).select("id");
+        if (errorEscritura) throw new Error(errorEscritura.message);
+        if (!escritas || escritas.length === 0) {
+          await abrirClaveExistente(await obtenerConfigDelUsuario(), pw, uid);
+          return;
+        }
+        fijarDataKey(dk, uid);
         setCodigoRecuperacion(codigo);
       } finally {
         creandoClaveRef.current = false;
@@ -2656,23 +2752,33 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     // recién tipeada (login fresco); si no hay contraseña en memoria (sesión
     // restaurada de una pestaña anterior) pide "desbloquear" a mano.
     const asegurarDataKey = async (cfg) => {
-      if (_dataKey) return;
+      // La clave en memoria solo sirve si es de ESTA cuenta (ver dataKeyVigente).
+      if (cfg && dataKeyVigente() && _dataKeyDe === cfg.id) return;
+      limpiarDataKey();
+      const { pw } = await sesionActual();
       if (!cfg || !cfg.saltPassword) {
         // No hay dataKey todavía. Solo es seguro crearla automáticamente si
-        // la contraseña se tipeó de verdad en ESTA pestaña (alta o login
-        // recién hechos acá) — si no, pedirla de nuevo antes de generar
+        // la contraseña de ESTA cuenta se tipeó de verdad en esta pestaña
+        // (alta o login recién hechos acá) — si no, pedirla antes de generar
         // nada (ver comentario en pidiendoPasswordAlta más arriba).
-        if (passwordInputRef.current) {
-          await crearDataKeyInicial();
-        } else {
+        if (!pw) {
           setPidiendoPasswordAlta(true);
+          return;
+        }
+        try {
+          await crearDataKeyInicial();
+        } catch (err) {
+          if (err.message !== CLAVE_EXISTENTE_NO_ABRE) throw err;
+          // La creó otra pestaña y no abre con esta contraseña: pedir
+          // desbloquear, con la config fresca (la de `cfg` no tiene la clave).
+          aplicarDataset({ config: await obtenerConfigDelUsuario() });
+          setPidiendoDesbloqueo(true);
         }
         return;
       }
-      if (passwordInputRef.current) {
+      if (pw) {
         try {
-          const clave = await claveDeEnvoltura(passwordInputRef.current, cfg.saltPassword);
-          _dataKey = await desenvolverClave(cfg.dataKeyWrappedPassword, clave);
+          await abrirClaveExistente(cfg, pw, cfg.id);
           return;
         } catch (err) {
         }
@@ -2698,6 +2804,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         // un error: de hecho confirma que es la correcta, así que seguimos.
         if (error && error.code !== "same_password") throw error;
         passwordInputRef.current = passwordAltaInput;
+        passwordDeEmailRef.current = (await sesionActual()).email;
         await crearDataKeyInicial();
         setPidiendoPasswordAlta(false);
         setPasswordAltaInput("");
@@ -2706,7 +2813,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         aplicarDataset(d2);
         setCargando(false);
       } catch (err) {
-        setErrorPasswordAlta(err.message);
+        setErrorPasswordAlta(mensajeDeErrorDeClave(err));
       } finally {
         setEnviandoPasswordAlta(false);
       }
@@ -2716,15 +2823,31 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       // simultáneo) — sin esto, una cuenta nueva podía terminar generando
       // dos dataKey en una carrera: la que quedaba en memoria no era
       // necesariamente la misma que ganaba el update en la base.
-      if (cargandoRef.current) return;
+      // Pero un evento de OTRA cuenta (sesión que llegó desde otra pestaña)
+      // no se descarta: se repite apenas termine la carga en curso — si no,
+      // esta pestaña se quedaba mostrando los datos (y la clave) de la cuenta
+      // anterior con la sesión de la nueva.
+      if (cargandoRef.current) {
+        if (_usuarioSesion !== cargandoParaRef.current) recargaPendienteRef.current = true;
+        return;
+      }
       cargandoRef.current = true;
+      cargandoParaRef.current = _usuarioSesion;
       setCargando(true);
       setError(null);
-      obtenerDatasetCompleto().then(async (d) => {
+      sesionActual().then(({ id }) => {
+        // Antes de descifrar nada: si la clave en memoria es de OTRA cuenta
+        // (la sesión llegó desde otra pestaña), se descarta acá mismo.
+        if (_dataKeyDe && _dataKeyDe !== id) limpiarDataKey();
+        return obtenerDatasetCompleto();
+      }).then(async (d) => {
+        // La sesión cambió de cuenta mientras cargaba: estos datos ya no son
+        // de la cuenta activa — no se aplican (la recarga pendiente se ocupa).
+        if (_usuarioSesion !== cargandoParaRef.current) return;
         setAutenticado(true);
         aplicarDataset(d);
         await asegurarDataKey(d.config);
-        if (_dataKey && !codigoRecuperacion) {
+        if (dataKeyVigente() && !codigoRecuperacion) {
           const d2 = await obtenerDatasetCompleto();
           aplicarDataset(d2);
         }
@@ -2734,6 +2857,15 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         setCargando(false);
       }).finally(() => {
         cargandoRef.current = false;
+        if (recargaPendienteRef.current) {
+          recargaPendienteRef.current = false;
+          if (_usuarioSesion) {
+            cargarDatosDesdeSupabase();
+          } else {
+            setAutenticado(false);
+            setCargando(false);
+          }
+        }
       });
     };
     const desbloquear = async () => {
@@ -2741,7 +2873,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       setEnviandoLogin(true);
       try {
         const clave = await claveDeEnvoltura(passwordDesbloqueo, config.saltPassword);
-        _dataKey = await desenvolverClave(config.dataKeyWrappedPassword, clave);
+        fijarDataKey(await desenvolverClave(config.dataKeyWrappedPassword, clave), config.id);
         setPidiendoDesbloqueo(false);
         setPasswordDesbloqueo("");
         setCargando(true);
@@ -2762,10 +2894,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     // guardado posterior, se puede reintentar sin perder la dataKey ya
     // recuperada (por eso los llamadores no la vuelven a null en ese error).
     const reenvolverDataKeyConNuevaPassword = async (nuevaPassword, camposExtra = {}) => {
-      if (!_dataKey) throw new Error("No hay una clave de encriptación cargada en esta sesión.");
+      const dkActual = dataKeyVigente();
+      if (!dkActual) throw new Error("No hay una clave de encriptación cargada en esta sesión.");
       const saltPassNueva = saltAlAzar();
       const claveNueva = await claveDeEnvoltura(nuevaPassword, saltPassNueva);
-      const wrappedNueva = await envolverClave(_dataKey, claveNueva);
+      const wrappedNueva = await envolverClave(dkActual, claveNueva);
       const { error: errAuth } = await sb.auth.updateUser({ password: nuevaPassword });
       if (errAuth) throw errAuth;
       await apiCall("Config", "update", {
@@ -2799,7 +2932,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         setEnviandoRecuperacionClave(false);
         return;
       }
-      _dataKey = dk;
+      fijarDataKey(dk, config.id);
       try {
         const codigoNuevo = await generarCodigoRecuperacion();
         const saltRecNueva = saltAlAzar();
@@ -2847,6 +2980,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         const { error } = await sb.auth.updateUser({ password: passwordNuevaRecuperacion });
         if (error) throw error;
         passwordInputRef.current = passwordNuevaRecuperacion;
+        passwordDeEmailRef.current = (await sesionActual()).email;
         await crearDataKeyInicial();
         modoRecuperacionClaveRef.current = false;
         setModoRecuperacionClave(false);
@@ -2859,7 +2993,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         aplicarDataset(d2);
         setCargando(false);
       } catch (err) {
-        setErrorRecuperacionClave("Hubo un error al crear tu cuenta: " + err.message + ". Volv\xE9 a intentarlo.");
+        setErrorRecuperacionClave(err.message === CLAVE_EXISTENTE_NO_ABRE ? mensajeDeErrorDeClave(err) : "Hubo un error al crear tu cuenta: " + err.message + ". Volv\xE9 a intentarlo.");
       } finally {
         setEnviandoRecuperacionClave(false);
       }
@@ -2894,9 +3028,15 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       setInfoLogin("");
       setEnviandoLogin(true);
       try {
+        passwordInputRef.current = passwordInput;
+        passwordDeEmailRef.current = normalizarEmail(emailInput);
         const { error } = await sb.auth.signInWithPassword({ email: emailInput.trim(), password: passwordInput });
         if (error) throw error;
       } catch (e) {
+        // Una contraseña que no entró no puede quedar ligada a ese mail: si
+        // después llegara la sesión de esa cuenta (p. ej. login correcto en
+        // otra pestaña), se usaría para crearle la clave.
+        olvidarPasswordTipeada();
         setErrorLogin(e.message === "Invalid login credentials" ? "Mail o contrase\xF1a incorrectos." : e.message);
       } finally {
         setEnviandoLogin(false);
@@ -2913,6 +3053,8 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       try {
         // Se deja registro de cu\xE1ndo y qu\xE9 versi\xF3n de los textos se acept\xF3
         // (queda en los metadatos de la cuenta de autenticaci\xF3n).
+        passwordInputRef.current = passwordInput;
+        passwordDeEmailRef.current = normalizarEmail(emailInput);
         const { data, error } = await sb.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput,
@@ -2923,6 +3065,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           setInfoLogin("Cuenta creada. Revis\xE1 tu mail para confirmarla antes de entrar.");
         }
       } catch (e) {
+        olvidarPasswordTipeada();
         setErrorLogin(e.message);
       } finally {
         setEnviandoLogin(false);
@@ -2958,6 +3101,9 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       // (carrera real que se dio en pruebas — el update que gana en la base
       // no era necesariamente el mismo cuya dataKey quedaba en memoria).
       const { data: listener } = sb.auth.onAuthStateChange((_evento, session) => {
+        // Primero que nada: qué cuenta tiene la sesión ahora (puede venir de
+        // otra pestaña). Encriptar/desencriptar lo consultan vía dataKeyVigente.
+        _usuarioSesion = session && session.user ? session.user.id : null;
         if (_evento === "PASSWORD_RECOVERY") {
           // Volvió del link de "olvidé mi contraseña" — NO es un login
           // normal, todavía no sabemos si va a poder recuperar el acceso a
@@ -2988,6 +3134,13 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         if (session) {
           cargarDatosDesdeSupabase();
         } else {
+          // Sin sesión (puede venir de que OTRA pestaña cerró sesión): esta
+          // pestaña tampoco se queda con la clave ni la contraseña en memoria.
+          limpiarDataKey();
+          olvidarPasswordTipeada();
+          // Si había una carga en curso, que al terminar no vuelva a mostrar
+          // los datos de la cuenta que ya salió (ver cargarDatosDesdeSupabase).
+          if (cargandoRef.current) recargaPendienteRef.current = true;
           setAutenticado(false);
           setCargando(false);
         }
@@ -3200,7 +3353,12 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       // inicie sesión después (sin recargar la página) heredaría esta
       // clave vieja en memoria, salteándose por completo la creación
       // de su propia dataKey. Bug real encontrado probando Fase 2.
-      _dataKey = null;
+      limpiarDataKey();
+      _usuarioSesion = null;
+      // Ídem la contraseña tipeada: quedaba en memoria después de salir y
+      // otra pestaña con una cuenta nueva la usaba para crearle la clave
+      // (bug real 2026-10-01, ver passwordDeLaCuentaActual).
+      olvidarPasswordTipeada();
       setAutenticado(false);
       setEmailInput("");
       setPasswordInput("");
@@ -3421,10 +3579,11 @@ Esta acci\xF3n no se puede deshacer.`)) return;
           {
             type: "password",
             value: passwordInput,
-            onChange: (e) => {
-              setPasswordInput(e.target.value);
-              passwordInputRef.current = e.target.value;
-            },
+            // passwordInputRef se fija recién al enviar (iniciarSesion /
+            // registrarse), junto con el mail al que corresponde — no en cada
+            // tecla, para que nunca quede una contraseña a medio tipear ligada
+            // a otra cuenta.
+            onChange: (e) => setPasswordInput(e.target.value),
             onKeyDown: (e) => {
               if (e.key === "Enter" && emailInput && passwordInput) modoRegistro ? registrarse() : iniciarSesion();
             },

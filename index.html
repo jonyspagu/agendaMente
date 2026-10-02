@@ -391,6 +391,15 @@
     };
     const turnosAgendadosSemana = weekDates.reduce((acc, d) => acc + (byFecha[fmtKey(d)] || []).filter((t) => t.estado === "agendado").length, 0);
     const [deshacerId, setDeshacerId] = useState(null);
+    // Si se crean dos turnos seguidos, el alta más lenta puede resolver
+    // última: solo el pedido más reciente tiene derecho a ofrecer "Deshacer".
+    const ultimoAltaRef = useRef(0);
+    const ofrecerDeshacer = (promesa) => {
+      const pedido = ++ultimoAltaRef.current;
+      Promise.resolve(promesa).then((nuevoId) => {
+        if (nuevoId && pedido === ultimoAltaRef.current) setDeshacerId(nuevoId);
+      });
+    };
     useEffect(() => {
       if (deshacerId === null) return;
       const timer = setTimeout(() => setDeshacerId(null), 7e3);
@@ -437,9 +446,12 @@
         avisos.push("Est\xE1s agendando un turno para el domingo, d\xEDa que normalmente no trabaj\xE1s.");
       }
       if (avisos.length > 0) window.alert(avisos.join("\n\n"));
-      const nuevoId = onAdd(form);
-      setDeshacerId(nuevoId);
       setShowForm(false);
+      // onAdd es async (devuelve una promesa del id): hay que esperarla. Bug
+      // real hasta 2026-10-01: se guardaba la promesa misma como id y el
+      // "Deshacer" de "Turno agregado" mandaba a borrar "[object Promise]".
+      // Si el alta falló, conManejoDeError devuelve null y no hay nada que deshacer.
+      ofrecerDeshacer(onAdd(form));
     };
     const confirmarDuplicar = (t) => {
       const pac = pacientes.find((x) => x.id === t.pacienteId);
@@ -454,8 +466,8 @@
 
 \u26A0 Ya hay otro paciente (${pacienteNombre(conflicto.turno.pacienteId)}) agendado a esa hora.`;
       if (window.confirm(msg)) {
-        const nuevoId = onDuplicarSemana(t, dias);
-        setDeshacerId(nuevoId);
+        // Misma espera que en validarYGuardar (onDuplicarSemana también es async).
+        ofrecerDeshacer(onDuplicarSemana(t, dias));
       }
     };
     const confirmarEliminarTurno = (t) => {
