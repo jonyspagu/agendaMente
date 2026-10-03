@@ -490,52 +490,92 @@ def main():
                 )
 
         # ==================================================================
-        # 7. Cobro mensual automático: a una paciente "mensual" a la que ya
-        #    se le cumplió el mes desde que arrancó (y nunca tuvo cobro), se
-        #    le genera el cobro solo al leer el Sheet (doGet) — reemplaza al
-        #    viejo botón manual "Generar cobro del mes".
+        # 7. Cobro mensual automático (regla 2026-10): por cada mes cerrado,
+        #    un cobro fechado el último día de ese mes, por precio × sesiones
+        #    que se cobran ("realizado" + "cancelado_cobra"). Se genera solo
+        #    al leer el Sheet (doGet). Se recalcula si se marca una sesión
+        #    tarde, salvo que el cobro esté pagado o con el monto editado a mano.
         # ==================================================================
-        fecha_desde_mensual = (date.today() - timedelta(days=40)).isoformat()
-        res, err = crear(r, "Pacientes", {
-            "nombre": TAG, "apellido": "mensual_vencido", "precio": 9000, "telefono": "000",
-            "notas": "", "desde": fecha_desde_mensual, "ultimoAumento": "", "frecuenciaDias": 7,
-            "mesesAumento": 6, "historia": "[]", "contactoReferencia": "",
-            "consentimientoFirmado": "NO", "fechaConsentimiento": "", "tipoPago": "mensual",
-            "linkConsentimiento": ""
-        })
-        paciente_mensual_id = res.get("id") if res else None
-        registrar_creado("Pacientes", paciente_mensual_id)
-        r.check(
-            "Cobro mensual automático — crear paciente mensual con el mes ya vencido",
-            res is not None and res.get("ok") is True,
-            err or f"id: {paciente_mensual_id}"
-        )
+        primero_de_este_mes = date.today().replace(day=1)
+        ultimo_mes_pasado = primero_de_este_mes - timedelta(days=1)
+        mes_pasado = ultimo_mes_pasado.strftime("%Y-%m")
+        fecha_cobro_mensual = ultimo_mes_pasado.isoformat()
+        PRECIO_MENSUAL = 9000
 
-        if paciente_mensual_id is None:
-            r.skip("Cobro mensual automático — se genera solo al leer, sin botón", "no se pudo crear el paciente de prueba")
-            r.skip("Cobro mensual automático — no se duplica en una segunda lectura", "no se pudo crear el paciente de prueba")
+        def paciente_mensual(apellido):
+            res, err = crear(r, "Pacientes", {
+                "nombre": TAG, "apellido": apellido, "precio": PRECIO_MENSUAL, "telefono": "000",
+                "notas": "", "desde": (ultimo_mes_pasado.replace(day=1) - timedelta(days=20)).isoformat(),
+                "ultimoAumento": "", "frecuenciaDias": 7, "mesesAumento": 6, "historia": "[]",
+                "contactoReferencia": "", "consentimientoFirmado": "NO", "fechaConsentimiento": "",
+                "tipoPago": "mensual", "linkConsentimiento": ""
+            })
+            nuevo_id = res.get("id") if res else None
+            registrar_creado("Pacientes", nuevo_id)
+            return nuevo_id, err
+
+        def cobros_de(data, pid):
+            return [c for c in (data or {}).get("cobros", []) if _leer_paciente_id(c) == pid]
+
+        paciente_mensual_id, err = paciente_mensual("mensual_por_sesiones")
+        paciente_sin_sesiones_id, _ = paciente_mensual("mensual_sin_sesiones")
+        r.check("Cobro mensual — crear pacientes mensuales de prueba", paciente_mensual_id is not None and paciente_sin_sesiones_id is not None, err or "")
+
+        nombres_mensual = [
+            "Cobro mensual — 1 cobro fechado el último día del mes pasado, por precio × sesiones (realizadas + 'canceló, se cobra')",
+            "Cobro mensual — no se duplica en una segunda lectura",
+            "Cobro mensual — paciente mensual sin sesiones en el mes: no se genera cobro",
+            "Cobro mensual — marcar una sesión tarde recalcula el cobro pendiente",
+            "Cobro mensual — un cobro pagado no se recalcula",
+            "Cobro mensual — un monto editado a mano no se pisa",
+        ]
+        if paciente_mensual_id is None or paciente_sin_sesiones_id is None:
+            for n in nombres_mensual:
+                r.skip(n, "no se pudieron crear los pacientes de prueba")
         else:
-            data, err = leer_con_reintento(
-                r,
-                lambda d: any(_leer_paciente_id(c) == paciente_mensual_id for c in d.get("cobros", [])),
-                op_label="read_post_cobro_mensual"
-            )
-            cobros_mensual = [c for c in data.get("cobros", []) if _leer_paciente_id(c) == paciente_mensual_id] if data else []
-            for c in cobros_mensual:
-                registrar_creado("Cobros", _leer_id(c))
-            r.check(
-                "Cobro mensual automático — se genera solo al leer, sin botón (1 cobro pendiente por el precio de la paciente)",
-                len(cobros_mensual) == 1 and cobros_mensual[0].get("estado") == "pendiente" and cobros_mensual[0].get("monto") == 9000,
-                f"cobros encontrados: {cobros_mensual}"
-            )
+            turnos_mes = {}
+            for dia, estado in [(3, "realizado"), (10, "realizado"), (17, "cancelado_cobra"), (24, "cancelado"), (25, "agendado"), (27, "agendado")]:
+                fecha = ultimo_mes_pasado.replace(day=dia).isoformat()
+                res, _ = crear(r, "Turnos", {"pacienteId": paciente_mensual_id, "fecha": fecha, "hora": "09:00", "estado": estado}, op_label="create_turno_mensual")
+                tid = res.get("id") if res else None
+                registrar_creado("Turnos", tid)
+                turnos_mes[dia] = tid
 
-            data2, err2 = leer(r, op_label="read_getAllData")
-            cobros_mensual_2 = [c for c in data2.get("cobros", []) if _leer_paciente_id(c) == paciente_mensual_id] if data2 else []
-            r.check(
-                "Cobro mensual automático — no se duplica en una segunda lectura",
-                len(cobros_mensual_2) == len(cobros_mensual),
-                f"cobros encontrados en la 2da lectura: {cobros_mensual_2}"
-            )
+            data, _ = leer_con_reintento(r, lambda d: len(cobros_de(d, paciente_mensual_id)) >= 1, op_label="read_post_cobro_mensual")
+            cobros_m = cobros_de(data, paciente_mensual_id)
+            for c in cobros_m:
+                registrar_creado("Cobros", _leer_id(c))
+            ok_1 = (len(cobros_m) == 1 and cobros_m[0].get("fecha") == fecha_cobro_mensual and cobros_m[0].get("estado") == "pendiente"
+                    and cobros_m[0].get("monto") == PRECIO_MENSUAL * 3 and cobros_m[0].get("sesiones") == 3)
+            r.check(nombres_mensual[0], ok_1, f"esperado fecha {fecha_cobro_mensual}, monto {PRECIO_MENSUAL * 3}, sesiones 3 — encontrados: {cobros_m}")
+            cobro_mensual_id = _leer_id(cobros_m[0]) if cobros_m else None
+
+            data2, _ = leer(r)
+            r.check(nombres_mensual[1], len(cobros_de(data2, paciente_mensual_id)) == len(cobros_m), f"2da lectura: {cobros_de(data2, paciente_mensual_id)}")
+            r.check(nombres_mensual[2], len(cobros_de(data2, paciente_sin_sesiones_id)) == 0, f"cobros: {cobros_de(data2, paciente_sin_sesiones_id)}")
+
+            if cobro_mensual_id is None:
+                for n in nombres_mensual[3:]:
+                    r.skip(n, "no se generó el cobro mensual base")
+            else:
+                # Marca tarde la sesión del 25 → 4 sesiones.
+                actualizar(r, "Turnos", turnos_mes[25], {"estado": "realizado"}, op_label="update_turno_tarde")
+                data, _ = leer_con_reintento(r, lambda d: any(c.get("sesiones") == 4 for c in cobros_de(d, paciente_mensual_id)), op_label="read_post_recalculo")
+                c = buscar((data or {}).get("cobros", []), cobro_mensual_id) or {}
+                r.check(nombres_mensual[3], c.get("monto") == PRECIO_MENSUAL * 4 and c.get("sesiones") == 4, f"cobro: {c}")
+
+                # Pagado → marcar otra sesión no lo cambia.
+                actualizar(r, "Cobros", cobro_mensual_id, {"estado": "pagado"}, op_label="update_cobro_pagado")
+                actualizar(r, "Turnos", turnos_mes[27], {"estado": "realizado"}, op_label="update_turno_tarde")
+                data, _ = leer(r)
+                c = buscar((data or {}).get("cobros", []), cobro_mensual_id) or {}
+                r.check(nombres_mensual[4], c.get("monto") == PRECIO_MENSUAL * 4 and c.get("sesiones") == 4, f"cobro: {c}")
+
+                # Pendiente de nuevo pero con monto editado a mano → no se pisa.
+                actualizar(r, "Cobros", cobro_mensual_id, {"estado": "pendiente", "monto": 30000}, op_label="update_cobro_monto_manual")
+                data, _ = leer(r)
+                c = buscar((data or {}).get("cobros", []), cobro_mensual_id) or {}
+                r.check(nombres_mensual[5], c.get("monto") == 30000, f"cobro: {c}")
 
         # ==================================================================
         # 8. Borrar Pacientes (feature nueva de UI: botón "Eliminar" en

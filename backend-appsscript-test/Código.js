@@ -193,12 +193,28 @@ function pacienteExiste(pacienteId) {
   return sheetToObjects(pacientesSh).some((p) => Number(leerCampoObjeto(p, "id")) === idNum);
 }
 
-// Genera solo el cobro mensual de cada paciente con tipoPago="mensual" cuando se
-// cumple un mes desde su último cobro (o desde que arrancó, si todavía no tuvo
-// ninguno). Así queda simétrico con las pacientes por sesión, donde el cobro
-// también se genera solo (al marcar el turno "realizado" en la Agenda) sin que la
-// profesional tenga que acordarse de apretar nada. Si estuvo varios meses sin
-// generarse, pone al día todos los meses vencidos (con un tope de seguridad).
+// Cobro mensual de las pacientes con tipoPago="mensual": un solo cobro por
+// mes calendario YA CERRADO, fechado el último día de ese mes (así figura en
+// el mes de las sesiones y no en el siguiente — bug real reportado por Guada
+// 2026-10), por precio × sesiones que se cobran ("realizado" + "canceló, se
+// cobra"). Antes se cobraba "precio" una sola vez por mes, sin importar
+// cuántas sesiones hubo. La cantidad queda en la columna "sesiones": la usa
+// la etiqueta del cobro ("Mensual septiembre · 4 sesiones") y sirve para
+// saber si el monto lo puso el sistema o lo editó ella a mano.
+//
+// Si marca una sesión tarde (ej. el 3/10 marca realizada la del 28/9), el
+// cobro de septiembre se recalcula solo en la próxima lectura — mientras siga
+// pendiente y nadie le haya editado el monto a mano. Pagado o editado a mano:
+// no se toca nunca. El recálculo automático no deja rastro en Historial (es
+// el sistema, no una edición de la profesional).
+//
+// Regla vigente desde septiembre 2026 (MES_INICIO_COBRO_MENSUAL): los cobros
+// de la regla vieja (monto fijo, un mes después de "desde") no se reprocesan.
+const MES_INICIO_COBRO_MENSUAL = "2026-09";
+const MESES_RECALCULO_COBRO_MENSUAL = 3;
+const ESTADOS_TURNO_QUE_SE_COBRAN = ["realizado", "cancelado_cobra"];
+const ESTADOS_TURNO_CANCELADOS = ["cancelado", "cancelado_cobra"];
+
 function procesarCobrosMensualesVencidos() {
   const lock = LockService.getScriptLock();
   try {
@@ -210,49 +226,84 @@ function procesarCobrosMensualesVencidos() {
     const ss = SpreadsheetApp.openById(SHEET_ID);
     const pacientesSh = ss.getSheetByName("Pacientes");
     const cobrosSh = ss.getSheetByName("Cobros");
-    if (!pacientesSh || !cobrosSh) return;
+    const turnosSh = ss.getSheetByName("Turnos");
+    if (!pacientesSh || !cobrosSh || !turnosSh) return;
+    asegurarColumna(cobrosSh, "sesiones");
 
     const pacientes = sheetToObjects(pacientesSh);
+    const turnos = sheetToObjects(turnosSh);
     const cobros = sheetToObjects(cobrosSh);
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
+    // Los últimos meses cerrados (el actual todavía no), sin bajar del inicio
+    // de la regla. Ej. hoy 3/10 → ["2026-09"] (agosto ya es regla vieja).
+    const mesesARevisar = [];
+    let mes = mesAnterior(formatearFecha(hoy).slice(0, 7));
+    while (mesesARevisar.length < MESES_RECALCULO_COBRO_MENSUAL && mes >= MES_INICIO_COBRO_MENSUAL) {
+      mesesARevisar.push(mes);
+      mes = mesAnterior(mes);
+    }
+
     pacientes.forEach((p) => {
       if (normalizarHeader(leerCampoObjeto(p, "tipoPago")) !== "mensual") return;
       const pacienteId = Number(leerCampoObjeto(p, "id"));
-      const desde = leerCampoObjeto(p, "desde");
       const precio = Number(leerCampoObjeto(p, "precio")) || 0;
-      if (!desde || !precio) return;
+      if (!precio) return;
+      const desde = String(leerCampoObjeto(p, "desde") || "");
+      const mesDesde = /^\d{4}-\d{2}/.test(desde) ? desde.slice(0, 7) : "";
 
-      let referencia = parsearFecha(desde);
-      if (isNaN(referencia.getTime())) return; // "desde" con formato no reconocido: no se puede calcular, se salta sin romper nada
-      cobros
-        .filter((c) => Number(leerCampoObjeto(c, "pacienteId")) === pacienteId)
-        .forEach((c) => {
-          const f = parsearFecha(leerCampoObjeto(c, "fecha"));
-          if (!isNaN(f.getTime()) && f > referencia) referencia = f;
-        });
+      mesesARevisar.forEach((mesCobro) => {
+        if (mesDesde && mesCobro < mesDesde) return;
+        const fechaCobro = ultimoDiaDelMes(mesCobro);
+        const sesiones = turnos.filter(
+          (t) => Number(leerCampoObjeto(t, "pacienteId")) === pacienteId && String(leerCampoObjeto(t, "fecha")).slice(0, 7) === mesCobro && ESTADOS_TURNO_QUE_SE_COBRAN.includes(String(leerCampoObjeto(t, "estado")))
+        ).length;
+        const existente = cobros.find(
+          (c) => Number(leerCampoObjeto(c, "pacienteId")) === pacienteId && String(leerCampoObjeto(c, "fecha")) === fechaCobro
+        );
 
-      let iteraciones = 0;
-      while (iteraciones < 24) {
-        const proxima = sumarUnMes(referencia);
-        if (proxima > hoy) break;
-        const nuevoId = getNextId(cobrosSh);
-        const row = buildRow(cobrosSh, nuevoId, {
-          pacienteId: pacienteId,
-          fecha: formatearFecha(proxima),
-          monto: precio,
-          estado: "pendiente"
-        });
-        cobrosSh.appendRow(row);
+        if (!existente) {
+          if (sesiones === 0) return;
+          const row = buildRow(cobrosSh, getNextId(cobrosSh), {
+            pacienteId: pacienteId,
+            fecha: fechaCobro,
+            monto: precio * sesiones,
+            estado: "pendiente",
+            sesiones: sesiones
+          });
+          cobrosSh.appendRow(row);
+          SpreadsheetApp.flush();
+          return;
+        }
+
+        // Recalcular solo un cobro armado por el sistema (tiene "sesiones"),
+        // todavía pendiente y con el monto tal cual lo dejó el sistema.
+        if (String(leerCampoObjeto(existente, "estado")) !== "pendiente") return;
+        const sesionesCrudo = leerCampoObjeto(existente, "sesiones");
+        if (sesionesCrudo === "" || sesionesCrudo === null || sesionesCrudo === void 0) return;
+        const sesionesGuardadas = Number(sesionesCrudo);
+        if (Number(leerCampoObjeto(existente, "monto")) !== precio * sesionesGuardadas) return;
+        if (sesionesGuardadas === sesiones) return;
+        updateRowById(cobrosSh, leerCampoObjeto(existente, "id"), { monto: precio * sesiones, sesiones: sesiones });
         SpreadsheetApp.flush();
-        referencia = proxima;
-        iteraciones++;
-      }
+      });
     });
   } finally {
     lock.releaseLock();
   }
+}
+
+// "2026-01" → "2025-12"
+function mesAnterior(mes) {
+  const partes = mes.split("-").map(Number);
+  return formatearFecha(new Date(partes[0], partes[1] - 2, 1)).slice(0, 7);
+}
+
+// "2026-09" → "2026-09-30" (día 0 del mes siguiente = último día de este)
+function ultimoDiaDelMes(mes) {
+  const partes = mes.split("-").map(Number);
+  return formatearFecha(new Date(partes[0], partes[1], 0));
 }
 
 // Genera sola la próxima sesión de las pacientes con turno fijo (columna
@@ -308,7 +359,7 @@ function procesarTurnosRecurrentes() {
           (t) => Number(leerCampoObjeto(t, "pacienteId")) === pacienteId && leerCampoObjeto(t, "fecha") === proximaStr && String(leerCampoObjeto(t, "hora")) === String(ultimo.hora)
         );
         const ocupadoPorOtra = todosLosTurnos.some(
-          (t) => Number(leerCampoObjeto(t, "pacienteId")) !== pacienteId && leerCampoObjeto(t, "fecha") === proximaStr && String(leerCampoObjeto(t, "hora")) === String(ultimo.hora) && leerCampoObjeto(t, "estado") !== "cancelado"
+          (t) => Number(leerCampoObjeto(t, "pacienteId")) !== pacienteId && leerCampoObjeto(t, "fecha") === proximaStr && String(leerCampoObjeto(t, "hora")) === String(ultimo.hora) && !ESTADOS_TURNO_CANCELADOS.includes(String(leerCampoObjeto(t, "estado")))
         );
         if (!yaExiste && !ocupadoPorOtra) {
           const nuevoId = getNextId(turnosSh);

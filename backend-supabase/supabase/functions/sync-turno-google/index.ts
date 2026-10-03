@@ -152,7 +152,9 @@ Deno.serve(async (req) => {
     // Cancelar un turno no borra la fila (setEstadoTurno solo cambia
     // `estado`) — sin este caso especial, un turno cancelado seguiría
     // apareciendo intacto en el Google Calendar de la profesional.
-    if (turno.estado === "cancelado") {
+    // "cancelado_cobra" (canceló el paciente, se cobra igual) tampoco ocupa
+    // la agenda: se borra igual.
+    if (turno.estado === "cancelado" || turno.estado === "cancelado_cobra") {
       if (!turno.google_event_id) {
         return json({ ok: true, info: "turno cancelado, nunca había llegado a sincronizarse" });
       }

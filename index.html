@@ -143,13 +143,31 @@
     return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${y}`;
   }
   const BASE_MONDAY = getMonday(HOY);
-  function periodoLabel(fecha) {
-    return `Sesi\xF3n ${formatFechaCorta(fecha)}`;
+  // Cobro mensual (lo arma el backend a fin de mes y guarda cuántas
+  // sesiones cobró): "Mensual · Septiembre 2026 · 4 sesiones". Cobro por
+  // sesión: "Sesión 3/10".
+  function periodoLabel(c, pacientes) {
+    const p = (pacientes || []).find((x) => x.id === c.pacienteId);
+    if (p && p.tipoPago === "mensual" && c.sesiones !== "" && c.sesiones !== null && c.sesiones !== void 0) {
+      const n = Number(c.sesiones);
+      return `Mensual \xB7 ${labelMes(String(c.fecha).slice(0, 7))} \xB7 ${n} sesi${n === 1 ? "\xF3n" : "ones"}`;
+    }
+    return `Sesi\xF3n ${formatFechaCorta(c.fecha)}`;
   }
-  const estadoTurnoColor = { agendado: "var(--muted)", realizado: "var(--verde)", cancelado: "var(--rust)" };
-  const estadoTurnoLabel = { agendado: "Agendado", realizado: "✓ Realizada", cancelado: "✕ Cancelado" };
+  const estadoTurnoColor = { agendado: "var(--muted)", realizado: "var(--verde)", cancelado: "var(--rust)", cancelado_cobra: "var(--ochre-dark)" };
+  const estadoTurnoLabel = { agendado: "Agendado", realizado: "✓ Realizada", cancelado: "✕ Cancelado", cancelado_cobra: "$ Cancel\xF3, se cobra" };
   function pillToneDeEstado(estado) {
-    return estado === "cancelado" ? "rust" : estado === "realizado" ? "verde" : "neutral";
+    return estado === "cancelado" ? "rust" : estado === "cancelado_cobra" ? "ochre" : estado === "realizado" ? "verde" : "neutral";
+  }
+  // "cancelado_cobra" = el paciente canceló pero la sesión se cobra igual
+  // (lo decide ella caso por caso con el botón "$ Canceló, se cobra"). Para la
+  // agenda es un cancelado (libera el horario, se ve tachado); para el cobro
+  // cuenta como una sesión realizada.
+  function estaCancelado(t) {
+    return t.estado === "cancelado" || t.estado === "cancelado_cobra";
+  }
+  function seCobra(t) {
+    return t.estado === "realizado" || t.estado === "cancelado_cobra";
   }
   function formatFechaHora(fechaIso) {
     const [fecha, hora] = String(fechaIso || "").split("T");
@@ -179,7 +197,7 @@
     return `Turno del ${fechaTurno} modificado`;
   }
   function turnoConflicto(turnos, pacienteId, fecha, hora, excludeId) {
-    const mismoSlot = turnos.filter((t) => t.fecha === fecha && t.hora === hora && t.estado !== "cancelado" && t.id !== excludeId);
+    const mismoSlot = turnos.filter((t) => t.fecha === fecha && t.hora === hora && !estaCancelado(t) && t.id !== excludeId);
     if (mismoSlot.some((t) => t.pacienteId === pacienteId)) return "mismo";
     if (mismoSlot.length > 0) return { tipo: "otro", turno: mismoSlot[0] };
     return null;
@@ -306,11 +324,11 @@
       return p ? nombreCompleto(p) : "\u26A0 Sin paciente asignado";
     };
     const sesionesHoy = useMemo(
-      () => turnos.filter((t) => t.fecha === hoyKey && t.estado !== "cancelado").sort((a, b) => String(a.hora).localeCompare(String(b.hora))),
+      () => turnos.filter((t) => t.fecha === hoyKey && !estaCancelado(t)).sort((a, b) => String(a.hora).localeCompare(String(b.hora))),
       [turnos, hoyKey]
     );
     const sesionesManiana = useMemo(
-      () => turnos.filter((t) => t.fecha === manianaKey && t.estado !== "cancelado").sort((a, b) => String(a.hora).localeCompare(String(b.hora))),
+      () => turnos.filter((t) => t.fecha === manianaKey && !estaCancelado(t)).sort((a, b) => String(a.hora).localeCompare(String(b.hora))),
       [turnos, manianaKey]
     );
     const sinConsentimiento = pacientes.filter((p) => p.consentimientoFirmado !== "SI");
@@ -330,7 +348,7 @@
       onEstado(turno.id, "realizado");
       setEscribiendo(true);
     };
-    return /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[turno.estado]}`, borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 14, color: "var(--ink)", fontWeight: 600 } }, turno.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14.5, color: "var(--ink)", fontWeight: 600 } }, nombre), /* @__PURE__ */ React.createElement(Pill, { tone: pillToneDeEstado(turno.estado) }, estadoTurnoLabel[turno.estado])), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, turno.estado === "agendado" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: marcarRealizada, style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2713 Se hizo"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "cancelado"), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2715 Cancel\xF3")) : /* @__PURE__ */ React.createElement(React.Fragment, null, !escribiendo && !guardada && /* @__PURE__ */ React.createElement("button", { onClick: () => setEscribiendo(true), style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "+ Nota"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "agendado"), style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "\u21A9 Deshacer")))), guardada && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--verde)", marginTop: 8 } }, "\u2713 Nota guardada en la historia cl\xEDnica."), escribiendo && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[turno.estado]}`, borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 14, color: "var(--ink)", fontWeight: 600 } }, turno.hora), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14.5, color: "var(--ink)", fontWeight: 600 } }, nombre), /* @__PURE__ */ React.createElement(Pill, { tone: pillToneDeEstado(turno.estado) }, estadoTurnoLabel[turno.estado])), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, turno.estado === "agendado" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: marcarRealizada, style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2713 Se hizo"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "cancelado"), style: { border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "\u2715 Cancel\xF3"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "cancelado_cobra"), title: "El paciente cancel\xF3 pero la sesi\xF3n se cobra igual", style: { border: "1px solid var(--ochre-dark)", background: "#fff", color: "var(--ochre-dark)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" } }, "$ Cancel\xF3, se cobra")) : /* @__PURE__ */ React.createElement(React.Fragment, null, !escribiendo && !guardada && /* @__PURE__ */ React.createElement("button", { onClick: () => setEscribiendo(true), style: { border: "1px solid var(--pine)", background: "#fff", color: "var(--pine)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "+ Nota"), /* @__PURE__ */ React.createElement("button", { onClick: () => onEstado(turno.id, "agendado"), style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, "\u21A9 Deshacer")))), guardada && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--verde)", marginTop: 8 } }, "\u2713 Nota guardada en la historia cl\xEDnica."), escribiendo && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement(
       "textarea",
       {
         value: nota,
@@ -550,7 +568,7 @@
     const accionesExpandidas = (t) => /* @__PURE__ */ React.createElement(
       "div",
       { style: { display: "flex", flexDirection: "column", gap: 5, marginTop: 8 } },
-      t.estado === "agendado" ? /* @__PURE__ */ React.createElement(
+      t.estado === "agendado" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
         "div",
         { style: { display: "flex", gap: 4 } },
         /* @__PURE__ */ React.createElement(
@@ -575,7 +593,18 @@
           },
           "\u2715 Cancel\xF3"
         )
-      ) : /* @__PURE__ */ React.createElement(
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            onEstado(t.id, "cancelado_cobra");
+          },
+          title: "El paciente cancel\xF3 pero la sesi\xF3n se cobra igual",
+          style: { border: "1px solid var(--ochre-dark)", background: "#fff", color: "var(--ochre-dark)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+        },
+        "$ Cancel\xF3, se cobra"
+      )) : /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: (e) => {
@@ -729,7 +758,7 @@
                         padding: "4px 7px",
                         boxSizing: "border-box",
                         overflow: isSel ? "visible" : "hidden",
-                        opacity: dragId === t.id ? 0.4 : t.estado === "cancelado" ? 0.6 : 1,
+                        opacity: dragId === t.id ? 0.4 : estaCancelado(t) ? 0.6 : 1,
                         boxShadow: isSel ? "0 6px 18px rgba(74,42,56,.25)" : "0 1px 2px rgba(74,42,56,.06)",
                         cursor: "grab"
                       }
@@ -847,15 +876,15 @@
                     fontSize: isMobile ? 8.5 : 9.5,
                     lineHeight: 1.25,
                     color: "var(--ink)",
-                    background: t.estado === "cancelado" ? "transparent" : "var(--paper2)",
+                    background: estaCancelado(t) ? "transparent" : "var(--paper2)",
                     borderLeft: `2px solid ${estadoTurnoColor[t.estado]}`,
                     borderRadius: 3,
                     padding: isMobile ? "1px 2px" : "1px 3px",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    textDecoration: t.estado === "cancelado" ? "line-through" : "none",
-                    opacity: t.estado === "cancelado" ? 0.6 : 1
+                    textDecoration: estaCancelado(t) ? "line-through" : "none",
+                    opacity: estaCancelado(t) ? 0.6 : 1
                   }
                 },
                 isMobile ? pacienteNombre(t.pacienteId).split(",")[0] : `${t.hora} ${pacienteNombre(t.pacienteId).split(",")[0]}`
@@ -894,7 +923,7 @@
         String(d.getDate()).padStart(2, "0"),
         "/",
         String(d.getMonth() + 1).padStart(2, "0")
-      ), feriado && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "var(--ochre-dark)", fontStyle: "italic", marginBottom: 7, lineHeight: 1.25, overflowWrap: "break-word" } }, feriado), !feriado && esDomingo && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "var(--muted)", fontStyle: "italic", marginBottom: 7 } }, "No laborable"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: isMobile ? 6 : 0 } }, (byFecha[key] || []).length === 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)", fontStyle: "italic", padding: "4px 2px" } }, "Sin turnos"), (byFecha[key] || []).map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { minWidth: 0, background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[t.estado]}`, borderRadius: 7, padding: "7px 8px", boxSizing: "border-box", opacity: t.estado === "cancelado" ? 0.55 : 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--muted)", fontFamily: "var(--mono)", fontWeight: 600 } }, t.hora), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, color: "var(--ink)", fontWeight: 600, margin: "3px 0 6px 0", overflowWrap: "break-word" } }, pacienteNombre(t.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 } }, /* @__PURE__ */ React.createElement(Pill, { tone: pillToneDeEstado(t.estado) }, estadoTurnoLabel[t.estado]), t.estado !== "agendado" && /* @__PURE__ */ React.createElement(
+      ), feriado && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "var(--ochre-dark)", fontStyle: "italic", marginBottom: 7, lineHeight: 1.25, overflowWrap: "break-word" } }, feriado), !feriado && esDomingo && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "var(--muted)", fontStyle: "italic", marginBottom: 7 } }, "No laborable"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: isMobile ? 6 : 0 } }, (byFecha[key] || []).length === 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)", fontStyle: "italic", padding: "4px 2px" } }, "Sin turnos"), (byFecha[key] || []).map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { minWidth: 0, background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${estadoTurnoColor[t.estado]}`, borderRadius: 7, padding: "7px 8px", boxSizing: "border-box", opacity: estaCancelado(t) ? 0.55 : 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--muted)", fontFamily: "var(--mono)", fontWeight: 600 } }, t.hora), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, color: "var(--ink)", fontWeight: 600, margin: "3px 0 6px 0", overflowWrap: "break-word" } }, pacienteNombre(t.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 } }, /* @__PURE__ */ React.createElement(Pill, { tone: pillToneDeEstado(t.estado) }, estadoTurnoLabel[t.estado]), t.estado !== "agendado" && /* @__PURE__ */ React.createElement(
         "button",
         {
           title: "Volver este turno a 'Agendado'",
@@ -902,7 +931,7 @@
           style: { border: "1px solid var(--line)", background: "#fff", color: "var(--muted)", borderRadius: 5, padding: "2px 7px", fontSize: 10, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" }
         },
         "\u21A9 Deshacer"
-      )), t.estado === "agendado" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 5 } }, /* @__PURE__ */ React.createElement(
+      )), t.estado === "agendado" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 5 } }, /* @__PURE__ */ React.createElement(
         "button",
         {
           title: "La sesi\xF3n se hizo (genera el cobro pendiente)",
@@ -918,6 +947,14 @@
           style: { flex: 1, border: "1px solid var(--rust)", background: "#fff", color: "var(--rust)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
         },
         "\u2715 Cancel\xF3"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          title: "El paciente cancel\xF3 pero la sesi\xF3n se cobra igual (genera el cobro pendiente)",
+          onClick: () => onEstado(t.id, "cancelado_cobra"),
+          style: { flexBasis: "100%", border: "1px solid var(--ochre-dark)", background: "#fff", color: "var(--ochre-dark)", borderRadius: 5, padding: "4px 0", fontSize: 10.5, fontFamily: "var(--sans)", fontWeight: 700, cursor: "pointer" }
+        },
+        "$ Cancel\xF3, se cobra"
       )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("button", { title: "Repetir este turno seg\xFAn la frecuencia del paciente", onClick: () => confirmarDuplicar(t), style: { ...repetirBtnStyle, flex: 1 } }, "\u21BB Repetir turno"), /* @__PURE__ */ React.createElement(
         "button",
         {
@@ -1050,17 +1087,11 @@
     const pendientesDe = (id) => cobros.filter((c) => c.pacienteId === id && c.estado === "pendiente");
     const montoPendienteDe = (id) => pendientesDe(id).reduce((s, c) => s + c.monto, 0);
     const cicloMensualDe = (pac) => {
-      if (pac.tipoPago !== "mensual" || !pac.desde) return null;
-      let referencia = parseISO(pac.desde);
-      if (isNaN(referencia.getTime())) return null;
-      cobros.forEach((c) => {
-        if (c.pacienteId !== pac.id) return;
-        const f = parseISO(c.fecha);
-        if (!isNaN(f.getTime()) && f > referencia) referencia = f;
-      });
-      const sesiones = turnos.filter((t) => t.pacienteId === pac.id && t.estado !== "cancelado" && parseISO(t.fecha) > referencia).sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
-      const realizadas = sesiones.filter((t) => t.estado === "realizado").length;
-      return { referencia, sesiones, realizadas, proximoCobro: sumarUnMes(referencia) };
+      if (pac.tipoPago !== "mensual") return null;
+      const mes = fmtKey(HOY).slice(0, 7);
+      const sesiones = turnos.filter((t) => t.pacienteId === pac.id && t.estado !== "cancelado" && String(t.fecha).startsWith(mes)).sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+      const realizadas = sesiones.filter(seCobra).length;
+      return { mes, sesiones, realizadas, proximoCobro: new Date(HOY.getFullYear(), HOY.getMonth() + 1, 1) };
     };
     const confirmarEliminarPaciente = (p) => {
       const turnosVinculados = turnos.filter((t) => t.pacienteId === p.id).length;
@@ -1099,7 +1130,7 @@
       }
     }, [pacientes]);
     const marcarAumentoConPrecio = (pac) => {
-      const etiqueta = pac.tipoPago === "mensual" ? "Nuevo monto mensual" : "Nuevo precio de sesi\xF3n";
+      const etiqueta = "Nuevo precio de sesi\xF3n";
       const input = window.prompt(`${etiqueta} para ${nombreCompleto(pac)}
 (actual: $${pac.precio.toLocaleString("es-AR")}):`, pac.precio);
       if (input === null) return;
@@ -1122,7 +1153,7 @@
       onActualizarNombre(pac.id, nombre.trim(), apellido.trim());
     };
     const editarPrecio = (pac) => {
-      const etiqueta = pac.tipoPago === "mensual" ? "Monto mensual" : "Precio de sesi\xF3n";
+      const etiqueta = "Precio de sesi\xF3n";
       const input = window.prompt(`${etiqueta} para ${nombreCompleto(pac)}:`, pac.precio);
       if (input === null) return;
       const nuevo = Number(String(input).replace(/\./g, "").replace(/,/g, ""));
@@ -1348,15 +1379,15 @@
             textAlign: "left"
           }
         },
-        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontFamily: "var(--mono)", marginTop: 2 } }, "$", pac.precio.toLocaleString("es-AR"), pac.tipoPago === "mensual" ? "/mes" : "/sesi\xF3n")),
+        /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, nombreCompleto(pac)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "var(--muted)", fontFamily: "var(--mono)", marginTop: 2 } }, "$", pac.precio.toLocaleString("es-AR"), pac.tipoPago === "mensual" ? "/sesi\xF3n \xB7 cobro mensual" : "/sesi\xF3n")),
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, enAumento && /* @__PURE__ */ React.createElement(Pill, { tone: "ochre" }, "Aumentar"), (ciclo == null ? void 0 : ciclo.realizadas) > 0 && /* @__PURE__ */ React.createElement(Pill, { tone: "ochre" }, ciclo.realizadas, " sesi\xF3n", ciclo.realizadas === 1 ? "" : "es", " sin facturar"), montoPend > 0 && /* @__PURE__ */ React.createElement(Pill, { tone: "rust" }, "$", montoPend.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement(ChevronRight, { size: 15, color: "var(--muted)" }))
       );
-    }))), p ? /* @__PURE__ */ React.createElement("div", { ref: detalleRef, style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "2px solid var(--pine)", borderRadius: 12, padding: isMobile ? 18 : 26, scrollMarginTop: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("button", { title: "Editar nombre", onClick: () => editarNombre(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp"), /* @__PURE__ */ React.createElement("button", { title: "Eliminar paciente", onClick: () => confirmarEliminarPaciente(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--rust)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--rust)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 14 }), " Eliminar"))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, p.tipoPago === "mensual" ? "Monto mensual" : "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
+    }))), p ? /* @__PURE__ */ React.createElement("div", { ref: detalleRef, style: { flex: 1, width: isMobile ? "100%" : "auto", boxSizing: "border-box", background: "var(--card)", border: "2px solid var(--pine)", borderRadius: 12, padding: isMobile ? 18 : 26, scrollMarginTop: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 12 : 0 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", margin: 0 } }, nombreCompleto(p)), /* @__PURE__ */ React.createElement("button", { title: "Editar nombre", onClick: () => editarNombre(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13, margin: "4px 0 0 0" } }, "Paciente desde ", p.desde)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => recordarWhatsApp(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--line)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--pine)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 14 }), " Recordar por WhatsApp"), /* @__PURE__ */ React.createElement("button", { title: "Eliminar paciente", onClick: () => confirmarEliminarPaciente(p), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px solid var(--rust)", background: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "var(--rust)", fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 14 }), " Eliminar"))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, margin: "20px 0" } }, /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Precio de sesi\xF3n"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: statValue }, "$", p.precio.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar precio", onClick: () => editarPrecio(p), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Sesiones realizadas"), /* @__PURE__ */ React.createElement("div", { style: statValue }, turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Canceladas"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, color: turnos.filter((t) => t.pacienteId === p.id && estaCancelado(t)).length > 0 ? "var(--rust)" : "var(--ink)" } }, turnos.filter((t) => t.pacienteId === p.id && estaCancelado(t)).length)), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Tasa de asistencia"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16 } }, (() => {
       const real = turnos.filter((t) => t.pacienteId === p.id && t.estado === "realizado").length;
-      const canc = turnos.filter((t) => t.pacienteId === p.id && t.estado === "cancelado").length;
+      const canc = turnos.filter((t) => t.pacienteId === p.id && estaCancelado(t)).length;
       const total = real + canc;
       return total ? `${Math.round(real / total * 100)}%` : "\u2014";
-    })())), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Deuda pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16, color: montoPendienteDe(p.id) ? "var(--rust)" : "var(--verde)" } }, "$", montoPendienteDe(p.id).toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "\xDAltimo aumento"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 15, color: mesesDesde(p.ultimoAumento) >= mesesUmbral(p) ? "var(--ochre-dark)" : "var(--pine)" } }, "hace ", mesesDesde(p.ultimoAumento), "m"), mesesDesde(p.ultimoAumento) >= mesesUmbral(p) && /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(p), style: { ...miniActionBtnStyle, fontSize: 10.5, padding: "2px 7px" } }, "Aumentar")))), cicloP && /* @__PURE__ */ React.createElement("div", { style: { border: "1px dashed var(--line)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 } }, "Sesiones de este ciclo (desde ", formatFechaCorta(fmtKey(cicloP.referencia)), ")"), cicloP.sesiones.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: "var(--muted)", fontStyle: "italic", margin: 0 } }, "Todav\xEDa no hay sesiones cargadas en este ciclo.") : cicloP.sesiones.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, padding: "4px 0", color: t.estado === "realizado" ? "var(--ink)" : "var(--muted)", fontStyle: t.estado === "realizado" ? "normal" : "italic" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 16, height: 16, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, background: t.estado === "realizado" ? "rgba(78,122,91,0.18)" : "var(--paper2)", color: t.estado === "realizado" ? "var(--verde)" : "var(--muted)" } }, t.estado === "realizado" ? "✓" : "\xB7"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", width: 46, flex: "none" } }, formatFechaCorta(t.fecha)), /* @__PURE__ */ React.createElement("span", null, t.estado === "realizado" ? "Realizada" : "Agendada"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--muted)", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" } }, "Pr\xF3ximo cobro: ", /* @__PURE__ */ React.createElement("b", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, formatFechaCorta(fmtKey(cicloP.proximoCobro))), " \xB7 $", p.precio.toLocaleString("es-AR"), " (por el ciclo completo, no por sesi\xF3n)")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Tel: ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefono || "sin cargar")), /* @__PURE__ */ React.createElement(
+    })())), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "Deuda pendiente"), /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 16, color: montoPendienteDe(p.id) ? "var(--rust)" : "var(--verde)" } }, "$", montoPendienteDe(p.id).toLocaleString("es-AR"))), /* @__PURE__ */ React.createElement("div", { style: statBox }, /* @__PURE__ */ React.createElement("div", { style: statLabel }, "\xDAltimo aumento"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { ...statValue, fontSize: 15, color: mesesDesde(p.ultimoAumento) >= mesesUmbral(p) ? "var(--ochre-dark)" : "var(--pine)" } }, "hace ", mesesDesde(p.ultimoAumento), "m"), mesesDesde(p.ultimoAumento) >= mesesUmbral(p) && /* @__PURE__ */ React.createElement("button", { onClick: () => marcarAumentoConPrecio(p), style: { ...miniActionBtnStyle, fontSize: 10.5, padding: "2px 7px" } }, "Aumentar")))), cicloP && /* @__PURE__ */ React.createElement("div", { style: { border: "1px dashed var(--line)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 } }, "Sesiones de ", labelMes(cicloP.mes)), cicloP.sesiones.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: "var(--muted)", fontStyle: "italic", margin: 0 } }, "Todav\xEDa no hay sesiones cargadas este mes.") : cicloP.sesiones.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, padding: "4px 0", color: seCobra(t) ? "var(--ink)" : "var(--muted)", fontStyle: seCobra(t) ? "normal" : "italic" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 16, height: 16, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, background: seCobra(t) ? "rgba(78,122,91,0.18)" : "var(--paper2)", color: seCobra(t) ? "var(--verde)" : "var(--muted)" } }, seCobra(t) ? "✓" : "\xB7"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", width: 46, flex: "none" } }, formatFechaCorta(t.fecha)), /* @__PURE__ */ React.createElement("span", null, t.estado === "realizado" ? "Realizada" : t.estado === "cancelado_cobra" ? "Cancel\xF3, se cobra" : "Agendada"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, color: "var(--muted)", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" } }, "Se cobra el ", /* @__PURE__ */ React.createElement("b", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, formatFechaCorta(fmtKey(cicloP.proximoCobro))), " \xB7 $", p.precio.toLocaleString("es-AR"), " \xD7 ", cicloP.realizadas, " sesi", cicloP.realizadas === 1 ? "\xF3n" : "ones", " = $", (p.precio * cicloP.realizadas).toLocaleString("es-AR"), " (cuentan las realizadas y las canceladas que se cobran)")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", null, "Tel: ", /* @__PURE__ */ React.createElement("span", { style: { color: "var(--ink)", fontFamily: "var(--mono)" } }, p.telefono || "sin cargar")), /* @__PURE__ */ React.createElement(
       "button",
       {
         title: "Editar tel\xE9fono",
@@ -1434,7 +1465,7 @@
         style: { border: "1px solid var(--line)", borderRadius: 6, padding: "4px 8px", fontSize: 12.5, fontFamily: "var(--sans)", color: "var(--ink)", background: "#fff" }
       },
       /* @__PURE__ */ React.createElement("option", { value: "sesion" }, "Por sesi\xF3n"),
-      /* @__PURE__ */ React.createElement("option", { value: "mensual" }, "Mensual")
+      /* @__PURE__ */ React.createElement("option", { value: "mensual" }, "Mensual (se cobra a fin de mes)")
     ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" } }, p.consentimientoFirmado === "SI" ? /* @__PURE__ */ React.createElement(Pill, { tone: "verde" }, "Consentimiento firmado (", formatFechaCorta(p.fechaConsentimiento), ")") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Pill, { tone: "rust" }, "Falta consentimiento firmado"), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -1773,7 +1804,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10.5, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: tono.bg, color: tono.color, whiteSpace: "nowrap" } }, "hace ", dias, " d\xEDa", dias === 1 ? "" : "s");
     };
     const confirmarEditarMonto = (c) => {
-      const input = window.prompt(`Monto del cobro de ${pacienteNombre(c.pacienteId)} (${periodoLabel(c.fecha)}):`, c.monto);
+      const input = window.prompt(`Monto del cobro de ${pacienteNombre(c.pacienteId)} (${periodoLabel(c, pacientes)}):`, c.monto);
       if (input === null) return;
       const nuevo = Number(String(input).replace(/\./g, "").replace(/,/g, ""));
       if (!nuevo || nuevo <= 0) {
@@ -1827,14 +1858,14 @@ Esta acci\xF3n no se puede deshacer.`)) return;
         style: { border: "none", background: "none", color: "var(--pine)", fontSize: 12, fontFamily: "var(--sans)", fontWeight: 600, cursor: "pointer", padding: 0 }
       },
       "Limpiar filtros"
-    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--muted)", marginLeft: "auto" } }, cobrosFiltrados.length, " de ", cobrosMes.length)), cobrosFiltrados.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, fontStyle: "italic" } }, "No hay cobros que coincidan con los filtros."), isMobile ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, cobrosFiltrados.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5 } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontFamily: "var(--mono)", fontWeight: 600, color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 10 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: { ...markBtn, flex: 1 } }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: { ...undoBtn, flex: 1 } }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 13 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 13 })))))) : cobrosFiltrados.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, overflow: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { minWidth: 560 } }, /* @__PURE__ */ React.createElement("div", { style: { ...rowGrid, padding: "10px 18px", background: "var(--paper2)" } }, ["Paciente", "Sesi\xF3n", "Monto", "Estado", ""].map((h) => /* @__PURE__ */ React.createElement("div", { key: h, style: { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase" } }, h))), cobrosFiltrados.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { ...rowGrid, padding: "12px 18px", borderTop: "1px solid var(--line)", background: i % 2 === 0 ? "transparent" : "var(--paper2)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)" } }, periodoLabel(c.fecha)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, fontFamily: "var(--mono)", color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: markBtn }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: undoBtn, title: "Volver este cobro a pendiente" }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 12 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 12 }))))))));
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "var(--muted)", marginLeft: "auto" } }, cobrosFiltrados.length, " de ", cobrosMes.length)), cobrosFiltrados.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { color: "var(--muted)", fontSize: 13.5, fontStyle: "italic" } }, "No hay cobros que coincidan con los filtros."), isMobile ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, cobrosFiltrados.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5 } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontFamily: "var(--mono)", fontWeight: 600, color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 })))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "var(--muted)" } }, periodoLabel(c, pacientes)), /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 10 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: { ...markBtn, flex: 1 } }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: { ...undoBtn, flex: 1 } }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 13 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 13 })))))) : cobrosFiltrados.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, overflow: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { minWidth: 560 } }, /* @__PURE__ */ React.createElement("div", { style: { ...rowGrid, padding: "10px 18px", background: "var(--paper2)" } }, ["Paciente", "Sesi\xF3n", "Monto", "Estado", ""].map((h) => /* @__PURE__ */ React.createElement("div", { key: h, style: { fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase" } }, h))), cobrosFiltrados.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { ...rowGrid, padding: "12px 18px", borderTop: "1px solid var(--line)", background: i % 2 === 0 ? "transparent" : "var(--paper2)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)" } }, pacienteNombre(c.pacienteId)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "var(--muted)" } }, periodoLabel(c, pacientes)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } }, badgeAntiguedad(c), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13.5, fontFamily: "var(--mono)", color: "var(--ink)" } }, "$", c.monto.toLocaleString("es-AR")), /* @__PURE__ */ React.createElement("button", { title: "Editar monto", onClick: () => confirmarEditarMonto(c), style: pencilBtnStyle }, /* @__PURE__ */ React.createElement(Pencil, { size: 11 }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(Pill, { tone: c.estado === "pagado" ? "verde" : "rust" }, estadoLabel(c))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, c.estado === "pendiente" ? /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pagado"), style: markBtn }, "Marcar pagado") : /* @__PURE__ */ React.createElement("button", { onClick: () => onMarcar(c.id, "pendiente"), style: undoBtn, title: "Volver este cobro a pendiente" }, "\u21A9 Deshacer"), c.estado === "pendiente" && /* @__PURE__ */ React.createElement("button", { title: "Preparar recordatorio de WhatsApp", onClick: () => onRecordarPago(c.pacienteId), style: { border: "1px solid var(--verde)", background: "#fff", color: "var(--verde)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(MessageCircle, { size: 12 })), /* @__PURE__ */ React.createElement("button", { title: "Eliminar cobro", onClick: () => confirmarEliminarCobro(c), style: { border: "1px dashed var(--line)", background: "transparent", color: "var(--rust)", borderRadius: 6, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement(Trash2, { size: 12 }))))))));
   }
   function MetricasView({ pacientes, turnos, cobros, historial, config, isMobile }) {
     const { mesesDisponibles, mes, setMes } = useMesSelector(cobros);
     const cobrosMes = useMemo(() => cobros.filter((c) => String(c.fecha).startsWith(mes)), [cobros, mes]);
     const turnosMes = turnos.filter((t) => String(t.fecha).startsWith(mes));
     const realizadas = turnosMes.filter((t) => t.estado === "realizado").length;
-    const canceladas = turnosMes.filter((t) => t.estado === "cancelado").length;
+    const canceladas = turnosMes.filter((t) => estaCancelado(t)).length;
     const agendadas = turnosMes.filter((t) => t.estado === "agendado").length;
     const totalMes = turnosMes.length;
     const tasaCancelacion = totalMes ? Math.round(canceladas / totalMes * 100) : 0;
@@ -1962,7 +1993,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     "turnoRecurrente"
   ];
   const CAMPOS_TURNO = ["id", "pacienteId", "fecha", "hora", "estado"];
-  const CAMPOS_COBRO = ["id", "pacienteId", "fecha", "monto", "estado"];
+  const CAMPOS_COBRO = ["id", "pacienteId", "fecha", "monto", "estado", "sesiones"];
   function normalizarPaciente(p) {
     const base = normalizarClaves(p, CAMPOS_PACIENTE);
     if (!base.parentescoReferencia && !base.telefonoReferencia && base.contactoReferencia) {
@@ -2175,7 +2206,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       setTurnos((prev) => prev.map((t) => t.id === id ? { ...t, estado } : t));
       apiCall("Turnos", "update", { id, data: { estado } }).then(async (resUpdate) => {
         setHistorial((resUpdate.historial || []).map(normalizarHistorial));
-        if (estado !== "realizado" || !turnoPrevio) return;
+        if (!seCobra({ estado }) || !turnoPrevio) return;
         const paciente = pacientes.find((p) => p.id === turnoPrevio.pacienteId);
         if (!paciente || paciente.tipoPago === "mensual") return;
         const yaExiste = cobros.some((c) => c.pacienteId === turnoPrevio.pacienteId && c.fecha === turnoPrevio.fecha);

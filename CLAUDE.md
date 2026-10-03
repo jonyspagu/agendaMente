@@ -23,7 +23,9 @@ Tablas/hojas: `Pacientes`, `Turnos`, `Cobros`, `Historial` (auditoría de edicio
 
 El frontend siempre trabaja en **camelCase** (`p.tipoPago`, `t.pacienteId`, `c.monto`). La traducción a snake_case (Postgres) o a lo que sea que tenga el Sheet vive solo en mappers puntuales (`pacienteADB`/`pacienteDeDB`, etc. en `frontend-supabase/index.html`) — el resto del componente no se entera del backend real.
 
-`tipoPago`: `"sesion"` | `"mensual"`. Para `"mensual"` se cobra una vez por ciclo, no por turno — no confundir con un bug si no aparece un cobro por cada sesión.
+`tipoPago`: `"sesion"` | `"mensual"`. `precio` es **siempre el valor de una sesión**. Para `"mensual"` hay un solo cobro por mes calendario cerrado, fechado el último día del mes, por `precio × sesiones` (regla desde 2026-10, reportado por Guada; antes era `precio` fijo un mes después de `desde`). Lo arma el backend solo (`procesarCobrosMensualesVencidos` en Apps Script en cada lectura; `sincronizar_cobro_mensual` en Supabase vía cron + trigger sobre turnos), guarda la cantidad en `cobros.sesiones` y lo recalcula si se marca una sesión tarde — solo si sigue pendiente y con el monto sin editar a mano. Corte: desde septiembre 2026, ventana de 3 meses cerrados. Para `"sesion"`, el frontend crea el cobro al marcar el turno.
+
+Estados de turno: `agendado` | `realizado` | `cancelado` | `cancelado_cobra` (botón "$ Canceló, se cobra": canceló el paciente y la profesional decide cobrarla igual). En el frontend, usar siempre `estaCancelado(t)` (agenda: libera horario, se ve tachado) y `seCobra(t)` (cobro: cuenta como realizada) en vez de comparar strings.
 
 ## Encriptación de la historia clínica (solo en `frontend-supabase`)
 
