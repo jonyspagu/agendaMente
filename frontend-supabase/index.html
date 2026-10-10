@@ -2049,11 +2049,10 @@ Esta acci\xF3n no se puede deshacer.`)) return;
   const SUPABASE_URL = "https://rtkllwucobddekdkfoux.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Q_Q4HvOJE4AT6BKdq-_1-A_MU2B2Fnu";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  // Client ID de OAuth de Google — NO es secreto (viaja en la URL del
-  // navegador de cualquier forma), pero todavía no existe: se completa acá
-  // recién cuando el proyecto de Google Cloud esté dado de alta. Vacío =
+  // Client ID de OAuth de Google (proyecto AgendaMente en Google Cloud) — NO
+  // es secreto (viaja en la URL del navegador de cualquier forma). Vacío =
   // el botón de "Conectar con Google Calendar" se muestra deshabilitado.
-  const GOOGLE_CLIENT_ID = "";
+  const GOOGLE_CLIENT_ID = "1091835407644-fbtbnect67lfbnccbojjtr95o991tikt.apps.googleusercontent.com";
   const GOOGLE_OAUTH_REDIRECT_URI = SUPABASE_URL + "/functions/v1/google-oauth-callback";
 
   // La UI entera (heredada de la época de Google Sheets) usa camelCase y
@@ -2180,6 +2179,54 @@ Esta acci\xF3n no se puede deshacer.`)) return;
     }
     return parseHistoria(valor);
   }
+  // "Notas" del paciente: mismo principio que la historia (cifrado en el
+  // navegador con la dataKey, nadie con acceso a la base las puede leer). Va
+  // con prefijo propio ("encn1:") para no confundirla con una historia. Un
+  // valor sin ese prefijo es una nota vieja en texto plano: se muestra tal
+  // cual y se cifra sola la primera vez que la dueña entra con la clave
+  // desbloqueada (ver cifrarNotasViejas).
+  const PREFIJO_NOTA = "encn1:";
+  async function encriptarNota(texto) {
+    if (texto === void 0) return void 0;
+    if (texto === null || texto === "") return "";
+    const dk = dataKeyVigente();
+    if (!dk) {
+      throw new Error("La historia cl\xEDnica est\xE1 bloqueada en esta pesta\xF1a. Volv\xE9 a ingresar tu contrase\xF1a.");
+    }
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plano = new TextEncoder().encode(JSON.stringify(String(texto)));
+    const cifrado = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, dk, plano);
+    return PREFIJO_NOTA + b64(iv) + ":" + b64(cifrado);
+  }
+  async function desencriptarNota(valor) {
+    if (typeof valor !== "string" || !valor.startsWith(PREFIJO_NOTA)) return valor;
+    const dk = dataKeyVigente();
+    if (!dk) return "";
+    const [, ivB64, dataB64] = valor.split(":");
+    try {
+      const plano = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(ivB64) }, dk, unb64(dataB64));
+      return JSON.parse(new TextDecoder().decode(plano));
+    } catch (err) {
+      return "";
+    }
+  }
+  // Notas que quedaron en texto plano de antes de que existiera este cifrado
+  // (o migradas desde la planilla): se cifran en segundo plano apenas hay
+  // clave vigente. El update es condicional al texto leído, así no pisa una
+  // edición que la usuaria haga justo en el medio. Si algo falla, no pasa
+  // nada: se reintenta en la próxima carga.
+  async function cifrarNotasViejas(filas) {
+    if (!dataKeyVigente()) return;
+    for (const fila of filas) {
+      const plano = fila.notas;
+      if (typeof plano !== "string" || plano === "" || plano.startsWith(PREFIJO_NOTA)) continue;
+      try {
+        const cifrada = await encriptarNota(plano);
+        await sb.from("pacientes").update({ notas: cifrada }).eq("id", fila.id).eq("notas", plano);
+      } catch (err) {
+      }
+    }
+  }
   function soloDefinidos(obj) {
     const out = {};
     Object.keys(obj).forEach((k) => {
@@ -2198,7 +2245,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       apellido: d.apellido,
       precio: d.precio !== void 0 ? Number(d.precio) || 0 : void 0,
       telefono: d.telefono,
-      notas: d.notas,
+      notas: await encriptarNota(d.notas),
       desde: d.desde || (d.desde === "" ? null : void 0),
       ultimo_aumento: d.ultimoAumento || (d.ultimoAumento === "" ? null : void 0),
       frecuencia_dias: d.frecuenciaDias,
@@ -2221,7 +2268,7 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       apellido: row.apellido,
       precio: Number(row.precio) || 0,
       telefono: row.telefono,
-      notas: row.notas,
+      notas: await desencriptarNota(row.notas),
       desde: row.desde,
       ultimoAumento: row.ultimo_aumento,
       frecuenciaDias: row.frecuencia_dias,
@@ -2320,7 +2367,10 @@ Esta acci\xF3n no se puede deshacer.`)) return;
       const k = claves[i];
       const r = resultados[i];
       if (r.error) throw new Error(r.error.message);
-      if (k === "pacientes") resultado.pacientes = await Promise.all((r.data || []).map(pacienteDeDB));
+      if (k === "pacientes") {
+        resultado.pacientes = await Promise.all((r.data || []).map(pacienteDeDB));
+        cifrarNotasViejas(r.data || []);
+      }
       else if (k === "turnos") resultado.turnos = (r.data || []).map(turnoDeDB);
       else if (k === "cobros") resultado.cobros = (r.data || []).map(cobroDeDB);
       else if (k === "historial") resultado.historial = (r.data || []).map(historialDeDB);
