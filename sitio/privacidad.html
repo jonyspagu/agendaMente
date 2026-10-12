@@ -21,8 +21,6 @@ h2{font-size:19px;margin:34px 0 8px}
 p,li{color:#2B3644}
 ul{padding-left:22px}
 .meta{color:var(--muted);font-size:14px;margin:0 0 24px}
-.borrador{background:#FFF4CC;border:1px solid #E5C766;border-radius:8px;padding:12px 16px;font-size:14px;color:#5B4A0B;margin:0 0 24px}
-mark.ph{background:#FFE58A;color:#3B2F00;padding:0 4px;border-radius:3px}
 .caja{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:16px 0}
 a{color:var(--accent)}
 footer{border-top:1px solid var(--line);padding:22px 24px;text-align:center;color:var(--muted);font-size:13px}
@@ -33,10 +31,9 @@ footer a{margin:0 10px}
 <body>
 <header><a href="/">agendaMente</a></header>
 <main>
-<div class="borrador"><b>Borrador.</b> Revisalo con un/a abogado/a y completá los campos marcados antes de publicar. Borrá este cartel al publicar.</div>
 
 <h1>Política de privacidad</h1>
-<p class="meta">Última actualización: 10 de octubre de 2026</p>
+<p class="meta">Última actualización: 11 de octubre de 2026</p>
 
 <p>En agendaMente cuidamos los datos personales, y sobre todo los datos de salud, que son datos sensibles. Esta política explica qué datos tratamos, para qué, con quién los compartimos y qué derechos tenés, conforme a la Ley 25.326 de Protección de los Datos Personales y su normativa complementaria.</p>
 
@@ -71,29 +68,41 @@ footer a{margin:0 10px}
 <li><b>Supabase</b> (base de datos y autenticación), con servidores en São Paulo, Brasil.</li>
 <li><b>Resend</b> (envío de mails del Servicio), Estados Unidos.</li>
 </ul>
-<p>Estos proveedores pueden estar en otros países, por lo que hay <b>transferencia internacional de datos</b>. Trabajamos con proveedores que aplican medidas de seguridad reconocidas y contratos de tratamiento de datos. <mark class="ph">[COMPLETAR: verificar con un/a abogado/a el mecanismo de transferencia internacional que corresponde (art. 12 Ley 25.326)]</mark> Solo compartimos datos con autoridades cuando una ley o una orden judicial nos obliga.</p>
+<p>Estos proveedores pueden estar en otros países, por lo que hay <b>transferencia internacional de datos</b>. Trabajamos con proveedores que aplican medidas de seguridad reconocidas y contratos de tratamiento de datos. Elegimos proveedores que se obligan por contrato a proteger los datos con medidas de seguridad adecuadas y a usarlos solo para prestarnos el servicio. Solo compartimos datos con autoridades cuando una ley o una orden judicial nos obliga.</p>
 
-<p><b>Google Calendar (opcional).</b> Si vos decidís conectar tu cuenta de Google desde Configuración, agendaMente crea un calendario aparte llamado “agendaMente” dentro de tu Google Calendar y copia ahí tus turnos: fecha, hora y las <b>iniciales</b> del paciente (nunca su nombre completo, notas ni historia clínica). Solo pedimos permiso para administrar ese calendario que crea la app: no vemos ni modificamos ningún otro calendario o evento tuyo. Guardamos, encriptado, el permiso que Google nos da para escribir en ese calendario, y lo borramos cuando desconectás Google Calendar. También podés quitar el acceso en cualquier momento desde tu cuenta de Google. El uso que hace agendaMente de la información recibida de las APIs de Google cumple con la <a href="https://developers.google.com/terms/api-services-user-data-policy">Política de Datos del Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado.</p>
+<p><b>Google Calendar (opcional).</b> Si conectás tu cuenta de Google, Google recibe los datos de tus turnos que se detallan en el punto 6. No compartimos con Google ningún otro dato.</p>
 
-<h2>6. Cuánto tiempo los conservamos</h2>
+<h2>6. Datos de tu cuenta de Google</h2>
+<p>Conectar Google Calendar es opcional: lo activás vos desde Configuración y podés desconectarlo cuando quieras. Este punto explica exactamente qué hace agendaMente con tu cuenta de Google.</p>
+<ul>
+<li><b>Qué permiso pedimos.</b> Uno solo: crear y administrar los calendarios que crea la propia app (permiso <code>calendar.app.created</code> de Google). Con ese permiso agendaMente crea un calendario aparte llamado “agendaMente” en tu Google Calendar. <b>No podemos ver, leer ni modificar ningún otro calendario o evento tuyo</b>, ni tus contactos, tu mail ni ningún otro dato de tu cuenta de Google.</li>
+<li><b>Qué datos mandamos a Google.</b> Por cada turno: fecha, hora, duración y las <b>iniciales</b> del paciente. Nunca su nombre completo, teléfono, notas ni historia clínica. Si editás, cancelás o borrás un turno, actualizamos o borramos el evento.</li>
+<li><b>Qué datos de Google guardamos.</b> El permiso que Google nos entrega para escribir en ese calendario (los “tokens” de acceso), el identificador del calendario “agendaMente” y el identificador de cada evento creado, para poder actualizarlo después. Los tokens se guardan encriptados en nuestra base de datos.</li>
+<li><b>Para qué los usamos.</b> Únicamente para mostrar tus turnos en tu Google Calendar. No los usamos para publicidad, no los vendemos, no armamos perfiles y no los usamos para entrenar modelos de inteligencia artificial.</li>
+<li><b>Con quién los compartimos.</b> Con nadie. Solo viajan entre agendaMente y Google, y se alojan en los proveedores de infraestructura del punto 5, que los procesan por nuestra cuenta.</li>
+<li><b>Cuánto tiempo los guardamos y cómo borrarlos.</b> Mientras tengas Google Calendar conectado. Al desconectarlo desde Configuración borramos los tokens de inmediato; si cerrás tu cuenta, se borra todo. También podés quitarle el acceso a agendaMente en cualquier momento desde <a href="https://myaccount.google.com/permissions">la configuración de seguridad de tu cuenta de Google</a>. Los eventos ya creados quedan en el calendario “agendaMente” de tu Google, y lo podés borrar vos desde Google Calendar.</li>
+</ul>
+<p>El uso que hace agendaMente de la información recibida de las APIs de Google cumple con la <a href="https://developers.google.com/terms/api-services-user-data-policy">Política de Datos del Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado.</p>
+
+<h2>7. Cuánto tiempo los conservamos</h2>
 <p>Mientras tu cuenta esté activa. Si la cancelás, conservamos tus datos 60 días para que puedas reactivarla o exportarlos, y luego los eliminamos de forma definitiva, salvo la información de facturación que debamos conservar por ley. Recordá que el plazo legal de conservación de la historia clínica es una obligación tuya como profesional: descargá tu copia.</p>
 
-<h2>7. Seguridad</h2>
+<h2>8. Seguridad</h2>
 <p>Aplicamos medidas técnicas y organizativas razonables: conexión cifrada (HTTPS), aislamiento de datos entre cuentas, encriptación de la historia clínica en el navegador y acceso administrativo restringido. Ningún sistema es infalible; si detectamos un incidente que afecte tus datos, te lo informamos dentro de las 72 horas de tomar conocimiento, con la información disponible y sus novedades.</p>
 
-<h2>8. Tus derechos</h2>
+<h2>9. Tus derechos</h2>
 <p>Podés acceder a tus datos, rectificarlos, actualizarlos y pedir su supresión escribiendo a <a href="mailto:contacto@agendamente.com.ar">contacto@agendamente.com.ar</a>. Respondemos dentro de los plazos legales. Si sos paciente de un/a profesional que usa agendaMente y querés ejercer estos derechos sobre tus datos, tenés que dirigirte a ese/a profesional, que es el/la responsable de tu información.</p>
 <div class="caja">
 <p>El titular de los datos personales tiene la facultad de ejercer el derecho de acceso a los mismos en forma gratuita a intervalos no inferiores a seis meses, salvo que se acredite un interés legítimo al efecto conforme lo establecido en el artículo 14, inciso 3 de la Ley Nº 25.326. La AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley Nº 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.</p>
 </div>
 
-<h2>9. Menores</h2>
+<h2>10. Menores</h2>
 <p>El Servicio está dirigido a profesionales mayores de 18 años. Los datos de pacientes menores de edad los carga y gestiona el/la profesional bajo su responsabilidad.</p>
 
-<h2>10. Cambios en esta política</h2>
+<h2>11. Cambios en esta política</h2>
 <p>Si la modificamos, publicamos la nueva versión con su fecha y, si el cambio es importante, te avisamos por mail o dentro de la aplicación.</p>
 
-<h2>11. Contacto</h2>
+<h2>12. Contacto</h2>
 <p><a href="mailto:contacto@agendamente.com.ar">contacto@agendamente.com.ar</a></p>
 
 </main>

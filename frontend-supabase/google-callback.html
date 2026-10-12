@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Conectando con Google Calendar — agendaMente</title>
+<script>
+  // Google vuelve acá después de dar permiso (redirect URI bajo dominio
+  // propio, requisito de la verificación de marca de Google) y esta página
+  // solo reenvía a la Edge Function con los mismos parámetros (code, state o
+  // error). La Edge Function hace todo el trabajo y devuelve a la app.
+  // GOOGLE_REDIRECT_URI (secret de la función) tiene que ser esta misma URL.
+  location.replace("https://rtkllwucobddekdkfoux.supabase.co/functions/v1/google-oauth-callback" + location.search);
+</script>
+</head>
+<body style="font-family: system-ui, sans-serif; padding: 40px 16px; text-align: center; color: #16213A;">
+  Conectando con Google Calendar…
+</body>
+</html>
